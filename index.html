@@ -10,14 +10,14 @@
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--tx);font-family:'Noto Sans Thai',system-ui,-apple-system,sans-serif;font-size:15px;-webkit-text-size-adjust:100%}
 button,input{font-family:inherit;font-size:15px}
-header{background:var(--g);color:#fff;padding:16px 16px 12px;position:sticky;top:0;z-index:5}
+header{background:var(--hd,var(--g));color:#fff;padding:16px 16px 12px;position:sticky;top:0;z-index:5}
 .top{display:flex;justify-content:space-between;align-items:center;gap:8px}
-.date{font-size:13px;color:#cfe9e4}
+.date{font-size:13px;color:rgba(255,255,255,.85)}
 h1{margin:0;font-size:21px}
-.pill{background:#fff;color:var(--g);border-radius:999px;padding:5px 12px;font-weight:600;font-size:14px;white-space:nowrap}
+.pill{background:#fff;color:var(--hd,var(--g));border-radius:999px;padding:5px 12px;font-weight:600;font-size:14px;white-space:nowrap}
 .chips{display:flex;gap:6px;overflow-x:auto;margin-top:10px;padding-bottom:2px}
-.chip{flex-shrink:0;min-height:34px;padding:4px 12px;border-radius:999px;border:1px solid #5fa79c;background:transparent;color:#fff}
-.chip.on{background:#fff;color:var(--g);border-color:#fff;font-weight:600}
+.chip{flex-shrink:0;min-height:34px;padding:4px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.55);background:transparent;color:#fff}
+.chip.on{background:#fff;color:var(--hd,var(--g));border-color:#fff;font-weight:600}
 .notice{background:#fff7e6;border-bottom:1px solid #f0dfb8;padding:8px 16px;font-size:14px;color:#6b4e0f}
 main{padding:12px 12px 120px;display:flex;flex-direction:column;gap:14px}
 .sec{font-size:13px;font-weight:600;color:#4b5a55;padding:0 4px;margin-bottom:6px}
@@ -76,6 +76,9 @@ const call = (q, ok) => fetch(API + '?' + new URLSearchParams(Object.assign({ t:
 let D = null, BLD = 'ทั้งหมด', OPEN = null, QEDIT = null, QDRAFT = null, ARM = null;
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+// 🎨 สีหัวแอพตามสีประจำวัน (วันใหม่เริ่ม 06:00 เหมือนบอท)
+const DAYCOL = ['#b42318', '#a16207', '#be185d', '#15803d', '#c2410c', '#1d4ed8', '#6d28d9'];   // อา จ อ พ พฤ ศ ส
+(() => { const d = new Date(Date.now() + 7 * 3600e3 - 6 * 3600e3).getUTCDay(); document.documentElement.style.setProperty('--hd', DAYCOL[d]); document.querySelector('meta[name=theme-color]') || document.head.insertAdjacentHTML('beforeend', `<meta name="theme-color" content="${DAYCOL[d]}">`); })();
 const short = b => String(b).replace(/^ตึก\s*/, '');
 
 function load() {
