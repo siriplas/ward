@@ -141,9 +141,10 @@ function taskRow(t) {
       <button class="b" onclick="OPEN=null;render()">ปิดเมนู</button>
     </div></div>`;
   if (isOpen && t.done) h += `<div class="panel">
-    <input class="inp" id="res${t.no}" placeholder="แก้ผล" value="${esc(t.result)}">
+    <input class="inp" id="res${t.no}" placeholder="${t.result ? 'พิมพ์ผล' : 'เพิ่มผล เช่น Hb 10'}">
     <div class="btns">
-      <button class="b p" onclick="fixRes(${t.no})">บันทึกผลใหม่</button>
+      <button class="b p" onclick="addRes(${t.no})">เพิ่มผล</button>
+      ${t.result ? `<button class="b" onclick="fixRes(${t.no})">แทนผลล่าสุด</button>` : ''}
       <button class="b" onclick="run('ww เปิด ${t.no}')">เปิดงานใหม่</button>
       <button class="b" onclick="OPEN=null;render()">ปิดเมนู</button>
     </div></div>`;
@@ -163,11 +164,12 @@ function flapCard(t) {
 
 const T = no => D.tasks.find(t => t.no === no);
 const val = no => ($('res' + no) || {}).value ? $('res' + no).value.trim() : '';
-function toggle(no) { OPEN = OPEN === no ? null : no; ARM = null; render(); const i = $('res' + no); if (i && !T(no).done) i.focus(); }
+function toggle(no) { OPEN = OPEN === no ? null : no; ARM = null; render(); const i = $('res' + no); if (i) i.focus(); }
 function closeT(no) { run(`ww เสร็จ ${no} ${val(no) || 'เสร็จ'}`); }
 function upd(no) { const v = val(no); if (!v) return toast('พิมพ์ความคืบหน้าในช่องก่อน'); run(`ww update ${no} ${v}`); }
 function editT(no) { const v = val(no); if (!v) return toast('พิมพ์ข้อความใหม่ในช่องก่อน แล้วกดแก้ข้อความ'); run(`ww แก้ ${no} ${v}`); }
 function cancelT(no) { if (ARM !== 'c' + no) { ARM = 'c' + no; return render(); } run(`ww ยกเลิก ${no}`); }
+function addRes(no) { const v = val(no); if (!v) return toast('พิมพ์ผลก่อน'); run(`ww เสร็จ ${no} ${v}`); }
 function fixRes(no) { const v = val(no); if (!v) return toast('พิมพ์ผลก่อน'); run(`ww แก้ผล ${no} ${v}`); }
 function saveQ(no) {
   const t = T(no);
