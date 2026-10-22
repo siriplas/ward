@@ -18,6 +18,9 @@ h1{margin:0;font-size:21px}
 .chips{display:flex;gap:6px;overflow-x:auto;margin-top:10px;padding-bottom:2px}
 .chip{flex-shrink:0;min-height:34px;padding:4px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.55);background:transparent;color:#fff}
 .chip.on{background:#fff;color:var(--hd,var(--g));border-color:#fff;font-weight:600}
+.dnav{display:flex;gap:6px;margin-top:8px}
+.dn{min-height:34px;min-width:44px;border:1px solid rgba(255,255,255,.55);border-radius:8px;background:transparent;color:#fff;font-size:18px}
+.dn.mid{flex:1;font-size:14px}.dn.mid.on{background:rgba(255,255,255,.2)}
 .tabs{display:flex;background:rgba(0,0,0,.18);border-radius:10px;padding:3px;margin-top:10px}
 .tab{flex:1;min-height:34px;border:0;border-radius:8px;background:transparent;color:rgba(255,255,255,.85)}
 .tab.on{background:#fff;color:var(--hd,var(--g));font-weight:600}
@@ -72,6 +75,7 @@ main{padding:12px 12px 120px;display:flex;flex-direction:column;gap:14px}
     <button class="pill" id="count" onclick="TAB==='round'?setTab('round'):load()" aria-label="รีเฟรช">…</button>
   </div>
   <div class="tabs"><button id="tabT" class="tab on" onclick="setTab('task')">งาน</button><button id="tabR" class="tab" onclick="setTab('round')">ราวด์</button></div>
+  <div class="dnav" id="dnav"></div>
   <div class="chips" id="chips"></div>
 </header>
 <div id="notices"></div>
@@ -86,7 +90,7 @@ main{padding:12px 12px 120px;display:flex;flex-direction:column;gap:14px}
 const API = 'https://script.google.com/macros/s/AKfycbw9dsYKGy8pELEBeIatNSjJLFv6W7MGjxhnjj584Z4BUlXN6WEfon-JID4f4eHR9wQ/exec';   // ← วาง URL ของบอท (ลงท้าย /exec)
 const TOK = new URLSearchParams(location.search).get('t') || '';
 const call = (q, ok) => fetch(API + '?' + new URLSearchParams(Object.assign({ t: TOK }, q))).then(r => r.json()).then(ok).catch(fail);
-let TAB = 'task', R = null, RBLD = 'ทั้งหมด', RG = 'ทุกคน', ROPEN = null, D = null, BLD = 'ทั้งหมด', OPEN = null, QEDIT = null, QDRAFT = null, ARM = null;
+let OFF = 0, TAB = 'task', R = null, RBLD = 'ทั้งหมด', RG = 'ทุกคน', ROPEN = null, D = null, BLD = 'ทั้งหมด', OPEN = null, QEDIT = null, QDRAFT = null, ARM = null;
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 // 🎨 สีหัวแอพตามสีประจำวัน (วันใหม่เริ่ม 06:00 เหมือนบอท)
@@ -96,7 +100,7 @@ const short = b => String(b).replace(/^ตึก\s*/, '');
 
 function load() {
   $('count').textContent = '…';
-  call({ api: 'data' }, set);
+  call({ api: 'data', off: OFF }, set);
 }
 function set(d) {
   document.body.classList.remove('busy');
@@ -108,12 +112,12 @@ function toast(m) { if (!m) return; const t = $('toast'); t.textContent = m; t.s
 function run(cmd) {
   document.body.classList.add('busy');
   OPEN = null; QEDIT = null; ARM = null;
-  call({ api: 'run', cmd }, r => { if (r.error) return set(r); toast(r.msg); set(r.data); });
+  call({ api: 'run', cmd: W(cmd), off: OFF }, r => { if (r.error) return set(r); toast(r.msg); set(r.data); });
 }
 
 function setTab(t) {
-  TAB = t; $("ttl").textContent = t === "round" ? "ราวด์" : "งานวันนี้"; $('tabT').classList.toggle('on', t === 'task'); $('tabR').classList.toggle('on', t === 'round');
-  $('newt').parentNode.style.display = t === 'task' ? 'flex' : 'none';
+  TAB = t; if (t === "round") $("ttl").textContent = "ราวด์"; $('tabT').classList.toggle('on', t === 'task'); $('tabR').classList.toggle('on', t === 'round');
+  $('newt').parentNode.style.display = t === 'task' ? 'flex' : 'none'; $('dnav').style.display = t === 'task' ? 'flex' : 'none';
   if (t === 'round') { if (R) renderRound(); else { $('main').innerHTML = '<div class="empty">กำลังโหลด…</div>'; }
     call({ api: 'round' }, r => { if (r.error) { $('main').innerHTML = '<div class="empty">' + (r.error === 'expired' ? '🔒 ลิงก์หมดอายุ' : '❗ อ่านตารางราวด์ไม่ได้') + '</div>'; return; } R = r; if (TAB === 'round') renderRound(); }); }
   else if (D) render();
@@ -147,9 +151,20 @@ function renderRound() {
   }).join('') || '<div class="empty">ไม่มีคนไข้ในตาราง</div>';
 }
 function addFor(n) { setTab('task'); $('newt').value = n + ' '; $('newt').focus(); }
+// วันอื่น: ใส่วันที่ในคำสั่ง (ww 22/10/69 เสร็จ 5 … / ww แก้ผล 22/10/69 5 …)
+function W(cmd) {
+  if (!OFF || !D) return cmd;
+  const d = D.day, m = cmd.match(/^ww แก้ผล (\d+) ([\s\S]*)$/);
+  return m ? `ww แก้ผล ${d} ${m[1]} ${m[2]}` : cmd.replace(/^ww /, `ww ${d} `);
+}
+function go(n) { OFF = n === 0 ? 0 : OFF + n; OPEN = null; QEDIT = null; load(); }
 function render() {
   if (TAB === 'round') return;
+  const names = { '-1': 'เมื่อวาน', '0': 'วันนี้', '1': 'พรุ่งนี้' };
   $('date').textContent = D.day;
+  $('ttl').textContent = 'งาน' + (names[OFF] || (OFF < 0 ? ` ${-OFF} วันก่อน` : ` อีก ${OFF} วัน`));
+  $('dnav').innerHTML = `<button class="dn" onclick="go(-1)" aria-label="วันก่อน">‹</button><button class="dn mid${OFF ? '' : ' on'}" onclick="go(0)">${OFF ? 'กลับวันนี้' : D.day}</button><button class="dn" onclick="go(1)" aria-label="วันถัดไป">›</button>`;
+  $('newt').placeholder = OFF ? `เพิ่มงานวันที่ ${D.day}` : 'เพิ่มงาน เช่น สมชาย CBC';
   const all = D.tasks;
   $('count').textContent = 'ค้าง ' + all.filter(t => !t.done && !t.flap).length;
   const blds = ['ทั้งหมด', ...new Set(all.map(t => t.bld))];
