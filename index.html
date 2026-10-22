@@ -172,7 +172,7 @@ function render() {
   const names = { '-1': 'เมื่อวาน', '0': 'วันนี้', '1': 'พรุ่งนี้' };
   $('date').textContent = D.day;
   $('ttl').textContent = 'งาน' + (names[OFF] || (OFF < 0 ? ` ${-OFF} วันก่อน` : ` อีก ${OFF} วัน`));
-  $('dnav').innerHTML = `<button class="dn" onclick="go(-1)" aria-label="วันก่อน">‹</button><button class="dn mid${OFF ? '' : ' on'}" onclick="go(0)">${OFF ? 'กลับวันนี้' : D.day}</button><button class="dn" onclick="go(1)" aria-label="วันถัดไป">›</button>`;
+  $('dnav').innerHTML = `<button class="dn" onclick="go(-1)" aria-label="วันก่อน">‹</button><button class="dn mid${OFF ? '' : ' on'}" onclick="go(0)">${D.day}${OFF ? ' · ↺ วันนี้' : ''}</button><button class="dn" onclick="go(1)" aria-label="วันถัดไป">›</button>`;
   $('newt').placeholder = OFF ? `เพิ่มงานวันที่ ${D.day}` : 'เพิ่มงาน เช่น สมชาย CBC';
   const all = D.tasks;
   $('count').textContent = 'ค้าง ' + all.filter(t => !t.done && !t.flap).length;
