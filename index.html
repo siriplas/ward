@@ -18,6 +18,13 @@ h1{margin:0;font-size:21px}
 .chips{display:flex;gap:6px;overflow-x:auto;margin-top:10px;padding-bottom:2px}
 .chip{flex-shrink:0;min-height:34px;padding:4px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.55);background:transparent;color:#fff}
 .chip.on{background:#fff;color:var(--hd,var(--g));border-color:#fff;font-weight:600}
+.tabs{display:flex;background:rgba(0,0,0,.18);border-radius:10px;padding:3px;margin-top:10px}
+.tab{flex:1;min-height:34px;border:0;border-radius:8px;background:transparent;color:rgba(255,255,255,.85)}
+.tab.on{background:#fff;color:var(--hd,var(--g));font-weight:600}
+.ww{font-size:13px;color:#1e3a8a;background:#eef2ff;border-radius:6px;padding:3px 8px;margin-top:4px;display:inline-block}
+.hn{font-weight:400;font-size:13px;color:var(--mu)}
+.badge{font-size:12px;font-weight:600;color:#7a3d00;background:#ffe8cc;border-radius:999px;padding:2px 10px;flex-shrink:0}
+.hist{border-left:3px solid #e2e8e6;padding-left:10px;display:flex;flex-direction:column;gap:6px}
 .notice{background:#fff7e6;border-bottom:1px solid #f0dfb8;padding:8px 16px;font-size:14px;color:#6b4e0f}
 main{padding:12px 12px 120px;display:flex;flex-direction:column;gap:14px}
 .sec{font-size:13px;font-weight:600;color:#4b5a55;padding:0 4px;margin-bottom:6px}
@@ -56,9 +63,10 @@ main{padding:12px 12px 120px;display:flex;flex-direction:column;gap:14px}
 <body>
 <header>
   <div class="top">
-    <div><div class="date" id="date"></div><h1>งานวันนี้</h1></div>
-    <button class="pill" id="count" onclick="load()" aria-label="รีเฟรช">…</button>
+    <div><div class="date" id="date"></div><h1 id="ttl">งานวันนี้</h1></div>
+    <button class="pill" id="count" onclick="TAB==='round'?setTab('round'):load()" aria-label="รีเฟรช">…</button>
   </div>
+  <div class="tabs"><button id="tabT" class="tab on" onclick="setTab('task')">งาน</button><button id="tabR" class="tab" onclick="setTab('round')">ราวด์</button></div>
   <div class="chips" id="chips"></div>
 </header>
 <div id="notices"></div>
@@ -73,7 +81,7 @@ main{padding:12px 12px 120px;display:flex;flex-direction:column;gap:14px}
 const API = 'https://script.google.com/macros/s/AKfycbw9dsYKGy8pELEBeIatNSjJLFv6W7MGjxhnjj584Z4BUlXN6WEfon-JID4f4eHR9wQ/exec';   // ← วาง URL ของบอท (ลงท้าย /exec)
 const TOK = new URLSearchParams(location.search).get('t') || '';
 const call = (q, ok) => fetch(API + '?' + new URLSearchParams(Object.assign({ t: TOK }, q))).then(r => r.json()).then(ok).catch(fail);
-let D = null, BLD = 'ทั้งหมด', OPEN = null, QEDIT = null, QDRAFT = null, ARM = null;
+let TAB = 'task', R = null, RBLD = 'ทั้งหมด', ROPEN = null, D = null, BLD = 'ทั้งหมด', OPEN = null, QEDIT = null, QDRAFT = null, ARM = null;
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 // 🎨 สีหัวแอพตามสีประจำวัน (วันใหม่เริ่ม 06:00 เหมือนบอท)
@@ -98,7 +106,39 @@ function run(cmd) {
   call({ api: 'run', cmd }, r => { if (r.error) return set(r); toast(r.msg); set(r.data); });
 }
 
+function setTab(t) {
+  TAB = t; $("ttl").textContent = t === "round" ? "ราวด์" : "งานวันนี้"; $('tabT').classList.toggle('on', t === 'task'); $('tabR').classList.toggle('on', t === 'round');
+  $('newt').parentNode.style.display = t === 'task' ? 'flex' : 'none';
+  if (t === 'round') { if (R) renderRound(); else { $('main').innerHTML = '<div class="empty">กำลังโหลด…</div>'; }
+    call({ api: 'round' }, r => { if (r.error) { $('main').innerHTML = '<div class="empty">' + (r.error === 'expired' ? '🔒 ลิงก์หมดอายุ' : '❗ อ่านตารางราวด์ไม่ได้') + '</div>'; return; } R = r; if (TAB === 'round') renderRound(); }); }
+  else if (D) render();
+}
+function renderRound() {
+  const all = R.pts;
+  const blds = ['ทั้งหมด', ...new Set(all.map(p => p.bld))];
+  if (!blds.includes(RBLD)) RBLD = 'ทั้งหมด';
+  $('chips').innerHTML = blds.map(b => `<button class="chip${b === RBLD ? ' on' : ''}" onclick="RBLD='${esc(b)}';renderRound()">${esc(short(b))}</button>`).join('');
+  $('notices').innerHTML = '';
+  const ps = all.filter(p => RBLD === 'ทั้งหมด' || p.bld === RBLD);
+  $('count').textContent = ps.length + ' คน';
+  const wards = [...new Set(ps.map(p => p.ward))];
+  $('main').innerHTML = wards.map(w => {
+    const list = ps.filter(p => p.ward === w);
+    return `<div><div class="sec">${esc(w)} · ${list.length} คน</div><div class="card">${list.map(p => {
+      const i = all.indexOf(p), op = ROPEN === i;
+      return `<div class="task"><button class="row" onclick="ROPEN=ROPEN===${i}?null:${i};renderRound()" style="align-items:flex-start">
+        <span style="flex-grow:1;min-width:0"><div><b>${esc(p.name)}</b> <span class="hn">${p.hn ? 'HN ' + esc(p.hn) : ''}</span></div>
+        <div style="font-size:13px">${esc(p.dx)}${p.staff ? ' · อ. ' + esc(p.staff) : ''}</div>
+        ${p.ww ? `<div class="ww">📌 ${esc(p.ww)}</div>` : ''}</span>
+        ${p.open ? `<span class="badge">ค้าง ${p.open}</span>` : ''}</button>
+        ${op ? `<div class="panel">${p.hist.length ? `<div class="hist">${p.hist.map(x => `<div><div class="meta">${esc(x.day)}</div><div>${x.mark} ${esc(x.task)}</div>${x.res ? `<div class="res">→ ${esc(x.res)}</div>` : ''}</div>`).join('')}</div>` : '<div class="meta">ยังไม่มีงานในบอท</div>'}
+          <button class="b p" onclick="addFor('${esc(p.name.split(/\s+/)[0])}')">+ เพิ่มงานให้${esc(p.name.split(/\s+/)[0])}</button></div>` : ''}</div>`;
+    }).join('')}</div></div>`;
+  }).join('') || '<div class="empty">ไม่มีคนไข้ในตาราง</div>';
+}
+function addFor(n) { setTab('task'); $('newt').value = n + ' '; $('newt').focus(); }
 function render() {
+  if (TAB === 'round') return;
   $('date').textContent = D.day;
   const all = D.tasks;
   $('count').textContent = 'ค้าง ' + all.filter(t => !t.done && !t.flap).length;
