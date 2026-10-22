@@ -146,9 +146,18 @@ function renderRound() {
         ${p.ww ? `<div class="ww">📌 ${esc(p.ww)}</div>` : ''}</span>
         ${p.open ? `<span class="badge">ค้าง ${p.open}</span>` : ''}</button>
         ${op ? `<div class="panel">${p.hist.length ? `<div class="hist">${p.hist.map(x => `<div><div class="meta">${esc(x.day)}</div><div>${x.mark} ${esc(x.task)}</div>${x.res ? `<div class="res">→ ${esc(x.res)}</div>` : ''}</div>`).join('')}</div>` : '<div class="meta">ยังไม่มีงานในบอท</div>'}
-          <button class="b p" onclick="addFor('${esc(p.name.split(/\s+/)[0])}')">+ เพิ่มงานให้${esc(p.name.split(/\s+/)[0])}</button></div>` : ''}</div>`;
+          <div class="btns" style="flex-wrap:nowrap"><input class="inp" id="radd${i}" placeholder="งานของ${esc(p.name.split(/\s+/)[0])} เช่น CBC, K" style="flex:1;width:auto;min-width:0" onkeydown="if(event.key==='Enter')addR(${i})">
+          <button class="b p" style="flex-grow:0" onclick="addR(${i})">เพิ่มงาน</button></div></div>` : ''}</div>`;
     }).join('')}</div></div>`;
   }).join('') || '<div class="empty">ไม่มีคนไข้ในตาราง</div>';
+}
+// เพิ่มงานจากหน้าราวด์ (ลงวันนี้) — ใส่ ward + ชื่อให้เอง กันชื่อซ้ำคนละ ward
+function addR(i) {
+  const p = R.pts[i], v = ($('radd' + i).value || '').trim();
+  if (!v) return toast('พิมพ์งานก่อน เช่น CBC');
+  const nm = p.name.split(/\s+/)[0], cmd = (/รอ\s*admit/i.test(p.ward) ? `ww ${nm} ${v}` : `ww ${p.ward} ${nm} ${v}`);
+  document.body.classList.add('busy');
+  call({ api: 'run', cmd, off: 0 }, r => { document.body.classList.remove('busy'); if (r.error) return set(r); toast(r.msg); if (OFF === 0) D = r.data; setTab('round'); });
 }
 function addFor(n) { setTab('task'); $('newt').value = n + ' '; $('newt').focus(); }
 // วันอื่น: ใส่วันที่ในคำสั่ง (ww 22/10/69 เสร็จ 5 … / ww แก้ผล 22/10/69 5 …)
