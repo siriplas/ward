@@ -22,6 +22,11 @@ h1{margin:0;font-size:21px}
 .tab{flex:1;min-height:34px;border:0;border-radius:8px;background:transparent;color:rgba(255,255,255,.85)}
 .tab.on{background:#fff;color:var(--hd,var(--g));font-weight:600}
 .ww{font-size:13px;color:#1e3a8a;background:#eef2ff;border-radius:6px;padding:3px 8px;margin-top:4px;display:inline-block}
+.gbar{display:flex;gap:6px;overflow-x:auto;padding:8px 12px;background:#fff;border-bottom:1px solid #dde3e1}
+.gchip{flex-shrink:0;min-height:32px;padding:2px 12px;border-radius:999px;border:1px solid #cdd6d3;background:#fff;color:#3c4a46;font-size:14px}
+.gchip.on{background:var(--hd,var(--g));border-color:var(--hd,var(--g));color:#fff;font-weight:600}
+.gchip.warn{border-color:#f1b5ae;color:#b42318}.gchip.warn.on{background:#b42318;color:#fff}
+.who{font-size:12px;color:var(--mu);margin-top:2px}.nobody{color:#b42318;font-weight:600}
 .hn{font-weight:400;font-size:13px;color:var(--mu)}
 .badge{font-size:12px;font-weight:600;color:#7a3d00;background:#ffe8cc;border-radius:999px;padding:2px 10px;flex-shrink:0}
 .hist{border-left:3px solid #e2e8e6;padding-left:10px;display:flex;flex-direction:column;gap:6px}
@@ -81,7 +86,7 @@ main{padding:12px 12px 120px;display:flex;flex-direction:column;gap:14px}
 const API = 'https://script.google.com/macros/s/AKfycbw9dsYKGy8pELEBeIatNSjJLFv6W7MGjxhnjj584Z4BUlXN6WEfon-JID4f4eHR9wQ/exec';   // ← วาง URL ของบอท (ลงท้าย /exec)
 const TOK = new URLSearchParams(location.search).get('t') || '';
 const call = (q, ok) => fetch(API + '?' + new URLSearchParams(Object.assign({ t: TOK }, q))).then(r => r.json()).then(ok).catch(fail);
-let TAB = 'task', R = null, RBLD = 'ทั้งหมด', ROPEN = null, D = null, BLD = 'ทั้งหมด', OPEN = null, QEDIT = null, QDRAFT = null, ARM = null;
+let TAB = 'task', R = null, RBLD = 'ทั้งหมด', RG = 'ทุกคน', ROPEN = null, D = null, BLD = 'ทั้งหมด', OPEN = null, QEDIT = null, QDRAFT = null, ARM = null;
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 // 🎨 สีหัวแอพตามสีประจำวัน (วันใหม่เริ่ม 06:00 เหมือนบอท)
@@ -118,8 +123,12 @@ function renderRound() {
   const blds = ['ทั้งหมด', ...new Set(all.map(p => p.bld))];
   if (!blds.includes(RBLD)) RBLD = 'ทั้งหมด';
   $('chips').innerHTML = blds.map(b => `<button class="chip${b === RBLD ? ' on' : ''}" onclick="RBLD='${esc(b)}';renderRound()">${esc(short(b))}</button>`).join('');
-  $('notices').innerHTML = '';
-  const ps = all.filter(p => RBLD === 'ทั้งหมด' || p.bld === RBLD);
+  // 👥 ใครดูใคร: กลุ่มจาก Tags (ชื่อคน / ทุกวัน… / ว่าง)
+  const cnt = {}; all.forEach(p => p.tags.forEach(g => cnt[g] = (cnt[g] || 0) + 1));
+  const gs = Object.keys(cnt).sort((a, b) => (a === 'ว่าง' ? -1 : b === 'ว่าง' ? 1 : 0) || (/^ทุก/.test(a) - /^ทุก/.test(b)) || a.localeCompare(b));
+  if (RG !== 'ทุกคน' && !cnt[RG]) RG = 'ทุกคน';
+  $('notices').innerHTML = `<div class="gbar">${['ทุกคน', ...gs].map(g => `<button class="gchip${g === RG ? ' on' : ''}${g === 'ว่าง' ? ' warn' : ''}" onclick="RG='${esc(g)}';renderRound()">${g === 'ว่าง' ? '🔔 ' : ''}${esc(g)}${g === 'ทุกคน' ? '' : ' ' + cnt[g]}</button>`).join('')}</div>`;
+  const ps = all.filter(p => (RBLD === 'ทั้งหมด' || p.bld === RBLD) && (RG === 'ทุกคน' || p.tags.includes(RG)));
   $('count').textContent = ps.length + ' คน';
   const wards = [...new Set(ps.map(p => p.ward))];
   $('main').innerHTML = wards.map(w => {
@@ -129,6 +138,7 @@ function renderRound() {
       return `<div class="task"><button class="row" onclick="ROPEN=ROPEN===${i}?null:${i};renderRound()" style="align-items:flex-start">
         <span style="flex-grow:1;min-width:0"><div><b>${esc(p.name)}</b> <span class="hn">${p.hn ? 'HN ' + esc(p.hn) : ''}</span></div>
         <div style="font-size:13px">${esc(p.dx)}${p.staff ? ' · อ. ' + esc(p.staff) : ''}</div>
+        <div class="who">${p.tags.includes('ว่าง') ? '<span class="nobody">🔔 ยังไม่มีคนดู</span>' : '👤 ' + esc(p.team || p.tags.join(', '))}${p.remark ? ' · ' + esc(p.remark) : ''}</div>
         ${p.ww ? `<div class="ww">📌 ${esc(p.ww)}</div>` : ''}</span>
         ${p.open ? `<span class="badge">ค้าง ${p.open}</span>` : ''}</button>
         ${op ? `<div class="panel">${p.hist.length ? `<div class="hist">${p.hist.map(x => `<div><div class="meta">${esc(x.day)}</div><div>${x.mark} ${esc(x.task)}</div>${x.res ? `<div class="res">→ ${esc(x.res)}</div>` : ''}</div>`).join('')}</div>` : '<div class="meta">ยังไม่มีงานในบอท</div>'}
