@@ -62,6 +62,12 @@ textarea.inp{resize:vertical;line-height:1.45;min-height:72px;overflow:hidden;fo
 .seg3{display:inline-flex;background:var(--bg2);border-radius:999px;padding:2px}.seg3 button{border:0;background:none;color:var(--mu);font-size:13px;padding:4px 10px;border-radius:999px;min-height:28px}.seg3 button.on{background:var(--inv);color:var(--invt);font-weight:600}
 .gchip.due{color:var(--or)}.gchip.due.on{background:var(--or);color:#fff}.itag.duet{color:var(--or);border-color:var(--or)}
 .duebar{display:block;width:100%;text-align:left;border:0;background:var(--orbg);color:var(--orx);padding:9px 16px;font-size:13px}
+.pop .box{animation:pop .45s cubic-bezier(.2,1.6,.4,1)}@keyframes pop{0%{transform:scale(.4)}60%{transform:scale(1.25)}100%{transform:scale(1)}}
+.pop .tt{animation:fadeok .6s}@keyframes fadeok{0%{color:var(--g)}100%{}}
+.thx{margin-top:3px;font-size:12px}.thb{display:inline-block;margin-top:4px;color:var(--tx2);cursor:pointer;padding:6px 12px;border-radius:999px;background:var(--bg2)}.thb.on{color:var(--or);font-weight:600}.thn{color:var(--or)}
+.burst{position:fixed;left:50%;top:45%;font-size:56px;transform:translate(-50%,-50%);animation:burst .9s ease-out forwards;pointer-events:none;z-index:30}
+@keyframes burst{0%{opacity:0;transform:translate(-50%,-30%) scale(.5)}30%{opacity:1;transform:translate(-50%,-50%) scale(1.2)}100%{opacity:0;transform:translate(-50%,-90%) scale(1)}}
+.fest header{border-top:0;box-shadow:inset 0 5px 0 -1px transparent}.fest header:before{content:'';position:absolute;left:0;right:0;top:0;height:5px;background:var(--bar)}header{position:sticky}.fxi{font-size:16px;margin-left:2px}
 .bldh{margin-top:14px;padding:10px 16px;font-size:14px;font-weight:700;color:var(--tx);background:var(--bg2);border-top:3px solid var(--hd)}
 .sec{font-size:12px;font-weight:600;color:var(--mu);padding:12px 16px 2px;letter-spacing:.3px}
 .card{background:transparent}
@@ -150,8 +156,20 @@ let OFF = 0, TAB = 'task', R = null, RBLD = 'ทั้งหมด', RG = 'ท�
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 // 🎨 สีหัวแอพตามสีประจำวัน (วันใหม่เริ่ม 06:00 เหมือนบอท)
+// 🎃 ธีมเทศกาล (ช่วงวันที่ เดือน-วัน) → แถบด้านบนเปลี่ยนลาย + ไอคอนเล็กข้างหัว
+const THEMES = [
+  { id: 'halloween', from: '10-20', to: '10-31', icon: '🎃', bar: 'repeating-linear-gradient(90deg,#f97316 0 18px,#7c3aed 18px 36px)', hd: '#ea580c' },
+  { id: 'loykrathong', from: '11-23', to: '11-25', icon: '🪷', bar: 'linear-gradient(90deg,#1e3a8a,#f59e0b,#1e3a8a)', hd: '#1e40af' },
+  { id: 'xmas', from: '12-20', to: '12-26', icon: '🎄', bar: 'repeating-linear-gradient(90deg,#dc2626 0 14px,#16a34a 14px 28px)', hd: '#16a34a' },
+  { id: 'newyear', from: '12-27', to: '01-03', icon: '🎆', bar: 'linear-gradient(90deg,#f59e0b,#ec4899,#8b5cf6,#06b6d4)', hd: '#8b5cf6' },
+  { id: 'songkran', from: '04-12', to: '04-16', icon: '💦', bar: 'repeating-linear-gradient(90deg,#0ea5e9 0 16px,#38bdf8 16px 32px)', hd: '#0284c7' }
+];
+function festival() {
+  const d = new Date(Date.now() + 7 * 3600e3), md = String(d.getUTCMonth() + 1).padStart(2, '0') + '-' + String(d.getUTCDate()).padStart(2, '0');
+  return THEMES.find(t => t.from <= t.to ? md >= t.from && md <= t.to : md >= t.from || md <= t.to);
+}
 const DAYCOL = ['#b42318', '#a16207', '#be185d', '#15803d', '#c2410c', '#1d4ed8', '#6d28d9'];   // อา จ อ พ พฤ ศ ส
-(() => { const d = new Date(Date.now() + 7 * 3600e3 - 6 * 3600e3).getUTCDay(); document.documentElement.style.setProperty('--hd', DAYCOL[d]); document.querySelector('meta[name=theme-color]') || document.head.insertAdjacentHTML('beforeend', `<meta name="theme-color" content="${DAYCOL[d]}">`); })();
+(() => { const d = new Date(Date.now() + 7 * 3600e3 - 6 * 3600e3).getUTCDay(); const fx = festival(); document.documentElement.style.setProperty('--hd', fx ? fx.hd : DAYCOL[d]); if (fx) { document.documentElement.style.setProperty('--bar', fx.bar); document.documentElement.classList.add('fest'); document.addEventListener('DOMContentLoaded', () => { const h1 = document.getElementById('ttl'); if (h1) h1.insertAdjacentHTML('afterend', `<span class="fxi">${fx.icon}</span>`); }); } document.querySelector('meta[name=theme-color]') || document.head.insertAdjacentHTML('beforeend', `<meta name="theme-color" content="${DAYCOL[d]}">`); })();
 const short = b => String(b).replace(/^ตึก\s*/, '');
 
 function load() {
@@ -189,7 +207,24 @@ function fail(e) { document.body.classList.remove('busy'); toast('❗ เชื�
 // ✅ ปิดงานแบบรอ 5 วินาที (กดยกเลิกได้) แล้วค่อยส่งให้บอท
 const QUICK = ['ปกติ', 'รอผล', 'ส่งแล้ว', 'ok'];
 let HOLD = [];
+let POP = null;
+// 🙏 ขอบคุณ: กดใต้งานที่คนอื่นปิด ; เจ้าของงานเห็นว่าใครขอบคุณ
+function thankRow(t) {
+  const me = (D && D.me) || '', mine = t.doneBy === me || t.doneBy === 'คุณ', th = t.thanks || [], gave = th.includes(me);
+  const list = th.length ? `<span class="thn">🙏 ${th.length} · ${th.map(esc).join(', ')}</span>` : '';   // ทุกคนเห็นว่าใครขอบคุณ
+  const btn = OPEN === t.no && !mine && t.doneBy ? `<span class="thb${gave ? ' on' : ''}" role="button" tabindex="0" onclick="event.stopPropagation();thank(${t.no})">${gave ? '🙏 ขอบคุณแล้ว (กดเพื่อยกเลิก)' : '🙏 ขอบคุณ ' + esc(t.doneBy)}</span>` : '';   // ปุ่มขึ้นเฉพาะตอนแตะเปิดงาน
+  return list || btn ? `<div class="thx">${list}${list && btn ? '<br>' : ''}${btn}</div>` : '';
+}
+function thank(no) {
+  const t = T(no), me = (D && D.me) || '';
+  t.thanks = (t.thanks || []).includes(me) ? t.thanks.filter(x => x !== me) : (t.thanks || []).concat(me);
+  if (t.thanks.includes(me)) burst();
+  render();
+  call({ api: 'thank', no, off: OFF }, r => { if (r.error) toast(r.msg || 'ไม่สำเร็จ'); else { T(no).thanks = r.thanks; render(); } });
+}
+function burst() { const b = document.createElement('div'); b.className = 'burst'; b.textContent = '🙏'; document.body.appendChild(b); setTimeout(() => b.remove(), 900); }
 function closeNo(no, res, off) {
+  POP = no; setTimeout(() => { if (POP === no) POP = null; }, 900);
   if (D) markMine(no);
   off = off == null ? OFF : off;
   const t = (off === OFF && D) ? T(no) : null, before = t ? Object.assign({}, t) : null;
@@ -456,10 +491,11 @@ function byPatient(list) {
 function taskRow(t) {
   const isOpen = OPEN === t.no;
   const nw = isNewT(t) ? '<span class="tag new">ใหม่</span>' : isNewR(t) ? '<span class="tag res">ผลใหม่</span>' : '';
-  let h = `<div class="task${t.done ? ' done' : ''}${nw ? ' isnew' : ''}"><button class="row" onclick="toggle(${t.no})" ${t.done ? '' : `data-sw="${t.no}"`}>
+  let h = `<div class="task${t.done ? ' done' : ''}${nw ? ' isnew' : ''}${POP === t.no && t.done ? ' pop' : ''}"><button class="row" onclick="toggle(${t.no})" ${t.done ? '' : `data-sw="${t.no}"`}>
     <span class="box">${t.done ? '✓' : ''}</span>
     <span style="flex-grow:1;min-width:0"><div class="tt">${nw}${t.urgent ? '<span class="urg">ด่วน </span>' : ''}${esc(t.rest || t.task)}</div>
     ${t.result ? `<div class="res${t.done ? '' : ' upd'}">→ ${esc(t.result)}</div>` : ''}
+    ${t.done ? thankRow(t) : ''}
     ${isOpen ? '' : '<!--'}<div class="meta">${t.no}. ${t.done ? 'ปิดโดย ' + esc(t.doneBy) + ' ' + esc(t.doneAt) : 'ลงโดย ' + esc(t.by)}</div>${isOpen ? '' : '-->'}</span></button>`;
   if (isOpen && !t.done) h += `<div class="panel">
     <div class="qr">${QUICK.map(q => `<button class="qrb" onclick="closeNo(${t.no}, '${q}')">${q}</button>`).join('')}</div>
