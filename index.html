@@ -70,6 +70,7 @@ textarea.inp{resize:vertical;line-height:1.45;min-height:72px;overflow:hidden;fo
 @keyframes burst{0%{opacity:0;transform:translate(-50%,-30%) scale(.5)}30%{opacity:1;transform:translate(-50%,-50%) scale(1.2)}100%{opacity:0;transform:translate(-50%,-90%) scale(1)}}
 .fest header{border-top:0;box-shadow:inset 0 5px 0 -1px transparent}.fest header:before{content:'';position:absolute;left:0;right:0;top:0;height:5px;background:var(--bar)}header{position:sticky}.fxi{font-size:16px;margin-left:2px}
 .chev{flex-shrink:0;width:28px;height:28px;border-radius:50%;background:var(--bg2);display:flex;align-items:center;justify-content:center;color:var(--mu)}.chev svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.itag.late{color:var(--rd);border-color:var(--rd)}
 .bldh{margin-top:14px;padding:10px 16px;font-size:14px;font-weight:700;color:var(--tx);background:var(--bg2);border-top:3px solid var(--hd)}
 .sec{font-size:12px;font-weight:600;color:var(--mu);padding:12px 16px 2px;letter-spacing:.3px}
 .card{background:transparent}
@@ -316,7 +317,7 @@ function renderRound() {
   const seg = `<span class="seg3">${[['active', 'active'], ['all', 'ทั้งหมด'], ['inactive', 'inactive ' + nIn]].map(([v, t]) => `<button class="${RACT === v ? 'on' : ''}" onclick="RACT='${v}';renderRound()">${t}</button>`).join('')}</span>`;
   const any = RBLD !== 'ทั้งหมด' || RG !== 'ทุกคน' || RST || RACT !== 'active' || RDUE;
   $('notices').innerHTML = `<div class="fbar">${bSel}${gSel}${sSel}</div><div class="fbar2">${seg}${quick}${any ? `<button class="gchip" onclick="RBLD='ทั้งหมด';RG='ทุกคน';RST='';RACT='active';RDUE=false;renderRound()">✕ ล้างตัวกรอง</button>` : ''}</div>`;
-  const ps = all.filter(p => (RBLD === 'ทั้งหมด' || p.bld === RBLD) && actOk(p) && (RG === 'ทุกคน' || p.tags.includes(RG)) && (!RST || p.staff === RST) && (!RDUE || dueToday(p)));
+  const ps = all.filter(p => (RBLD === 'ทั้งหมด' || p.bld === RBLD) && (RDUE ? dueToday(p) : actOk(p)) && (RG === 'ทุกคน' || p.tags.includes(RG)) && (!RST || p.staff === RST));
   $('count').textContent = ps.length + ' คน';
   const wards = [...new Set(ps.map(p => p.ward))];
   let lastB = null;
@@ -441,7 +442,19 @@ function edAct(a) {
 // 📅 คนไข้ที่ต้องดูวันนี้ (กลุ่ม "ทุกวันพฤหัสบดี" / โน้ต "q thu")
 const TH_DAY = [['อาทิตย์', 'sun'], ['จันทร์', 'mon'], ['อังคาร', 'tue'], ['พุธ', 'wed'], ['พฤหัส', 'thu'], ['ศุกร์', 'fri'], ['เสาร์', 'sat']];
 const todayDow = () => new Date(Date.now() + 7 * 3600e3 - 6 * 3600e3).getUTCDay();
+// วันนัดในข้อความ: "Next visit 25/10" / "next 4/10" / "F/U 28/10" / "นัด 25/10" (คอลัมน์ A, Ward work, Plan) → จำนวนวันจากวันนี้ (0 = วันนี้, ลบ = เลยนัด)
+function visitIn(p) {
+  const m = [p.remark, p.ww, p.plan].join(' ').match(/(?:next(?:\s*visit)?|f\/?u|นัด|visit)\s*:?\s*(\d{1,2})\/(\d{1,2})/i);
+  if (!m) return null;
+  const now = new Date(Date.now() + 7 * 3600e3 - 6 * 3600e3), y = now.getUTCFullYear();
+  let t = Date.UTC(y, Number(m[2]) - 1, Number(m[1]));
+  const today = Date.UTC(y, now.getUTCMonth(), now.getUTCDate());
+  if (t - today > 200 * 864e5) t = Date.UTC(y - 1, Number(m[2]) - 1, Number(m[1]));   // ข้ามปี
+  if (today - t > 200 * 864e5) t = Date.UTC(y + 1, Number(m[2]) - 1, Number(m[1]));
+  return Math.round((t - today) / 864e5);
+}
 function dueToday(p) {
+  if (visitIn(p) === 0) return true;   // ถึงวันนัด → ต้องดู แม้เป็น inactive
   const [th, en] = TH_DAY[todayDow()];
   return !p.inactive && (p.tags.some(t => /^ทุก/.test(t) && t.includes(th)) || new RegExp('(^|\\W)q\\s*' + en, 'i').test(p.remark || ''));
 }
