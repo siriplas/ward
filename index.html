@@ -75,6 +75,12 @@ main{padding:12px 12px 120px;display:flex;flex-direction:column;gap:14px}
 .tag{font-size:11px;font-weight:700;border-radius:6px;padding:1px 6px;margin-right:6px;vertical-align:2px}
 .tag.new{background:#1d4ed8;color:#fff}.tag.res{background:#0f766e;color:#fff}
 .isnew{background:#f5f8ff}
+.sheet{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:20;display:flex;align-items:flex-end}
+.sbox{background:#fff;width:100%;max-height:90vh;overflow:auto;border-radius:16px 16px 0 0;padding:16px;display:flex;flex-direction:column;gap:12px}
+.sbox h3{margin:0;font-size:18px}.lbl{font-size:13px;font-weight:600;color:#4b5a55}
+.chip2{min-height:36px;padding:0 12px;border-radius:999px;border:1px solid #cdd6d3;background:#fff;color:#3c4a46}
+.chip2.on{background:var(--hd,var(--g));border-color:var(--hd,var(--g));color:#fff;font-weight:600}
+.prog{font-size:14px;white-space:pre-line}
 .toast{align-items:center;position:fixed;left:12px;right:12px;bottom:84px;background:#17201d;color:#fff;border-radius:10px;padding:10px 14px;font-size:14px;white-space:pre-line;display:none;z-index:9}
 .empty{color:var(--mu);text-align:center;padding:30px 0}
 .busy{opacity:.5;pointer-events:none}
@@ -93,6 +99,7 @@ main{padding:12px 12px 120px;display:flex;flex-direction:column;gap:14px}
 <div id="notices"></div>
 <main id="main"><div class="empty">กำลังโหลด…</div></main>
 <div class="toast" id="toast"></div>
+<div class="sheet" id="psheet" style="display:none" onclick="if(event.target===this)closePhoto()"><div class="sbox" id="pbox"></div></div>
 <form class="add" onsubmit="addTask(event)">
   <label for="newt" style="position:absolute;left:-9999px">เพิ่มงาน</label>
   <input class="inp" id="newt" placeholder="เพิ่มงาน เช่น สมชาย CBC" autocomplete="off">
@@ -231,6 +238,7 @@ function renderRound() {
         ${p.ww ? `<div class="ww">📌 ${esc(p.ww)}</div>` : ''}</span>
         <span style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;flex-shrink:0">${p.open ? `<span class="badge">🟡 ค้าง ${p.open}</span>` : p.done ? '<span class="badge ok">✅ เสร็จหมด</span>' : ''}${p.flap ? '<span class="badge">👁 Flap</span>' : ''}</span></button>
         ${op ? `<div class="panel">${p.hist.length ? `<div class="hist">${p.hist.map(x => `<div><div class="meta">${esc(x.day)}</div><div style="display:flex;gap:8px;align-items:center"><span style="flex:1">${x.mark} ${esc(x.task)}${x.res ? ` <span class="${x.upd ? 'arr upd' : 'arr'}">→ ${esc(x.res)}</span>` : ''}</span>${x.canClose ? `<button class="b" style="min-height:34px;padding:0 10px" onclick="event.stopPropagation();closeRound(${x.no}, this)">✓ เสร็จ</button>` : ''}</div></div>`).join('')}</div>` : '<div class="meta">ไม่มีงานใน 3 วันล่าสุด</div>'}
+          <button class="b" onclick="openPhoto(${i})">📷 ลงรูป${p.hn ? '' : ' (ไม่มี HN)'}</button>
           <div class="btns" style="flex-wrap:nowrap"><input class="inp" id="radd${i}" placeholder="งานของ${esc(p.name.split(/\s+/)[0])} เช่น CBC, K" style="flex:1;width:auto;min-width:0" onkeydown="if(event.key==='Enter')addR(${i})">
           <button class="b p" style="flex-grow:0" onclick="addR(${i})">เพิ่มงาน</button></div></div>` : ''}</div>`;
     }).join('')}</div></div>`;
@@ -243,6 +251,61 @@ function addR(i) {
   const nm = p.name.split(/\s+/)[0], cmd = (/รอ\s*admit/i.test(p.ward) ? `ww ${nm} ${v}` : `ww ${p.ward} ${nm} ${v}`);
   document.body.classList.add('busy');
   call({ api: 'run', cmd, off: 0 }, r => { document.body.classList.remove('busy'); if (r.error) return set(r); toast(r.msg); if (OFF === 0) D = r.data; setTab('round'); });
+}
+// 📷 ลงรูปจากแอพ → Drive (ทีละไฟล์)
+let PH = null;
+function openPhoto(i) {
+  const p = R.pts[i];
+  if (!p.hn) return toast(`ไม่มี HN ของ ${p.name} ในตาราง — เติม HN ในตารางก่อน หรือลงผ่านไลน์`);
+  PH = { p, day: 0, date: isoOff(0), tag: '', pod: '', orig: false, files: [], busy: false, log: '' };
+  $('psheet').style.display = 'flex'; drawPhoto();
+}
+function closePhoto() { if (PH && PH.busy) return; $('psheet').style.display = 'none'; PH = null; }
+function drawPhoto() {
+  const s = PH, tags = ['', 'preop', 'intraop', 'postop', 'POD', 'consult', 'opd'];
+  $('pbox').innerHTML = `<h3>📷 ลงรูป ${esc(s.p.name)}</h3>
+    <div class="meta">${esc(s.p.ward)} · ${esc(s.p.dx)}${s.p.staff ? ' · อ. ' + esc(s.p.staff) : ''}</div>
+    <div class="lbl">รูปของวันไหน</div>
+    <div class="btns">${[['วันนี้', 0], ['เมื่อวาน', -1]].map(([n, o]) => `<button class="chip2${s.date === isoOff(o) ? ' on' : ''}" onclick="PH.date='${isoOff(o)}';drawPhoto()">${n}</button>`).join('')}
+      <input type="date" class="inp" style="width:auto;min-height:36px" value="${s.date}" max="${isoOff(0)}" onchange="PH.date=this.value;drawPhoto()"></div>
+    <div class="lbl">ป้าย</div>
+    <div class="btns">${tags.map(t => `<button class="chip2${s.tag === t ? ' on' : ''}" onclick="PH.tag='${t}';drawPhoto()">${t || 'ไม่ใส่'}</button>`).join('')}
+      ${s.tag === 'POD' ? `<input class="inp" style="width:80px;min-height:36px" inputmode="numeric" placeholder="วันที่" value="${esc(s.pod)}" oninput="PH.pod=this.value.replace(/\\D/g,'')">` : ''}</div>
+    <label class="btns" style="align-items:center;gap:8px"><input type="checkbox" ${s.orig ? 'checked' : ''} onchange="PH.orig=this.checked"> ส่งไฟล์ต้นฉบับ (คมสุด แต่ช้า)</label>
+    <label class="b" style="display:flex;align-items:center;justify-content:center;cursor:pointer">🖼 เลือกรูป / วิดีโอ${s.files.length ? ` (${s.files.length})` : ''}<input type="file" accept="image/*,video/*" multiple style="display:none" onchange="PH.files=[...this.files];drawPhoto()"></label>
+    ${s.log ? `<div class="prog">${esc(s.log)}</div>` : ''}
+    <div class="btns"><button class="b p" ${s.busy || !s.files.length ? 'disabled' : ''} onclick="upPhotos()">${s.busy ? 'กำลังลง…' : 'ลง ' + s.files.length + ' ไฟล์'}</button><button class="b" onclick="closePhoto()">ปิด</button></div>`;
+}
+async function shrink(file) {
+  if (PH.orig || !/^image\//.test(file.type) || /gif/.test(file.type)) return file;
+  try {
+    const bm = await createImageBitmap(file), M = 2500, k = Math.min(1, M / Math.max(bm.width, bm.height));
+    if (k === 1 && file.size < 2.5e6) return file;
+    const c = document.createElement('canvas'); c.width = Math.round(bm.width * k); c.height = Math.round(bm.height * k);
+    c.getContext('2d').drawImage(bm, 0, 0, c.width, c.height);
+    return await new Promise(res => c.toBlob(b => res(b || file), 'image/jpeg', 0.9));
+  } catch (e) { return file; }
+}
+const b64 = blob => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(',')[1]); r.onerror = rej; r.readAsDataURL(blob); });
+async function upPhotos() {
+  const s = PH; if (!s || s.busy) return;
+  const tag = s.tag === 'POD' ? (s.pod ? 'POD' + s.pod : '') : s.tag;
+  if (s.tag === 'POD' && !s.pod) return toast('ใส่เลข POD ก่อน');
+  s.busy = true; let ok = 0, dup = 0, bad = 0, where = '', msgs = []; drawPhoto();
+  for (let k = 0; k < s.files.length; k++) {
+    s.log = `⏳ ${k + 1}/${s.files.length}…`; drawPhoto();
+    try {
+      const f = await shrink(s.files[k]);
+      if (f.size > 35e6) { bad++; msgs.push(`${s.files[k].name}: ไฟล์ใหญ่เกิน 35 MB`); continue; }
+      const body = { app: 'upload', t: TOK, name: s.p.name, hn: s.p.hn, dx: s.p.dx, staff: s.p.staffRaw || s.p.staff, day: s.date, tag, i: k + 1, first: k === 0, mime: f.type || 'image/jpeg', data: await b64(f) };
+      const r = await (await fetch(API, { method: 'POST', body: JSON.stringify(body) })).json();
+      if (r.ok) { r.dup ? dup++ : ok++; where = r.folder; if (r.renamed) msgs.push('📁 อัปเดตชื่อโฟลเดอร์: + ' + r.renamed); if (r.created) msgs.push('📁 สร้างโฟลเดอร์ใหม่'); }
+      else { bad++; msgs.push(r.msg || (r.error === 'expired' ? 'ลิงก์หมดอายุ' : 'ลงไม่สำเร็จ')); if (r.error === 'expired') break; }
+    } catch (e) { bad++; msgs.push('เชื่อมต่อไม่ได้'); }
+  }
+  s.busy = false; s.files = [];
+  s.log = `✅ ลงแล้ว ${ok}${dup ? ' · มีแล้ว ' + dup + ' ข้าม' : ''}${bad ? ' · ไม่สำเร็จ ' + bad : ''}${where ? '\n📁 ' + where : ''}${msgs.length ? '\n' + [...new Set(msgs)].join('\n') : ''}`;
+  drawPhoto();
 }
 function addFor(n) { setTab('task'); $('newt').value = n + ' '; $('newt').focus(); }
 // วันอื่น: ใส่วันที่ในคำสั่ง (ww 22/10/69 เสร็จ 5 … / ww แก้ผล 22/10/69 5 …)
