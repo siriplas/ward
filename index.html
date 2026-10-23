@@ -60,6 +60,8 @@ textarea.inp{resize:vertical;line-height:1.45;min-height:72px;overflow:hidden;fo
 .fbar2{display:flex;gap:6px;padding:4px 16px 6px;flex-wrap:wrap}.fbar2:empty{display:none}
 .fut{opacity:.55}.fut .meta{color:var(--or);font-weight:600}
 .seg3{display:inline-flex;background:var(--bg2);border-radius:999px;padding:2px}.seg3 button{border:0;background:none;color:var(--mu);font-size:13px;padding:4px 10px;border-radius:999px;min-height:28px}.seg3 button.on{background:var(--inv);color:var(--invt);font-weight:600}
+.gchip.due{color:var(--or)}.gchip.due.on{background:var(--or);color:#fff}.itag.duet{color:var(--or);border-color:var(--or)}
+.duebar{display:block;width:100%;text-align:left;border:0;background:var(--orbg);color:var(--orx);padding:9px 16px;font-size:13px}
 .bldh{margin-top:14px;padding:10px 16px;font-size:14px;font-weight:700;color:var(--tx);background:var(--bg2);border-top:3px solid var(--hd)}
 .sec{font-size:12px;font-weight:600;color:var(--mu);padding:12px 16px 2px;letter-spacing:.3px}
 .card{background:transparent}
@@ -144,7 +146,7 @@ let LOADING = 0;
 const busyOn = () => { LOADING++; document.body.classList.add('loading'); };
 const busyOff = () => { LOADING = Math.max(0, LOADING - 1); if (!LOADING) document.body.classList.remove('loading'); };
 const call = (q, ok) => { busyOn(); return fetch(API + '?' + new URLSearchParams(Object.assign({ t: TOK }, q))).then(r => r.json()).then(d => { busyOff(); ok(d); }).catch(e => { busyOff(); fail(e); }); };
-let OFF = 0, TAB = 'task', R = null, RBLD = 'ทั้งหมด', RG = 'ทุกคน', RST = '', RACT = 'active', ROPEN = null, D = null, BLD = 'ทั้งหมด', OPEN = null, QEDIT = null, QDRAFT = null, ARM = null;
+let OFF = 0, TAB = 'task', R = null, RBLD = 'ทั้งหมด', RG = 'ทุกคน', RST = '', RACT = 'active', RDUE = false, ROPEN = null, D = null, BLD = 'ทั้งหมด', OPEN = null, QEDIT = null, QDRAFT = null, ARM = null;
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 // 🎨 สีหัวแอพตามสีประจำวัน (วันใหม่เริ่ม 06:00 เหมือนบอท)
@@ -272,11 +274,12 @@ function renderRound() {
   let mine = LS.get('ww_myteam'); if (mine && !cnt[mine]) mine = null; mine = mine || meKey || '';
   const myBtn = mine ? `<button class="gchip${RG === mine ? ' on' : ''}" onclick="RG=RG==='${esc(mine)}'?'ทุกคน':'${esc(mine)}';renderRound()">ของฉัน</button>` : '';
   const mySel = `<label class="gchip" style="position:relative">${mine ? '✎ ' + esc(mine) : 'ฉันคือ… ▾'}<select style="position:absolute;inset:0;opacity:0" onchange="LS.set('ww_myteam',this.value);RG=this.value||'ทุกคน';renderRound()"><option value="">เลือกชื่อของคุณในทีม</option>${gs.filter(g => g !== 'ว่าง' && g !== 'inactive' && !/^ทุก/.test(g)).map(g => `<option${g === mine ? ' selected' : ''}>${esc(g)}</option>`).join('')}</select></label>`;
-  const quick = myBtn + mySel + (cnt['ว่าง'] ? `<button class="gchip warn${RG === 'ว่าง' ? ' on' : ''}" onclick="RG=RG==='ว่าง'?'ทุกคน':'ว่าง';renderRound()">ว่าง ${cnt['ว่าง']}</button>` : '');
+  const nDue = all.filter(dueToday).length;
+  const quick = (nDue ? `<button class="gchip due${RDUE ? ' on' : ''}" onclick="RDUE=!RDUE;renderRound()">วันนี้ต้องดู ${nDue}</button>` : '') + myBtn + mySel + (cnt['ว่าง'] ? `<button class="gchip warn${RG === 'ว่าง' ? ' on' : ''}" onclick="RG=RG==='ว่าง'?'ทุกคน':'ว่าง';renderRound()">ว่าง ${cnt['ว่าง']}</button>` : '');
   const seg = `<span class="seg3">${[['active', 'active'], ['all', 'ทั้งหมด'], ['inactive', 'inactive ' + nIn]].map(([v, t]) => `<button class="${RACT === v ? 'on' : ''}" onclick="RACT='${v}';renderRound()">${t}</button>`).join('')}</span>`;
-  const any = RBLD !== 'ทั้งหมด' || RG !== 'ทุกคน' || RST || RACT !== 'active';
-  $('notices').innerHTML = `<div class="fbar">${bSel}${gSel}${sSel}</div><div class="fbar2">${seg}${quick}${any ? `<button class="gchip" onclick="RBLD='ทั้งหมด';RG='ทุกคน';RST='';RACT='active';renderRound()">✕ ล้างตัวกรอง</button>` : ''}</div>`;
-  const ps = all.filter(p => (RBLD === 'ทั้งหมด' || p.bld === RBLD) && actOk(p) && (RG === 'ทุกคน' || p.tags.includes(RG)) && (!RST || p.staff === RST));
+  const any = RBLD !== 'ทั้งหมด' || RG !== 'ทุกคน' || RST || RACT !== 'active' || RDUE;
+  $('notices').innerHTML = `<div class="fbar">${bSel}${gSel}${sSel}</div><div class="fbar2">${seg}${quick}${any ? `<button class="gchip" onclick="RBLD='ทั้งหมด';RG='ทุกคน';RST='';RACT='active';RDUE=false;renderRound()">✕ ล้างตัวกรอง</button>` : ''}</div>`;
+  const ps = all.filter(p => (RBLD === 'ทั้งหมด' || p.bld === RBLD) && actOk(p) && (RG === 'ทุกคน' || p.tags.includes(RG)) && (!RST || p.staff === RST) && (!RDUE || dueToday(p)));
   $('count').textContent = ps.length + ' คน';
   const wards = [...new Set(ps.map(p => p.ward))];
   let lastB = null;
@@ -286,7 +289,7 @@ function renderRound() {
     return bh + `<div><div class="sec">${esc(w)} · ${list.length} คน</div><div class="card">${list.map(p => {
       const i = all.indexOf(p), op = ROPEN === i;
       return `<div class="task prow${p.inactive ? ' inact' : ''}"><button class="row" onclick="ROPEN=ROPEN===${i}?null:${i};renderRound()" style="align-items:flex-start">
-        <span style="flex-grow:1;min-width:0"><div><b>${esc(p.name)}</b>${p.inactive ? '<span class="itag">inactive</span>' : ''} <span class="hn">${p.hn ? 'HN ' + esc(p.hn) : ''}</span></div>
+        <span style="flex-grow:1;min-width:0"><div><b>${esc(p.name)}</b>${p.inactive ? '<span class="itag">inactive</span>' : ''}${dueToday(p) ? '<span class="itag duet">วันนี้</span>' : ''} <span class="hn">${p.hn ? 'HN ' + esc(p.hn) : ''}</span></div>
         <div style="font-size:13px">${[p.dx, p.staff].filter(Boolean).map(esc).join(' · ')}</div>
         <div class="who">${p.tags.includes('ว่าง') ? '<span class="nobody">ยังไม่มีคนดู</span>' : esc(p.team || p.tags.join(', '))}${p.remark ? ' · ' + esc(p.remark) : ''}</div>
         ${p.ww ? `<div class="ww">${esc(p.ww)}</div>` : ''}</span>
@@ -398,6 +401,13 @@ function edAct(a) {
   if (ED.arm !== a) { ED.arm = a; return drawEdit(); }
   edCall({ act: a });
 }
+// 📅 คนไข้ที่ต้องดูวันนี้ (กลุ่ม "ทุกวันพฤหัสบดี" / โน้ต "q thu")
+const TH_DAY = [['อาทิตย์', 'sun'], ['จันทร์', 'mon'], ['อังคาร', 'tue'], ['พุธ', 'wed'], ['พฤหัส', 'thu'], ['ศุกร์', 'fri'], ['เสาร์', 'sat']];
+const todayDow = () => new Date(Date.now() + 7 * 3600e3 - 6 * 3600e3).getUTCDay();
+function dueToday(p) {
+  const [th, en] = TH_DAY[todayDow()];
+  return !p.inactive && (p.tags.some(t => /^ทุก/.test(t) && t.includes(th)) || new RegExp('(^|\\W)q\\s*' + en, 'i').test(p.remark || ''));
+}
 function addFor(n) { setTab('task'); document.body.classList.add('adding'); $('newt').value = n + ' '; $('newt').focus(); }
 // วันอื่น: ใส่วันที่ในคำสั่ง (ww 22/10/69 เสร็จ 5 … / ww แก้ผล 22/10/69 5 …)
 function W(cmd) {
@@ -424,7 +434,9 @@ function render() {
   const blds = ['ทั้งหมด', ...new Set(all.map(t => t.bld))];
   if (!blds.includes(BLD)) BLD = 'ทั้งหมด';
   $('chips').innerHTML = blds.map(b => `<button class="chip${b === BLD ? ' on' : ''}" onclick="BLD='${esc(b)}';render()">${esc(short(b))}</button>`).join('');
-  $('notices').innerHTML = newsBar() + (D.notices.length ? `<div class="notice">${D.notices.map(esc).join(' · ')}</div>` : '');
+  const due = R ? R.pts.filter(dueToday) : [];
+  const dueBar = due.length ? `<button class="duebar" onclick="RDUE=true;setTab('round')">วันนี้ต้องไปดู ${due.length} คน: ${due.slice(0, 6).map(p => esc(p.name.split(/\s+/)[0])).join(', ')}${due.length > 6 ? ' …' : ''} ›</button>` : '';
+  $('notices').innerHTML = newsBar() + dueBar + (D.notices.length ? `<div class="notice">${D.notices.map(esc).join(' · ')}</div>` : '');
   const ts = all.filter(t => BLD === 'ทั้งหมด' || t.bld === BLD);
   let h = '';
   const fl = ts.filter(t => t.flap && !t.done);
@@ -501,6 +513,7 @@ function saveQ(no) {
 }
 function addTask(e) { e.preventDefault(); const v = $('newt').value.trim(); if (!v) return; $('newt').value = ''; document.body.classList.remove('adding'); run('ww ' + v); }
 load();
+call({ api: 'round' }, r => { if (!r.error) { R = r; if (TAB === 'task' && D) render(); } });
 </script>
 </body>
 </html>
