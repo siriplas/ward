@@ -45,6 +45,7 @@ h1{margin:0;font-size:20px;font-weight:700}
 .hist{border-left:2px solid var(--ln);padding-left:10px;display:flex;flex-direction:column;gap:6px;margin-top:4px}
 .notice{padding:8px 16px;font-size:13px;color:var(--or)}
 main{padding:4px 0 120px;display:flex;flex-direction:column;gap:4px}
+.bldh{margin-top:14px;padding:10px 16px;font-size:14px;font-weight:700;color:var(--tx);background:var(--bg2);border-top:3px solid var(--hd)}
 .sec{font-size:12px;font-weight:600;color:var(--mu);padding:12px 16px 2px;letter-spacing:.3px}
 .card{background:transparent}
 .pthead{display:flex;justify-content:space-between;align-items:baseline;padding:8px 16px 0;font-weight:700;font-size:16px}
@@ -241,9 +242,11 @@ function renderRound() {
   const ps = all.filter(p => (RBLD === 'ทั้งหมด' || p.bld === RBLD) && (RG === 'ทุกคน' || p.tags.includes(RG)));
   $('count').textContent = ps.length + ' คน';
   const wards = [...new Set(ps.map(p => p.ward))];
+  let lastB = null;
   $('main').innerHTML = wards.map(w => {
-    const list = ps.filter(p => p.ward === w);
-    return `<div><div class="sec">${esc(w)} · ${list.length} คน</div><div class="card">${list.map(p => {
+    const list = ps.filter(p => p.ward === w), bd = list[0].bld;
+    const bh = bd !== lastB ? `<div class="bldh">${esc(bd)} · ${ps.filter(p => p.bld === bd).length} คน</div>` : ''; lastB = bd;
+    return bh + `<div><div class="sec">${esc(w)} · ${list.length} คน</div><div class="card">${list.map(p => {
       const i = all.indexOf(p), op = ROPEN === i;
       return `<div class="task prow"><button class="row" onclick="ROPEN=ROPEN===${i}?null:${i};renderRound()" style="align-items:flex-start">
         <span style="flex-grow:1;min-width:0"><div><b>${esc(p.name)}</b> <span class="hn">${p.hn ? 'HN ' + esc(p.hn) : ''}</span></div>
