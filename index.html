@@ -20,7 +20,7 @@ h1{margin:0;font-size:21px}
 .chip.on{background:#fff;color:var(--hd,var(--g));border-color:#fff;font-weight:600}
 .dnav{display:flex;gap:6px;margin-top:8px}
 .dn{min-height:34px;min-width:44px;border:1px solid rgba(255,255,255,.55);border-radius:8px;background:transparent;color:#fff;font-size:18px}
-.dn.mid{flex:1;font-size:14px}.dn.mid.on{background:rgba(255,255,255,.2)}
+.dn.mid{flex:1;font-size:14px;opacity:1;color:#fff}.dn.today{font-size:14px;padding:0 12px;background:#fff;color:var(--hd,var(--g));font-weight:600;border-color:#fff}.dn.mid.on{background:rgba(255,255,255,.2)}
 .tabs{display:flex;background:rgba(0,0,0,.18);border-radius:10px;padding:3px;margin-top:10px}
 .tab{flex:1;min-height:34px;border:0;border-radius:8px;background:transparent;color:rgba(255,255,255,.85)}
 .tab.on{background:#fff;color:var(--hd,var(--g));font-weight:600}
@@ -31,8 +31,7 @@ h1{margin:0;font-size:21px}
 .gchip.warn{border-color:#f1b5ae;color:#b42318}.gchip.warn.on{background:#b42318;color:#fff}
 .who{font-size:12px;color:var(--mu);margin-top:2px}.nobody{color:#b42318;font-weight:600}
 .hn{font-weight:400;font-size:13px;color:var(--mu)}
-.badge.res.upd{color:#8a4b00}
-.res{color:#1e3a8a;background:#e6edff}
+.badge.res{color:#1e3a8a;background:#e6edff}
 .badge.ok{color:#0b4d45;background:#dff3ee}
 .badge{font-size:12px;font-weight:600;color:#7a3d00;background:#ffe8cc;border-radius:999px;padding:2px 10px;flex-shrink:0}
 .hist{border-left:3px solid #e2e8e6;padding-left:10px;display:flex;flex-direction:column;gap:6px}
@@ -67,7 +66,15 @@ main{padding:12px 12px 120px;display:flex;flex-direction:column;gap:14px}
 .qb.stop.on{background:#6b7470;border-color:#6b7470}
 .add{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid #dde3e1;padding:10px 12px 16px;display:flex;gap:8px;z-index:5}
 .add .b.p{flex-grow:0}
-.toast{position:fixed;left:12px;right:12px;bottom:84px;background:#17201d;color:#fff;border-radius:10px;padding:10px 14px;font-size:14px;white-space:pre-line;display:none;z-index:9}
+.qr{display:flex;gap:6px;flex-wrap:wrap}
+.qrb{min-height:38px;padding:0 14px;border-radius:999px;border:1px solid #a9d6cd;background:#eef8f6;color:#0b4d45;font-weight:500}
+.undo{border:0;background:#fff;color:#17201d;border-radius:8px;min-height:36px;padding:0 12px;font-weight:600;margin-left:8px}
+.row{transition:transform .15s}
+.news{display:block;width:100%;text-align:left;border:0;background:#e6edff;color:#1e3a8a;font-weight:600;padding:10px 16px;font-size:14px;border-bottom:1px solid #c7d4fb}
+.tag{font-size:11px;font-weight:700;border-radius:6px;padding:1px 6px;margin-right:6px;vertical-align:2px}
+.tag.new{background:#1d4ed8;color:#fff}.tag.res{background:#0f766e;color:#fff}
+.isnew{background:#f5f8ff}
+.toast{align-items:center;position:fixed;left:12px;right:12px;bottom:84px;background:#17201d;color:#fff;border-radius:10px;padding:10px 14px;font-size:14px;white-space:pre-line;display:none;z-index:9}
 .empty{color:var(--mu);text-align:center;padding:30px 0}
 .busy{opacity:.5;pointer-events:none}
 </style>
@@ -106,16 +113,80 @@ function load() {
   $('count').textContent = '…';
   call({ api: 'data', off: OFF }, set);
 }
+// 🆕 งาน/ผลใหม่ตั้งแต่เปิดแอพครั้งก่อน (จำในเครื่องนี้ ; ไม่นับที่ตัวเองทำ)
+const LS = { get: k => { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } }, set: (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} } };
+let SEEN = null, NEWS = { t: [], r: [] }, SEEN_NO = {};
+const MINE = LS.get('ww_mine') || {};
+function markMine(no) { if (OFF) return; MINE[D.day + '#' + no] = Date.now(); LS.set('ww_mine', MINE); }
+function computeNews() {
+  if (OFF !== 0 || !D) { NEWS = { t: [], r: [] }; return; }
+  const key = 'ww_seen_' + D.day, prev = LS.get(key);
+  if (SEEN === null) { SEEN = prev || D.now; LS.set(key, D.now); }   // ครั้งแรกของวัน = ไม่เตือน
+  const mine = t => (MINE[D.day + '#' + t.no] || 0);
+  const me = D.me || '\u0000';
+  NEWS.t = D.tasks.filter(t => t.addTs > SEEN && t.by !== me && !mine(t));
+  NEWS.r = D.tasks.filter(t => t.result && t.resTs > SEEN && t.resTs > mine(t) + 60e3 && !(t.done && t.doneBy === me));
+}
+const isNewT = t => NEWS.t.includes(t) && !SEEN_NO[t.no], isNewR = t => NEWS.r.includes(t) && !SEEN_NO[t.no];
+function newsBar() {
+  const nt = NEWS.t.filter(isNewT).length, nr = NEWS.r.filter(isNewR).length;
+  if (!nt && !nr) return '';
+  const at = new Date(SEEN + 7 * 3600e3).toISOString().slice(11, 16);
+  return `<button class="news" onclick="jumpNew()">${nt ? '🆕 งานใหม่ ' + nt : ''}${nt && nr ? ' · ' : ''}${nr ? '📝 ผลใหม่ ' + nr : ''} <span style="font-weight:400">ตั้งแต่ ${at}</span> ›</button>`;
+}
+function jumpNew() { const el = document.querySelector('.isnew'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
 function set(d) {
   document.body.classList.remove('busy');
   if (!d || d.error) { $('main').innerHTML = '<div class="empty">🔒 ลิงก์หมดอายุ<br>พิมพ์ ww app ในแชท 1:1 กับบอท</div>'; return; }
-  D = d; render();
+  D = d; computeNews(); render();
 }
 function fail(e) { document.body.classList.remove('busy'); toast('❗ เชื่อมต่อไม่ได้ ลองใหม่'); }
+// ✅ ปิดงานแบบรอ 5 วินาที (กดยกเลิกได้) แล้วค่อยส่งให้บอท
+const QUICK = ['ปกติ', 'รอผล', 'ส่งแล้ว', 'ok'];
+let HOLD = [];
+function closeNo(no, res, off) {
+  if (D) markMine(no);
+  off = off == null ? OFF : off;
+  const t = (off === OFF && D) ? T(no) : null, before = t ? Object.assign({}, t) : null;
+  if (t) Object.assign(t, { done: true, result: res || '', doneBy: 'คุณ', doneAt: nowHM() });
+  OPEN = null; if (TAB === 'task' && D) render();
+  const day = off === OFF && D ? D.day : null;
+  const job = { no, res, off, day, before, tm: setTimeout(() => sendClose(job), 5000) };
+  HOLD.push(job);
+  undoBar(`✅ ปิดงาน ${no}${res ? ' · ' + res : ''}`, job);
+}
+function sendClose(job) {
+  HOLD = HOLD.filter(j => j !== job);
+  const cmd = `ww ${job.off && job.day ? job.day + ' ' : ''}เสร็จ ${job.no} ${job.res || 'เสร็จ'}`;
+  PENDING++; if (TAB === 'task' && D) render();
+  call({ api: 'run', cmd, off: OFF }, r => { PENDING--; if (r.error) return set(r); if (/^❗/.test(r.msg || '')) toast(r.msg); if (!HOLD.length) set(r.data); if (TAB === 'round') setTab('round'); });
+}
+function undo(job) {
+  clearTimeout(job.tm); HOLD = HOLD.filter(j => j !== job);
+  if (job.before && D) { const t = T(job.no); if (t) Object.assign(t, job.before); render(); }
+  $('toast').style.display = 'none';
+}
+function undoBar(m, job) {
+  const t = $('toast'); t.innerHTML = `<span style="flex:1">${esc(m)}</span><button class="undo">↩️ ยกเลิก</button>`;
+  t.querySelector('.undo').onclick = () => undo(job);
+  t.style.display = 'flex'; clearTimeout(t._h); t._h = setTimeout(() => t.style.display = 'none', 5000);
+}
+// ส่งงานที่รออยู่ทันทีถ้าปิด/สลับแอพ
+const flush = () => HOLD.slice().forEach(j => { clearTimeout(j.tm); sendClose(j); });
+document.addEventListener('visibilitychange', () => { if (document.hidden) flush(); });
+window.addEventListener('pagehide', flush);
+// แท็บราวด์: ปิดงานวันนี้
+function closeRound(no, btn) { btn.textContent = '✓'; btn.disabled = true; closeNo(no, '', 0); }
+// 👉 ปัดขวาที่งานค้าง = ปิดงาน (ไม่มีผล)
+let SW = null;
+document.addEventListener('touchstart', e => { const b = e.target.closest('[data-sw]'); SW = b ? { b, x: e.touches[0].clientX, y: e.touches[0].clientY, dx: 0 } : null; }, { passive: true });
+document.addEventListener('touchmove', e => { if (!SW) return; const dx = e.touches[0].clientX - SW.x, dy = e.touches[0].clientY - SW.y; if (Math.abs(dy) > Math.abs(dx)) { SW.b.style.transform = ''; SW = null; return; } SW.dx = Math.max(0, dx); SW.b.style.transform = `translateX(${SW.dx}px)`; SW.b.style.background = SW.dx > 90 ? '#dff3ee' : ''; }, { passive: true });
+document.addEventListener('touchend', () => { if (!SW) return; const { b, dx } = SW; SW = null; b.style.transform = ''; b.style.background = ''; if (dx > 90) closeNo(Number(b.dataset.sw), ''); });
 function toast(m) { if (!m) return; const t = $('toast'); t.textContent = m; t.style.display = 'block'; clearTimeout(t._h); t._h = setTimeout(() => t.style.display = 'none', 3500); }
 // ⚡ ตอบสนองทันที: แก้บนจอก่อน (patch) แล้วค่อยส่งให้บอท ; ผลจากบอทมาทีหลังจะแทนข้อมูลบนจอ
 let SEQ = 0, PENDING = 0;
 function run(cmd, patch) {
+  const mn = cmd.match(/^ww \S+ (\d+)/); if (mn && D) markMine(Number(mn[1]));
   OPEN = null; QEDIT = null; ARM = null;
   if (patch && D) { try { patch(); } catch (e) {} }
   const my = ++SEQ; PENDING++; render();
@@ -158,7 +229,7 @@ function renderRound() {
         <div class="who">${p.tags.includes('ว่าง') ? '<span class="nobody">🔔 ยังไม่มีคนดู</span>' : '👤 ' + esc(p.team || p.tags.join(', '))}${p.remark ? ' · ' + esc(p.remark) : ''}</div>
         ${p.ww ? `<div class="ww">📌 ${esc(p.ww)}</div>` : ''}</span>
         <span style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;flex-shrink:0">${p.open ? `<span class="badge">🟡 ค้าง ${p.open}</span>` : p.done ? `<span class="badge ok">✅ เสร็จ ${p.done}</span>` : ''}${p.res ? `<span class="badge res">📝 ผล ${p.res}</span>` : ''}${p.flap ? '<span class="badge">👁 Flap</span>' : ''}</span></button>
-        ${op ? `<div class="panel">${p.hist.length ? `<div class="hist">${p.hist.map(x => `<div><div class="meta">${esc(x.day)}</div><div>${x.mark} ${esc(x.task)}</div>${x.res ? `<div class="res">${esc(x.res)}</div>` : ''}</div>`).join('')}</div>` : '<div class="meta">ไม่มีงานใน 3 วันล่าสุด</div>'}
+        ${op ? `<div class="panel">${p.hist.length ? `<div class="hist">${p.hist.map(x => `<div><div class="meta">${esc(x.day)}</div><div style="display:flex;gap:8px;align-items:center"><span style="flex:1">${x.mark} ${esc(x.task)}</span>${x.canClose ? `<button class="b" style="min-height:34px;padding:0 10px" onclick="event.stopPropagation();closeRound(${x.no}, this)">✓ เสร็จ</button>` : ''}</div>${x.res ? `<div class="res">${esc(x.res)}</div>` : ''}</div>`).join('')}</div>` : '<div class="meta">ไม่มีงานใน 3 วันล่าสุด</div>'}
           <div class="btns" style="flex-wrap:nowrap"><input class="inp" id="radd${i}" placeholder="งานของ${esc(p.name.split(/\s+/)[0])} เช่น CBC, K" style="flex:1;width:auto;min-width:0" onkeydown="if(event.key==='Enter')addR(${i})">
           <button class="b p" style="flex-grow:0" onclick="addR(${i})">เพิ่มงาน</button></div></div>` : ''}</div>`;
     }).join('')}</div></div>`;
@@ -185,14 +256,15 @@ function render() {
   const names = { '-1': 'เมื่อวาน', '0': 'วันนี้', '1': 'พรุ่งนี้' };
   $('date').textContent = D.day;
   $('ttl').textContent = 'งาน' + (names[OFF] || (OFF < 0 ? ` ${-OFF} วันก่อน` : ` อีก ${OFF} วัน`));
-  $('dnav').innerHTML = `<button class="dn" onclick="go(-1)" aria-label="วันก่อน">‹</button><button class="dn mid${OFF ? '' : ' on'}" onclick="go(0)">${D.day}${OFF ? ' · ↺ วันนี้' : ''}</button><button class="dn" onclick="go(1)" aria-label="วันถัดไป">›</button>`;
+  const rel = names[OFF] || (OFF < 0 ? `${-OFF} วันก่อน` : `อีก ${OFF} วัน`);
+  $('dnav').innerHTML = `<button class="dn" onclick="go(-1)" aria-label="วันก่อน">‹</button><button class="dn mid${OFF ? '' : ' on'}" disabled>${D.day} (${rel})</button><button class="dn" onclick="go(1)" aria-label="วันถัดไป">›</button>${OFF ? '<button class="dn today" onclick="go(0)">วันนี้</button>' : ''}`;
   $('newt').placeholder = OFF ? `เพิ่มงานวันที่ ${D.day}` : 'เพิ่มงาน เช่น สมชาย CBC';
   const all = D.tasks;
   $('count').textContent = (PENDING ? '⏳ ' : '') + 'ค้าง ' + all.filter(t => !t.done && !t.flap).length;
   const blds = ['ทั้งหมด', ...new Set(all.map(t => t.bld))];
   if (!blds.includes(BLD)) BLD = 'ทั้งหมด';
   $('chips').innerHTML = blds.map(b => `<button class="chip${b === BLD ? ' on' : ''}" onclick="BLD='${esc(b)}';render()">${esc(short(b))}</button>`).join('');
-  $('notices').innerHTML = D.notices.length ? `<div class="notice">📢 ${D.notices.map(esc).join(' · ')}</div>` : '';
+  $('notices').innerHTML = newsBar() + (D.notices.length ? `<div class="notice">📢 ${D.notices.map(esc).join(' · ')}</div>` : '');
   const ts = all.filter(t => BLD === 'ทั้งหมด' || t.bld === BLD);
   let h = '';
   const fl = ts.filter(t => t.flap && !t.done);
@@ -211,12 +283,14 @@ function byPatient(list) {
 }
 function taskRow(t) {
   const isOpen = OPEN === t.no;
-  let h = `<div class="task${t.done ? ' done' : ''}"><button class="row" onclick="toggle(${t.no})">
+  const nw = isNewT(t) ? '<span class="tag new">ใหม่</span>' : isNewR(t) ? '<span class="tag res">ผลใหม่</span>' : '';
+  let h = `<div class="task${t.done ? ' done' : ''}${nw ? ' isnew' : ''}"><button class="row" onclick="toggle(${t.no})" ${t.done ? '' : `data-sw="${t.no}"`}>
     <span class="box">${t.done ? '✓' : ''}</span>
-    <span style="flex-grow:1;min-width:0"><div class="tt">${t.urgent ? '<span class="urg">ด่วน </span>' : ''}${esc(t.rest || t.task)}</div>
+    <span style="flex-grow:1;min-width:0"><div class="tt">${nw}${t.urgent ? '<span class="urg">ด่วน </span>' : ''}${esc(t.rest || t.task)}</div>
     ${t.result ? (t.done ? `<div class="res">📝 ${esc(t.result)}</div>` : `<div class="res upd">⏳ ${esc(t.result)}</div>`) : ''}
     <div class="meta">${t.no}. ${t.done ? 'ปิดโดย ' + esc(t.doneBy) + ' ' + esc(t.doneAt) : 'ลงโดย ' + esc(t.by)}</div></span></button>`;
   if (isOpen && !t.done) h += `<div class="panel">
+    <div class="qr">${QUICK.map(q => `<button class="qrb" onclick="closeNo(${t.no}, '${q}')">${q}</button>`).join('')}</div>
     <input class="inp" id="res${t.no}" placeholder="ผล (ไม่ใส่ก็ได้) เช่น K 3.8">
     <div class="btns">
       <button class="b p" onclick="closeT(${t.no})">ปิดงาน</button>
@@ -251,8 +325,8 @@ function flapCard(t) {
 
 const T = no => D.tasks.find(t => t.no === no);
 const val = no => ($('res' + no) || {}).value ? $('res' + no).value.trim() : '';
-function toggle(no) { OPEN = OPEN === no ? null : no; ARM = null; render(); const i = $('res' + no); if (i) i.focus(); }
-function closeT(no) { const v = val(no); run(`ww เสร็จ ${no} ${v || 'เสร็จ'}`, () => Object.assign(T(no), { done: true, result: v, doneBy: 'คุณ', doneAt: nowHM() })); }
+function toggle(no) { SEEN_NO[no] = 1;  OPEN = OPEN === no ? null : no; ARM = null; render(); const i = $('res' + no); if (i) i.focus(); }
+function closeT(no) { closeNo(no, val(no)); }
 function upd(no) { const v = val(no); if (!v) return toast('พิมพ์ความคืบหน้าในช่องก่อน'); run(`ww update ${no} ${v}`, () => T(no).result = v); }
 function editT(no) { const v = val(no); if (!v) return toast('พิมพ์ข้อความใหม่ในช่องก่อน แล้วกดแก้ข้อความ'); run(`ww แก้ ${no} ${v}`, () => T(no).rest = v); }
 function cancelT(no) { if (ARM !== 'c' + no) { ARM = 'c' + no; return render(); } run(`ww ยกเลิก ${no}`, () => D.tasks = D.tasks.filter(t => t.no !== no)); }
