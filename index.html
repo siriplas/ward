@@ -312,7 +312,7 @@ function renderRound() {
   let mine = LS.get('ww_myteam'); if (mine && !cnt[mine]) mine = null; mine = mine || meKey || '';
   const myBtn = mine ? `<button class="gchip${RG === mine ? ' on' : ''}" onclick="RG=RG==='${esc(mine)}'?'ทุกคน':'${esc(mine)}';renderRound()">ของฉัน</button>` : '';
   const mySel = `<label class="gchip" style="position:relative">${mine ? '✎ ' + esc(mine) : 'ฉันคือ… ▾'}<select style="position:absolute;inset:0;opacity:0" onchange="LS.set('ww_myteam',this.value);RG=this.value||'ทุกคน';renderRound()"><option value="">เลือกชื่อของคุณในทีม</option>${gs.filter(g => g !== 'ว่าง' && g !== 'inactive' && !/^ทุก/.test(g)).map(g => `<option${g === mine ? ' selected' : ''}>${esc(g)}</option>`).join('')}</select></label>`;
-  const nDue = all.filter(dueToday).length;
+  const nDue = all.filter(p => dueToday(p)).length;
   const quick = (nDue ? `<button class="gchip due${RDUE ? ' on' : ''}" onclick="RDUE=!RDUE;if(RDUE){RST='';RG='ทุกคน';RBLD='ทั้งหมด';RACT='active'}renderRound()">วันนี้ต้องดู ${nDue}</button>` : '') + myBtn + mySel + (cnt['ว่าง'] ? `<button class="gchip warn${RG === 'ว่าง' ? ' on' : ''}" onclick="RG=RG==='ว่าง'?'ทุกคน':'ว่าง';renderRound()">ว่าง ${cnt['ว่าง']}</button>` : '');
   const seg = `<span class="seg3">${[['active', 'active'], ['all', 'ทั้งหมด'], ['inactive', 'inactive ' + nIn]].map(([v, t]) => `<button class="${RACT === v ? 'on' : ''}" onclick="RACT='${v}';renderRound()">${t}</button>`).join('')}</span>`;
   const any = RBLD !== 'ทั้งหมด' || RG !== 'ทุกคน' || RST || RACT !== 'active' || RDUE;
@@ -453,9 +453,10 @@ function visitIn(p) {
   if (today - t > 200 * 864e5) t = Date.UTC(y + 1, Number(m[2]) - 1, Number(m[1]));
   return Math.round((t - today) / 864e5);
 }
-function dueToday(p) {
-  if (visitIn(p) === 0) return true;   // ถึงวันนัด → ต้องดู แม้เป็น inactive
-  const [th, en] = TH_DAY[todayDow()];
+function dueToday(p, off) {
+  off = off || 0;
+  if (visitIn(p) === off) return true;   // ถึงวันนัด → ต้องดู แม้เป็น inactive
+  const [th, en] = TH_DAY[((todayDow() + off) % 7 + 7) % 7];
   return !p.inactive && (p.tags.some(t => /^ทุก/.test(t) && t.includes(th)) || new RegExp('(^|\\W)q\\s*' + en, 'i').test(p.remark || ''));
 }
 function addFor(n) { setTab('task'); document.body.classList.add('adding'); $('newt').value = n + ' '; $('newt').focus(); }
@@ -499,8 +500,8 @@ function render() {
   const blds = ['ทั้งหมด', ...new Set(all.map(t => t.bld))];
   if (!blds.includes(BLD)) BLD = 'ทั้งหมด';
   $('chips').innerHTML = blds.map(b => `<button class="chip${b === BLD ? ' on' : ''}" onclick="BLD='${esc(b)}';render()">${esc(short(b))}</button>`).join('');
-  const due = R ? R.pts.filter(dueToday) : [];
-  const dueBar = due.length ? `<button class="duebar" onclick="RDUE=true;RST='';RG='ทุกคน';RBLD='ทั้งหมด';RACT='active';setTab('round')">วันนี้ต้องไปดู ${due.length} คน: ${due.slice(0, 6).map(p => esc(p.name.split(/\s+/)[0])).join(', ')}${due.length > 6 ? ' …' : ''} ›</button>` : '';
+  const due = R ? R.pts.filter(p => dueToday(p, OFF)) : [];   // ตามวันที่เลือกในแท็บงาน
+  const dueBar = due.length ? `<button class="duebar" ${OFF ? 'disabled' : ''} onclick="RDUE=true;RST='';RG='ทุกคน';RBLD='ทั้งหมด';RACT='active';setTab('round')">${OFF ? D.day + ' ต้องไปดู' : 'วันนี้ต้องไปดู'} ${due.length} คน: ${due.slice(0, 6).map(p => esc(p.name.split(/\s+/)[0])).join(', ')}${due.length > 6 ? ' …' : ''} ›</button>` : '';
   $('notices').innerHTML = newsBar() + dueBar + (D.notices.length ? `<div class="notice">${D.notices.map(esc).join(' · ')}</div>` : '');
   const ts = all.filter(t => BLD === 'ทั้งหมด' || t.bld === BLD);
   let h = '';
