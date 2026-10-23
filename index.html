@@ -344,7 +344,7 @@ function renderRound() {
     return bh + `<div><div class="sec">${esc(w)} · ${list.length} คน</div><div class="card">${list.map(p => {
       const i = all.indexOf(p), op = ROPEN === i;
       return `<div class="task prow${p.inactive ? ' inact' : ''}"><button class="row" onclick="ROPEN=ROPEN===${i}?null:${i};renderRound()" style="align-items:flex-start">
-        <span style="flex-grow:1;min-width:0"><div><b>${esc(p.name)}</b>${p.inactive ? '<span class="itag">ไม่ต้องดู</span>' : ''}${dueToday(p) ? '<span class="itag duet">วันนี้</span>' : ''} <span class="hn">${p.hn ? 'HN ' + esc(p.hn) : ''}</span></div>
+        <span style="flex-grow:1;min-width:0"><div><b>${esc(p.name)}</b>${p.inactive ? '<span class="itag">ไม่ต้องดู</span>' : ''}${dueToday(p) ? `<span class="itag duet">${p.inactive && setIn(p) === 1 && visitIn(p) !== 0 ? 'วันนี้ (พรุ่งนี้ set)' : 'วันนี้'}</span>` : ''} <span class="hn">${p.hn ? 'HN ' + esc(p.hn) : ''}</span></div>
         <div style="font-size:13px">${[p.dx, p.staff].filter(Boolean).map(esc).join(' · ')}</div>
         <div class="who">${p.tags.includes('ว่าง') ? '<span class="nobody">ยังไม่มีคนดู</span>' : esc(p.team || p.tags.join(', '))}${p.remark ? ' · ' + esc(p.remark) : ''}</div>
         ${p.ww ? `<div class="ww">${esc(p.ww)}</div>` : ''}</span>
@@ -461,7 +461,7 @@ const TH_DAY = [['อาทิตย์', 'sun'], ['จันทร์', 'mon'],
 const todayDow = () => new Date(Date.now() + 7 * 3600e3 - 6 * 3600e3).getUTCDay();
 // วันนัดในข้อความ: "Next visit 25/10" / "next 4/10" / "F/U 28/10" / "นัด 25/10" (คอลัมน์ A, Ward work, Plan) → จำนวนวันจากวันนี้ (0 = วันนี้, ลบ = เลยนัด)
 function visitIn(p) {
-  const m = [p.remark, p.ww, p.plan].join(' ').match(/(?:next(?:\s*visit)?|f\/?u|นัด|visit)\s*:?\s*(\d{1,2})\/(\d{1,2})/i);
+  const m = [p.remark, p.ww, p.plan].join(' ').match(/(?:next(?:\s*visit)?|f\/?u|นัด|visit|ดูอีก(?:ที|ครั้ง)?)\s*:?\s*(\d{1,2})\/(\d{1,2})/i);
   if (!m) return null;
   const now = new Date(Date.now() + 7 * 3600e3 - 6 * 3600e3), y = now.getUTCFullYear();
   let t = Date.UTC(y, Number(m[2]) - 1, Number(m[1]));
@@ -470,9 +470,17 @@ function visitIn(p) {
   if (today - t > 200 * 864e5) t = Date.UTC(y + 1, Number(m[2]) - 1, Number(m[1]));
   return Math.round((t - today) / 864e5);
 }
+// วัน set (ผ่าตัด): "set 25/10" / "Set OR for DB 28/10/69" → ต้องไปดูวันก่อน set 1 วัน
+function dayIn(d, m) {
+  const now = new Date(Date.now() + 7 * 3600e3 - 6 * 3600e3), y = now.getUTCFullYear(), today = Date.UTC(y, now.getUTCMonth(), now.getUTCDate());
+  let t = Date.UTC(y, m - 1, d);
+  if (t - today > 200 * 864e5) t = Date.UTC(y - 1, m - 1, d); if (today - t > 200 * 864e5) t = Date.UTC(y + 1, m - 1, d);
+  return Math.round((t - today) / 864e5);
+}
+function setIn(p) { const m = [p.remark, p.ww, p.plan].join(' ').match(/\bset\b[^\d\n]{0,60}?(\d{1,2})\/(\d{1,2})/i); return m ? dayIn(Number(m[1]), Number(m[2])) : null; }
 function dueToday(p, off) {
   off = off || 0;
-  if (visitIn(p) === off) return true;   // ถึงวันนัด → ต้องดู แม้เป็น inactive
+  if (p.inactive && (visitIn(p) === off || setIn(p) === off + 1)) return true;   // ไม่ต้องดู: ถึงวันนัด หรือวันก่อน set   // วันนัด (next …) ใช้เฉพาะคน ไม่ต้องดู — คนกำลังดูดูทุกวันอยู่แล้ว (next ในนั้นมักเป็นวันทำแผล)
   const [th, en] = TH_DAY[((todayDow() + off) % 7 + 7) % 7];
   return !p.inactive && (p.tags.some(t => /^ทุก/.test(t) && t.includes(th)) || new RegExp('(^|\\W)q\\s*' + en, 'i').test(p.remark || ''));
 }
