@@ -264,7 +264,11 @@ function renderRound() {
   const bSel = sel(RBLD, blds.map(b => [b, b === 'ทั้งหมด' ? 'ทุกตึก' : short(b)]), RBLD !== 'ทั้งหมด', "RBLD=this.value;renderRound()", RBLD === 'ทั้งหมด' ? 'ตึก' : short(RBLD));
   const gSel = sel(RG, [['ทุกคน', 'ทุกคน']].concat(gs.map(g => [g, `${g} (${cnt[g]})`])), RG !== 'ทุกคน', "RG=this.value;renderRound()", RG === 'ทุกคน' ? 'คนดู' : RG);
   const sSel = sel(RST, [['', 'ทุกอาจารย์']].concat(Object.keys(sc).sort().map(s => [s, `${s} (${sc[s]})`])), !!RST, "RST=this.value;renderRound()", RST || 'อาจารย์');
-  const quick = (meKey ? `<button class="gchip${RG === meKey ? ' on' : ''}" onclick="RG=RG==='${esc(meKey)}'?'ทุกคน':'${esc(meKey)}';renderRound()">ของฉัน</button>` : '') + (cnt['ว่าง'] ? `<button class="gchip warn${RG === 'ว่าง' ? ' on' : ''}" onclick="RG=RG==='ว่าง'?'ทุกคน':'ว่าง';renderRound()">ว่าง ${cnt['ว่าง']}</button>` : '');
+  // ของฉัน: จำชื่อทีมของตัวเองในเครื่อง (ชื่อไลน์อาจไม่ตรงชื่อทีม) ; ยังไม่ตั้ง → เดาจากชื่อไลน์
+  let mine = LS.get('ww_myteam'); if (mine && !cnt[mine]) mine = null; mine = mine || meKey || '';
+  const myBtn = mine ? `<button class="gchip${RG === mine ? ' on' : ''}" onclick="RG=RG==='${esc(mine)}'?'ทุกคน':'${esc(mine)}';renderRound()">ของฉัน</button>` : '';
+  const mySel = `<label class="gchip" style="position:relative">${mine ? '✎ ' + esc(mine) : 'ฉันคือ… ▾'}<select style="position:absolute;inset:0;opacity:0" onchange="LS.set('ww_myteam',this.value);RG=this.value||'ทุกคน';renderRound()"><option value="">เลือกชื่อของคุณในทีม</option>${gs.filter(g => g !== 'ว่าง' && g !== 'inactive' && !/^ทุก/.test(g)).map(g => `<option${g === mine ? ' selected' : ''}>${esc(g)}</option>`).join('')}</select></label>`;
+  const quick = myBtn + mySel + (cnt['ว่าง'] ? `<button class="gchip warn${RG === 'ว่าง' ? ' on' : ''}" onclick="RG=RG==='ว่าง'?'ทุกคน':'ว่าง';renderRound()">ว่าง ${cnt['ว่าง']}</button>` : '');
   const any = RBLD !== 'ทั้งหมด' || RG !== 'ทุกคน' || RST;
   $('notices').innerHTML = `<div class="fbar">${bSel}${gSel}${sSel}</div><div class="fbar2">${quick}${any ? `<button class="gchip" onclick="RBLD='ทั้งหมด';RG='ทุกคน';RST='';renderRound()">✕ ล้างตัวกรอง</button>` : ''}</div>`;
   const ps = all.filter(p => (RBLD === 'ทั้งหมด' || p.bld === RBLD) && (RG === 'inactive' ? p.inactive : !p.inactive && (RG === 'ทุกคน' || p.tags.includes(RG))) && (!RST || p.staff === RST));   // inactive ขึ้นเฉพาะตอนเลือกกลุ่ม inactive
