@@ -251,6 +251,10 @@ function W(cmd) {
   const d = D.day, m = cmd.match(/^ww แก้ผล (\d+) ([\s\S]*)$/);
   return m ? `ww แก้ผล ${d} ${m[1]} ${m[2]}` : cmd.replace(/^ww /, `ww ${d} `);
 }
+// 📅 ปฏิทิน: วันนี้ (เริ่ม 06:00) ± n วัน เป็น yyyy-mm-dd
+const todayUTC = () => { const d = new Date(Date.now() + 7 * 3600e3 - 6 * 3600e3); return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()); };
+const isoOff = n => new Date(todayUTC() + n * 864e5).toISOString().slice(0, 10);
+function pickDay(v) { if (!v) return; const [y, m, d] = v.split('-').map(Number); const n = Math.round((Date.UTC(y, m - 1, d) - todayUTC()) / 864e5); OFF = Math.max(-30, Math.min(14, n)); OPEN = null; QEDIT = null; load(); }
 function go(n) { OFF = n === 0 ? 0 : OFF + n; OPEN = null; QEDIT = null; load(); }
 function render() {
   if (TAB === 'round') return;
@@ -258,7 +262,7 @@ function render() {
   $('date').textContent = D.day;
   $('ttl').textContent = 'งาน' + (names[OFF] || (OFF < 0 ? ` ${-OFF} วันก่อน` : ` อีก ${OFF} วัน`));
   const rel = names[OFF] || (OFF < 0 ? `${-OFF} วันก่อน` : `อีก ${OFF} วัน`);
-  $('dnav').innerHTML = `<button class="dn" onclick="go(-1)" aria-label="วันก่อน">‹</button><button class="dn mid${OFF ? '' : ' on'}" disabled>${D.day} (${rel})</button><button class="dn" onclick="go(1)" aria-label="วันถัดไป">›</button>${OFF ? '<button class="dn today" onclick="go(0)">วันนี้</button>' : ''}`;
+  $('dnav').innerHTML = `<button class="dn" onclick="go(-1)" aria-label="วันก่อน">‹</button><label class="dn mid${OFF ? '' : ' on'}" style="position:relative;display:flex;align-items:center;justify-content:center;cursor:pointer">📅 ${D.day} (${rel})<input type="date" id="dpick" min="${isoOff(-30)}" max="${isoOff(14)}" value="${isoOff(OFF)}" onchange="pickDay(this.value)" style="position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer"></label><button class="dn" onclick="go(1)" aria-label="วันถัดไป">›</button>${OFF ? '<button class="dn today" onclick="go(0)">วันนี้</button>' : ''}`;
   $('newt').placeholder = OFF ? `เพิ่มงานวันที่ ${D.day}` : 'เพิ่มงาน เช่น สมชาย CBC';
   const all = D.tasks;
   $('count').textContent = (PENDING ? '⏳ ' : '') + 'ค้าง ' + all.filter(t => !t.done && !t.flap).length;
