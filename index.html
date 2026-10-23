@@ -48,6 +48,7 @@ main{padding:12px 12px 120px;display:flex;flex-direction:column;gap:14px}
 .done .box{background:var(--g2);border-color:var(--g2)}
 .done .tt{color:var(--mu)}
 .meta{font-size:12px;color:var(--mu)}
+.arr{color:var(--g);font-weight:500}.arr.upd{color:#8a4b00}
 .res.upd{color:#8a4b00}
 .res{font-size:14px;color:var(--g);font-weight:500}
 .urg{color:#b42318;font-weight:700}
@@ -228,8 +229,8 @@ function renderRound() {
         <div style="font-size:13px">${esc(p.dx)}${p.staff ? ' · อ. ' + esc(p.staff) : ''}</div>
         <div class="who">${p.tags.includes('ว่าง') ? '<span class="nobody">🔔 ยังไม่มีคนดู</span>' : '👤 ' + esc(p.team || p.tags.join(', '))}${p.remark ? ' · ' + esc(p.remark) : ''}</div>
         ${p.ww ? `<div class="ww">📌 ${esc(p.ww)}</div>` : ''}</span>
-        <span style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;flex-shrink:0">${p.open ? `<span class="badge">🟡 ค้าง ${p.open}</span>` : p.done ? `<span class="badge ok">✅ เสร็จ ${p.done}</span>` : ''}${p.res ? `<span class="badge res">📝 ผล ${p.res}</span>` : ''}${p.flap ? '<span class="badge">👁 Flap</span>' : ''}</span></button>
-        ${op ? `<div class="panel">${p.hist.length ? `<div class="hist">${p.hist.map(x => `<div><div class="meta">${esc(x.day)}</div><div style="display:flex;gap:8px;align-items:center"><span style="flex:1">${x.mark} ${esc(x.task)}</span>${x.canClose ? `<button class="b" style="min-height:34px;padding:0 10px" onclick="event.stopPropagation();closeRound(${x.no}, this)">✓ เสร็จ</button>` : ''}</div>${x.res ? `<div class="res">${esc(x.res)}</div>` : ''}</div>`).join('')}</div>` : '<div class="meta">ไม่มีงานใน 3 วันล่าสุด</div>'}
+        <span style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;flex-shrink:0">${p.open ? `<span class="badge">🟡 ค้าง ${p.open}</span>` : p.done ? '<span class="badge ok">✅ เสร็จหมด</span>' : ''}${p.flap ? '<span class="badge">👁 Flap</span>' : ''}</span></button>
+        ${op ? `<div class="panel">${p.hist.length ? `<div class="hist">${p.hist.map(x => `<div><div class="meta">${esc(x.day)}</div><div style="display:flex;gap:8px;align-items:center"><span style="flex:1">${x.mark} ${esc(x.task)}${x.res ? ` <span class="${x.upd ? 'arr upd' : 'arr'}">→ ${esc(x.res)}</span>` : ''}</span>${x.canClose ? `<button class="b" style="min-height:34px;padding:0 10px" onclick="event.stopPropagation();closeRound(${x.no}, this)">✓ เสร็จ</button>` : ''}</div></div>`).join('')}</div>` : '<div class="meta">ไม่มีงานใน 3 วันล่าสุด</div>'}
           <div class="btns" style="flex-wrap:nowrap"><input class="inp" id="radd${i}" placeholder="งานของ${esc(p.name.split(/\s+/)[0])} เช่น CBC, K" style="flex:1;width:auto;min-width:0" onkeydown="if(event.key==='Enter')addR(${i})">
           <button class="b p" style="flex-grow:0" onclick="addR(${i})">เพิ่มงาน</button></div></div>` : ''}</div>`;
     }).join('')}</div></div>`;
@@ -287,7 +288,7 @@ function taskRow(t) {
   let h = `<div class="task${t.done ? ' done' : ''}${nw ? ' isnew' : ''}"><button class="row" onclick="toggle(${t.no})" ${t.done ? '' : `data-sw="${t.no}"`}>
     <span class="box">${t.done ? '✓' : ''}</span>
     <span style="flex-grow:1;min-width:0"><div class="tt">${nw}${t.urgent ? '<span class="urg">ด่วน </span>' : ''}${esc(t.rest || t.task)}</div>
-    ${t.result ? (t.done ? `<div class="res">📝 ${esc(t.result)}</div>` : `<div class="res upd">⏳ ${esc(t.result)}</div>`) : ''}
+    ${t.result ? `<div class="res${t.done ? '' : ' upd'}">→ ${esc(t.result)}</div>` : ''}
     <div class="meta">${t.no}. ${t.done ? 'ปิดโดย ' + esc(t.doneBy) + ' ' + esc(t.doneAt) : 'ลงโดย ' + esc(t.by)}</div></span></button>`;
   if (isOpen && !t.done) h += `<div class="panel">
     <div class="qr">${QUICK.map(q => `<button class="qrb" onclick="closeNo(${t.no}, '${q}')">${q}</button>`).join('')}</div>
