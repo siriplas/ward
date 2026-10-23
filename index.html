@@ -25,6 +25,7 @@ h1{margin:0;font-size:20px;font-weight:700}
 .loadbar{position:fixed;top:0;left:0;right:0;height:4px;z-index:7;pointer-events:none;opacity:0;transition:opacity .2s;background:linear-gradient(90deg,transparent 0,rgba(255,255,255,.85) 50%,transparent 100%);background-size:40% 100%;background-repeat:no-repeat}
 body.loading .loadbar{opacity:1;animation:lb 1s ease-in-out infinite}
 @keyframes lb{from{background-position:-40% 0}to{background-position:140% 0}}
+.upd{font-size:11px;color:var(--mu);margin-left:6px;white-space:nowrap}.upd.old{color:var(--or)}
 .tabs{display:flex;gap:20px;margin-top:6px}
 .tab{border:0;background:none;padding:8px 0;color:var(--mu);font-weight:500;border-bottom:2px solid transparent;min-height:38px}
 .tab.on{color:var(--tx);border-bottom-color:var(--hd)}
@@ -127,7 +128,7 @@ input[type=date]{color-scheme:light dark}
 <header>
   <div class="top">
     <div><div class="date" id="date"></div><h1 id="ttl">งานวันนี้</h1></div>
-    <span style="display:flex;align-items:center;gap:6px"><span class="pill" id="count">…</span><button class="rf" id="rf" onclick="refreshNow()" aria-label="รีเฟรช"><svg viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg></button></span>
+    <span style="display:flex;align-items:center;gap:6px"><span class="pill" id="count">…</span><span class="upd" id="updAt"></span><button class="rf" id="rf" onclick="refreshNow()" aria-label="รีเฟรช"><svg viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg></button></span>
   </div>
   <div class="tabs"><button id="tabT" class="tab on" onclick="setTab('task')">งาน</button><button id="tabR" class="tab" onclick="setTab('round')">ราวด์</button></div>
   <div class="dnav" id="dnav"></div>
@@ -201,7 +202,7 @@ function jumpNew() { const el = document.querySelector('.isnew'); if (el) el.scr
 function set(d) {
   document.body.classList.remove('busy');
   if (!d || d.error) { $('main').innerHTML = '<div class="empty">🔒 ลิงก์หมดอายุ<br>พิมพ์ ww app ในแชท 1:1 กับบอท</div>'; return; }
-  D = d; computeNews(); render();
+  D = d; LAST = Date.now(); computeNews(); render(); stamp();
 }
 function fail(e) { document.body.classList.remove('busy'); toast('❗ เชื่อมต่อไม่ได้ ลองใหม่'); }
 // ✅ ปิดงานแบบรอ 5 วินาที (กดยกเลิกได้) แล้วค่อยส่งให้บอท
@@ -280,10 +281,10 @@ function run(cmd, patch) {
 const nowHM = () => new Date(Date.now() + 7 * 3600e3).toISOString().slice(11, 16);
 
 function setTab(t) {
-  TAB = t; document.body.classList.toggle('rtab', t === 'round'); if (t === "round") $("ttl").textContent = "ราวด์"; $('tabT').classList.toggle('on', t === 'task'); $('tabR').classList.toggle('on', t === 'round');
+  TAB = t; document.body.classList.toggle('rtab', t === 'round'); stamp(); if (t === "round") $("ttl").textContent = "ราวด์"; $('tabT').classList.toggle('on', t === 'task'); $('tabR').classList.toggle('on', t === 'round');
   if (t === 'round') document.body.classList.remove('adding'); $('dnav').style.display = t === 'task' ? 'flex' : 'none';
   if (t === 'round') { if (R) renderRound(); else { $('main').innerHTML = '<div class="empty">กำลังโหลด…</div>'; }
-    call({ api: 'round' }, r => { if (r.error) { $('main').innerHTML = '<div class="empty">' + (r.error === 'expired' ? '🔒 ลิงก์หมดอายุ' : '❗ อ่านตารางราวด์ไม่ได้') + '</div>'; return; } R = r; if (TAB === 'round') renderRound(); }); }
+    call({ api: 'round' }, r => { if (!r.error) { LASTR = Date.now(); stamp(); } if (r.error) { $('main').innerHTML = '<div class="empty">' + (r.error === 'expired' ? '🔒 ลิงก์หมดอายุ' : '❗ อ่านตารางราวด์ไม่ได้') + '</div>'; return; } R = r; if (TAB === 'round') renderRound(); }); }
   else if (D) render();
 }
 function renderRound() {
@@ -310,7 +311,7 @@ function renderRound() {
   const myBtn = mine ? `<button class="gchip${RG === mine ? ' on' : ''}" onclick="RG=RG==='${esc(mine)}'?'ทุกคน':'${esc(mine)}';renderRound()">ของฉัน</button>` : '';
   const mySel = `<label class="gchip" style="position:relative">${mine ? '✎ ' + esc(mine) : 'ฉันคือ… ▾'}<select style="position:absolute;inset:0;opacity:0" onchange="LS.set('ww_myteam',this.value);RG=this.value||'ทุกคน';renderRound()"><option value="">เลือกชื่อของคุณในทีม</option>${gs.filter(g => g !== 'ว่าง' && g !== 'inactive' && !/^ทุก/.test(g)).map(g => `<option${g === mine ? ' selected' : ''}>${esc(g)}</option>`).join('')}</select></label>`;
   const nDue = all.filter(dueToday).length;
-  const quick = (nDue ? `<button class="gchip due${RDUE ? ' on' : ''}" onclick="RDUE=!RDUE;renderRound()">วันนี้ต้องดู ${nDue}</button>` : '') + myBtn + mySel + (cnt['ว่าง'] ? `<button class="gchip warn${RG === 'ว่าง' ? ' on' : ''}" onclick="RG=RG==='ว่าง'?'ทุกคน':'ว่าง';renderRound()">ว่าง ${cnt['ว่าง']}</button>` : '');
+  const quick = (nDue ? `<button class="gchip due${RDUE ? ' on' : ''}" onclick="RDUE=!RDUE;if(RDUE){RST='';RG='ทุกคน';RBLD='ทั้งหมด';RACT='active'}renderRound()">วันนี้ต้องดู ${nDue}</button>` : '') + myBtn + mySel + (cnt['ว่าง'] ? `<button class="gchip warn${RG === 'ว่าง' ? ' on' : ''}" onclick="RG=RG==='ว่าง'?'ทุกคน':'ว่าง';renderRound()">ว่าง ${cnt['ว่าง']}</button>` : '');
   const seg = `<span class="seg3">${[['active', 'active'], ['all', 'ทั้งหมด'], ['inactive', 'inactive ' + nIn]].map(([v, t]) => `<button class="${RACT === v ? 'on' : ''}" onclick="RACT='${v}';renderRound()">${t}</button>`).join('')}</span>`;
   const any = RBLD !== 'ทั้งหมด' || RG !== 'ทุกคน' || RST || RACT !== 'active' || RDUE;
   $('notices').innerHTML = `<div class="fbar">${bSel}${gSel}${sSel}</div><div class="fbar2">${seg}${quick}${any ? `<button class="gchip" onclick="RBLD='ทั้งหมด';RG='ทุกคน';RST='';RACT='active';RDUE=false;renderRound()">✕ ล้างตัวกรอง</button>` : ''}</div>`;
@@ -454,6 +455,21 @@ function W(cmd) {
 const todayUTC = () => { const d = new Date(Date.now() + 7 * 3600e3 - 6 * 3600e3); return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()); };
 const isoOff = n => new Date(todayUTC() + n * 864e5).toISOString().slice(0, 10);
 function pickDay(v) { if (!v) return; const [y, m, d] = v.split('-').map(Number); const n = Math.round((Date.UTC(y, m - 1, d) - todayUTC()) / 864e5); OFF = Math.max(-30, Math.min(14, n)); OPEN = null; QEDIT = null; load(); }
+// 🕒 เวลาที่ดึงข้อมูลล่าสุด + รีเฟรชเองเมื่อกลับมาที่แอพ / ทุก 5 นาที (ไม่รีเฟรชระหว่างพิมพ์หรือเปิดเมนู)
+let LAST = 0, LASTR = 0;
+const AUTO_MIN = 5, AUTO_MIN_R = 24 * 60, BACK_MIN = 1;   // งาน: ทุก 5 นาที + กลับมาหลังออกไปเกิน 1 นาที · ราวด์: วันละครั้ง ตี 5 (โหลดนาน)
+const last5am = () => { const b = Date.now() + 7 * 3600e3, d = new Date(b), t = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 5) - 7 * 3600e3; return t > Date.now() ? t - 864e5 : t; };
+function stamp() { const e = $('updAt'), L = TAB === 'round' ? LASTR : LAST, A = TAB === 'round' ? AUTO_MIN_R : AUTO_MIN; if (!e) return; if (!L) { e.textContent = ''; return; } const m = Math.floor((Date.now() - L) / 60000); e.textContent = m < 1 ? 'อัปเดตเมื่อกี้' : `อัปเดต ${new Date(L + 7 * 3600e3).toISOString().slice(11, 16)}`; e.classList.toggle('old', TAB === 'round' ? L < last5am() : m >= A * 2); }
+function autoRefresh(force) {
+  if (document.hidden || LOADING || HOLD.length) return;
+  const busyUI = OPEN !== null || QEDIT !== null || ROPEN !== null || ED || PH || document.body.classList.contains('adding') || /INPUT|TEXTAREA|SELECT/.test((document.activeElement || {}).tagName || '');
+  if (busyUI) return;
+  if (TAB === 'round') { if (force || (LASTR && LASTR < last5am())) setTab('round'); }   // ราวด์: รีเฟรชเองเฉพาะเมื่อข้ามตี 5 แล้ว
+  else if (force || Date.now() - LAST >= AUTO_MIN * 60000) load();
+}
+setInterval(() => { stamp(); autoRefresh(false); }, 20000);
+let HIDDEN_AT = 0;
+document.addEventListener('visibilitychange', () => { if (document.hidden) { HIDDEN_AT = Date.now(); return; } if (TAB === 'task' && HIDDEN_AT && Date.now() - HIDDEN_AT >= BACK_MIN * 60000) autoRefresh(true); else autoRefresh(false); });
 function refreshNow() { $('rf').classList.add('spin'); setTimeout(() => $('rf').classList.remove('spin'), 1500); TAB === 'round' ? setTab('round') : load(); }
 function go(n) { OFF = n === 0 ? 0 : OFF + n; OPEN = null; QEDIT = null; load(); }
 function render() {
@@ -470,7 +486,7 @@ function render() {
   if (!blds.includes(BLD)) BLD = 'ทั้งหมด';
   $('chips').innerHTML = blds.map(b => `<button class="chip${b === BLD ? ' on' : ''}" onclick="BLD='${esc(b)}';render()">${esc(short(b))}</button>`).join('');
   const due = R ? R.pts.filter(dueToday) : [];
-  const dueBar = due.length ? `<button class="duebar" onclick="RDUE=true;setTab('round')">วันนี้ต้องไปดู ${due.length} คน: ${due.slice(0, 6).map(p => esc(p.name.split(/\s+/)[0])).join(', ')}${due.length > 6 ? ' …' : ''} ›</button>` : '';
+  const dueBar = due.length ? `<button class="duebar" onclick="RDUE=true;RST='';RG='ทุกคน';RBLD='ทั้งหมด';RACT='active';setTab('round')">วันนี้ต้องไปดู ${due.length} คน: ${due.slice(0, 6).map(p => esc(p.name.split(/\s+/)[0])).join(', ')}${due.length > 6 ? ' …' : ''} ›</button>` : '';
   $('notices').innerHTML = newsBar() + dueBar + (D.notices.length ? `<div class="notice">${D.notices.map(esc).join(' · ')}</div>` : '');
   const ts = all.filter(t => BLD === 'ทั้งหมด' || t.bld === BLD);
   let h = '';
@@ -549,7 +565,7 @@ function saveQ(no) {
 }
 function addTask(e) { e.preventDefault(); const v = $('newt').value.trim(); if (!v) return; $('newt').value = ''; document.body.classList.remove('adding'); run('ww ' + v); }
 load();
-call({ api: 'round' }, r => { if (!r.error) { R = r; if (TAB === 'task' && D) render(); } });
+call({ api: 'round' }, r => { if (!r.error) { R = r; LASTR = Date.now(); if (TAB === 'task' && D) render(); } });
 </script>
 </body>
 </html>
