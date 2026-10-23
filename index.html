@@ -69,6 +69,7 @@ textarea.inp{resize:vertical;line-height:1.45;min-height:72px;overflow:hidden;fo
 .burst{position:fixed;left:50%;top:45%;font-size:56px;transform:translate(-50%,-50%);animation:burst .9s ease-out forwards;pointer-events:none;z-index:30}
 @keyframes burst{0%{opacity:0;transform:translate(-50%,-30%) scale(.5)}30%{opacity:1;transform:translate(-50%,-50%) scale(1.2)}100%{opacity:0;transform:translate(-50%,-90%) scale(1)}}
 .fest header{border-top:0;box-shadow:inset 0 5px 0 -1px transparent}.fest header:before{content:'';position:absolute;left:0;right:0;top:0;height:5px;background:var(--bar)}header{position:sticky}.fxi{font-size:16px;margin-left:2px}
+.chev{flex-shrink:0;width:28px;height:28px;border-radius:50%;background:var(--bg2);display:flex;align-items:center;justify-content:center;color:var(--mu)}.chev svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 .bldh{margin-top:14px;padding:10px 16px;font-size:14px;font-weight:700;color:var(--tx);background:var(--bg2);border-top:3px solid var(--hd)}
 .sec{font-size:12px;font-weight:600;color:var(--mu);padding:12px 16px 2px;letter-spacing:.3px}
 .card{background:transparent}
@@ -329,7 +330,7 @@ function renderRound() {
         <div style="font-size:13px">${[p.dx, p.staff].filter(Boolean).map(esc).join(' · ')}</div>
         <div class="who">${p.tags.includes('ว่าง') ? '<span class="nobody">ยังไม่มีคนดู</span>' : esc(p.team || p.tags.join(', '))}${p.remark ? ' · ' + esc(p.remark) : ''}</div>
         ${p.ww ? `<div class="ww">${esc(p.ww)}</div>` : ''}</span>
-        <span style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;flex-shrink:0">${p.open ? `<span class="badge">ค้าง ${p.open}</span>` : p.done ? '<span class="badge ok">✓ เสร็จ</span>' : ''}${p.flap ? '<span class="badge fl">flap</span>' : ''}</span></button>
+        <span style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;flex-shrink:0">${p.open ? `<span class="badge">ค้าง ${p.open}</span>` : p.done ? '<span class="badge ok">✓ เสร็จ</span>' : ''}${p.flap ? '<span class="badge fl">flap</span>' : ''}${op ? '<span class="chev" style="margin-top:4px"><svg viewBox="0 0 24 24"><path d="M6 15l6-6 6 6"/></svg></span>' : ''}</span></button>
         ${op ? `<div class="panel" style="padding-left:16px">${p.hist.length ? `<div class="hist">${p.hist.map(x => `<div${x.fut ? ' class="fut"' : ''}><div class="meta">${x.fut ? '⏭ ' : ''}${esc(x.day)}</div><div style="display:flex;gap:8px;align-items:center"><span style="flex:1">${x.mark} ${esc(x.task)}${x.res ? ` <span class="${x.upd ? 'arr upd' : 'arr'}">→ ${esc(x.res)}</span>` : ''}</span>${x.canClose ? `<button class="b" style="min-height:34px;padding:0 10px" onclick="event.stopPropagation();closeRound(${x.no}, this)">✓ เสร็จ</button>` : ''}</div></div>`).join('')}</div>` : '<div class="meta">ไม่มีงานใน 3 วันล่าสุด และไม่มีงานล่วงหน้า</div>'}
           <div class="links"><button onclick="openPhoto(${i})"><svg viewBox="0 0 24 24"><path d="M4 7h3l2-3h6l2 3h3v13H4z"/><circle cx="12" cy="13" r="3.5"/></svg>ลงรูป</button><a target="_blank" rel="noopener" href="https://drive.google.com/drive/search?q=${encodeURIComponent('type:folder ' + (p.hn || p.name.split(/\s+/)[0]))}"><svg viewBox="0 0 24 24"><path d="M3 7h6l2 2h10v10H3z"/></svg>Drive</a>${R.canEdit ? `<button onclick="openEdit(${i})"><svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg>แก้ไข</button>` : ''}</div>
           <div class="btns" style="flex-wrap:nowrap"><input class="inp" id="radd${i}" placeholder="งาน เช่น CBC" style="flex:1;width:auto;min-width:0" onkeydown="if(event.key==='Enter')addR(${i})">
@@ -512,7 +513,7 @@ function taskRow(t) {
     <span style="flex-grow:1;min-width:0"><div class="tt">${nw}${t.urgent ? '<span class="urg">ด่วน </span>' : ''}${esc(t.rest || t.task)}</div>
     ${t.result ? `<div class="res${t.done ? '' : ' upd'}">→ ${esc(t.result)}</div>` : ''}
     ${t.done ? thankRow(t) : ''}
-    ${isOpen ? '' : '<!--'}<div class="meta">${t.no}. ${t.done ? 'ปิดโดย ' + esc(t.doneBy) + ' ' + esc(t.doneAt) : 'ลงโดย ' + esc(t.by)}</div>${isOpen ? '' : '-->'}</span></button>`;
+    ${isOpen ? '' : '<!--'}<div class="meta">${t.no}. ${t.done ? 'ปิดโดย ' + esc(t.doneBy) + ' ' + esc(t.doneAt) : 'ลงโดย ' + esc(t.by)}</div>${isOpen ? '' : '-->'}</span>${isOpen ? '<span class="chev" aria-label="ปิด"><svg viewBox="0 0 24 24"><path d="M6 15l6-6 6 6"/></svg></span>' : ''}</button>`;
   if (isOpen && !t.done) h += `<div class="panel">
     <div class="qr">${QUICK.map(q => `<button class="qrb" onclick="closeNo(${t.no}, '${q}')">${q}</button>`).join('')}</div>
     <input class="inp" id="res${t.no}" placeholder="ผล (ไม่ใส่ก็ได้) เช่น K 3.8">
@@ -523,7 +524,6 @@ function taskRow(t) {
     <div class="btns">
       <button class="b" onclick="editT(${t.no})">แก้ข้อความ</button>
       <button class="b r" onclick="cancelT(${t.no})">${ARM === 'c' + t.no ? 'กดอีกครั้งเพื่อยกเลิก' : 'ยกเลิกงาน'}</button>
-      <button class="b" onclick="OPEN=null;render()">ปิดเมนู</button>
     </div></div>`;
   if (isOpen && t.done) h += `<div class="panel">
     <input class="inp" id="res${t.no}" placeholder="${t.result ? 'พิมพ์ผล' : 'เพิ่มผล เช่น Hb 10'}">
@@ -531,19 +531,20 @@ function taskRow(t) {
       <button class="b p" onclick="addRes(${t.no})">เพิ่มผล</button>
       ${t.result ? `<button class="b" onclick="fixRes(${t.no})">แทนผลล่าสุด</button>` : ''}
       <button class="b" onclick="run('ww เปิด ${t.no}', () => Object.assign(T(${t.no}), { done: false }))">เปิดงานใหม่</button>
-      <button class="b" onclick="OPEN=null;render()">ปิดเมนู</button>
     </div></div>`;
   return h + '</div>';
 }
 function flapCard(t) {
   const ed = QEDIT === t.no, cur = QDRAFT;
-  let h = `<div class="flap"><div style="display:flex;justify-content:space-between;gap:8px"><div><b>${esc(t.pt)}</b> <span class="q">${t.q ? 'q ' + t.q + ' hr' : 'เฝ้า'}</span></div><span class="meta">${esc(t.ward)}</span></div>
+  let h = `<div class="flap"><div style="display:flex;justify-content:space-between;gap:8px"><div><b>${esc(t.pt)}</b> <span class="q">${freqLabel(t)}</span></div><span class="meta">${esc(t.ward)}</span></div>
     <div style="font-size:14px">${esc(t.rest)}</div>`;
-  if (ed) h += `<div class="meta" style="color:#7a3d00">เลือกความถี่ใหม่ แล้วกดยืนยัน</div><div class="qs">
-    ${[2, 4, 6, 8].map(n => `<button class="qb${cur === n ? ' on' : ''}" onclick="QDRAFT=${n};render()">q ${n}</button>`).join('')}
+  if (ed) h += `<div class="meta" style="color:var(--orx)">ความถี่</div><div class="qs">
+    ${[2, 4, 6, 8].map(n => `<button class="qb${cur === n ? ' on' : ''}" onclick="QDRAFT=${n};QT=[];keepDet();render()">q ${n}</button>`).join('')}
+    ${[['เช้า,เย็น,hs', 'ชยhs']].map(([v, l]) => `<button class="qb${QT.join(',') === v ? ' on' : ''}" onclick="QT='${v}'.split(',');QDRAFT=null;keepDet();render()">${l}</button>`).join('')}
     <button class="qb stop${cur === 'stop' ? ' on' : ''}" onclick="QDRAFT='stop';render()">หยุดเฝ้า</button></div>
+    ${cur === 'stop' ? '' : `<div class="meta" style="color:var(--orx)">รายละเอียดการเฝ้า (ทำอะไรทุกรอบ)</div><textarea class="inp" id="fdet" rows="2" oninput="grow(this)" placeholder="เช่น ดู color temp doppler · ทำแผล NSS">${esc(FDET != null ? FDET : flapDetail(t))}</textarea>`}
     <div class="btns"><button class="b o" onclick="saveQ(${t.no})">ยืนยัน</button><button class="b" onclick="QEDIT=null;render()">ยกเลิก</button></div>`;
-  else h += `<div style="display:flex;justify-content:space-between;align-items:center"><span class="meta">${t.no}. ลงโดย ${esc(t.by)}</span><button class="b" style="min-height:34px" onclick="QEDIT=${t.no};QDRAFT=${t.q || 'null'};render()">แก้ความถี่</button></div>`;
+  else h += `<div style="display:flex;justify-content:space-between;align-items:center"><span class="meta">${t.edited ? 'แก้ล่าสุดโดย ' + esc(t.edited.by || '-') + ' ' + esc(t.edited.at) : t.no + '. ลงโดย ' + esc(t.by)}</span><button class="b" style="min-height:34px" onclick="QEDIT=${t.no};QDRAFT=${t.q || 'null'};QT=timesOf(T(${t.no}));FDET=null;render();const f=$('fdet');if(f)grow(f)">แก้</button></div>`;
   return h + '</div>';
 }
 
@@ -556,12 +557,25 @@ function editT(no) { const v = val(no); if (!v) return toast('พิมพ์ข
 function cancelT(no) { if (ARM !== 'c' + no) { ARM = 'c' + no; return render(); } run(`ww ยกเลิก ${no}`, () => D.tasks = D.tasks.filter(t => t.no !== no)); }
 function addRes(no) { const v = val(no); if (!v) return toast('พิมพ์ผลก่อน'); run(`ww เสร็จ ${no} ${v}`, () => T(no).result = v); }
 function fixRes(no) { const v = val(no); if (!v) return toast('พิมพ์ผลก่อน'); run(`ww แก้ผล ${no} ${v}`, () => T(no).result = v); }
+// ความถี่เฝ้า: q N hr หรือ เช้า / เย็น / hs (เลือกได้หลายอัน)
+let QT = [], FDET = null;
+const TIMES = ['เช้า', 'เย็น', 'hs'];
+const QRE = /q\s*\d+\s*(?:hrs?|ชม\.?|h)?/i;
+const timesOf = t => /(^|\s)ชย\s*hs(?=\s|$)/i.test(String(t.rest || '')) ? TIMES.slice() : TIMES.filter(w => new RegExp('(^|\\s)' + w + '(?=\\s|$)', 'i').test(String(t.rest || '')));
+const freqLabel = t => t.q ? 'q ' + t.q + ' hr' : (timesOf(t).length === 3 ? 'ชยhs' : timesOf(t).join(' ') || 'เฝ้า');
+const keepDet = () => { const f = $('fdet'); if (f) FDET = f.value; };
+function flapDetail(t) { let s = String(t.rest || '').replace(QRE, '').replace(/(^|\s)ชย\s*hs(?=\s|$)/ig, ' '); TIMES.forEach(w => s = s.replace(new RegExp('(^|\\s)' + w + '(?=\\s|$)', 'ig'), ' ')); return s.replace(/^\s*(?:เฝ้า|monitor)\s*(?:flap)?\s*/i, '').replace(/\s+/g, ' ').trim(); }
 function saveQ(no) {
   const t = T(no);
   if (QDRAFT === 'stop') return run(`ww เสร็จ ${no} หยุดเฝ้า`, () => T(no).done = true);
-  if (!QDRAFT || QDRAFT === t.q) { QEDIT = null; return render(); }
-  const re = /q\s*\d+\s*(?:hrs?|ชม\.?|h)?/i;
-  const nq = QDRAFT; run(`ww แก้ ${no} ${re.test(t.task) ? t.task.replace(re, 'q ' + QDRAFT + ' hr') : t.task + ' q ' + QDRAFT + ' hr'}`, () => T(no).q = nq);
+  const q = QT.length ? null : (QDRAFT || t.q), tm = TIMES.filter(w => QT.includes(w)).join(' ');
+  const det = ($('fdet') ? $('fdet').value : flapDetail(t)).replace(/\s+/g, ' ').trim();
+  const freq = q ? 'q ' + q + ' hr' : tm;
+  const curF = t.q ? 'q ' + t.q + ' hr' : timesOf(t).join(' ');
+  if (freq === curF && det === flapDetail(t)) { QEDIT = null; return render(); }
+  const rest = `เฝ้า flap${freq ? ' ' + freq : ''}${det ? ' ' + det : ''}`;
+  FDET = null;
+  run(`ww แก้ ${no} ${t.pt} ${rest}`, () => Object.assign(T(no), { q, rest }));
 }
 function addTask(e) { e.preventDefault(); const v = $('newt').value.trim(); if (!v) return; $('newt').value = ''; document.body.classList.remove('adding'); run('ww ' + v); }
 load();
