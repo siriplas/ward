@@ -73,6 +73,8 @@ textarea.inp{resize:vertical;line-height:1.45;min-height:72px;overflow:hidden;fo
 .chev{flex-shrink:0;width:28px;height:28px;border-radius:50%;background:var(--bg2);display:flex;align-items:center;justify-content:center;color:var(--mu)}.chev svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 .itag.late{color:var(--rd);border-color:var(--rd)}
 .mk{width:16px;height:16px;border-radius:50%;border:1.6px solid var(--mu);flex-shrink:0;margin-top:3px;display:inline-flex;align-items:center;justify-content:center;font-size:10px;color:#fff;font-weight:700}.mk.d{background:var(--g2);border-color:var(--g2)}.mk.f{border-color:var(--orx);border-style:dashed}.fltag{font-size:11px;color:var(--orx);font-weight:600}
+.nitem{display:block;width:100%;text-align:left;border:0;background:var(--bg2);border-radius:10px;padding:10px 12px;color:var(--tx);margin-bottom:6px}
+.flash{animation:flash 2.2s ease}@keyframes flash{0%,40%{background:rgba(29,78,216,.18)}100%{background:transparent}}
 .bldh{margin-top:14px;padding:10px 16px;font-size:14px;font-weight:700;color:var(--tx);background:var(--bg2);border-top:3px solid var(--hd)}
 .sec{font-size:12px;font-weight:600;color:var(--mu);padding:12px 16px 2px;letter-spacing:.3px}
 .card{background:transparent}
@@ -202,7 +204,20 @@ function newsBar() {
   const at = new Date(SEEN + 7 * 3600e3).toISOString().slice(11, 16);
   return `<button class="news" onclick="jumpNew()">${nt ? '🆕 งานใหม่ ' + nt : ''}${nt && nr ? ' · ' : ''}${nr ? '📝 อัปเดต ' + nr : ''} <span style="font-weight:400">ตั้งแต่ ${at}</span> ›</button>`;
 }
-function jumpNew() { const el = document.querySelector('.isnew'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+// แตะแถบ → รายการงานใหม่ / อัปเดต (บอกว่าอะไรเปลี่ยน ใครทำ กี่โมง) → แตะรายการ = เลื่อนไปที่งาน + กะพริบ
+function jumpNew() {
+  const nt = NEWS.t.filter(isNewT), nr = NEWS.r.filter(isNewR);
+  const hm = ms => ms ? new Date(ms + 7 * 3600e3).toISOString().slice(11, 16) : '';
+  const item = (t, kind) => `<button class="nitem" onclick="goTask(${t.no})"><span class="tag ${kind === 'n' ? 'new' : 'res'}">${kind === 'n' ? 'ใหม่' : 'อัปเดต'}</span><b>${esc(t.pt)}</b> ${esc(t.rest || t.task)}${kind === 'r' && t.result ? `<div class="res${t.done ? '' : ' upd'}">→ ${esc(t.result)}</div>` : ''}<div class="meta">${kind === 'n' ? 'ลงโดย ' + esc(t.by) + ' ' + hm(t.addTs) : (t.done ? 'ปิดโดย ' + esc(t.doneBy) + ' ' : 'อัปเดต ') + hm(t.resTs)}</div></button>`;
+  $('pbox').innerHTML = `<h3>ตั้งแต่เปิดแอพครั้งก่อน</h3>${nt.length ? '<div class="lbl">🆕 งานใหม่ ' + nt.length + '</div>' + nt.map(t => item(t, 'n')).join('') : ''}${nr.length ? '<div class="lbl">📝 อัปเดต ' + nr.length + '</div>' + nr.map(t => item(t, 'r')).join('') : ''}<div class="btns"><button class="b p" onclick="nt0()">รับทราบทั้งหมด</button><button class="b" onclick="closePhoto()">ปิด</button></div>`;
+  $('psheet').style.display = 'flex';
+}
+function nt0() { NEWS.t.concat(NEWS.r).forEach(t => SEEN_NO[t.no] = 1); closePhoto(); render(); }
+function goTask(no) {
+  closePhoto(); SEEN_NO[no] = 1; BLD = 'ทั้งหมด'; render();
+  const el = document.getElementById('task' + no); if (!el) return;
+  el.scrollIntoView({ behavior: 'smooth', block: 'center' }); el.classList.add('flash'); setTimeout(() => el.classList.remove('flash'), 2200);
+}
 function set(d) {
   document.body.classList.remove('busy');
   if (!d || d.error) { $('main').innerHTML = '<div class="empty">🔒 ลิงก์หมดอายุ<br>พิมพ์ ww app ในแชท 1:1 กับบอท</div>'; return; }
@@ -524,7 +539,7 @@ function byPatient(list) {
 function taskRow(t) {
   const isOpen = OPEN === t.no;
   const nw = isNewT(t) ? '<span class="tag new">ใหม่</span>' : isNewR(t) ? '<span class="tag res">อัปเดต</span>' : '';
-  let h = `<div class="task${t.done ? ' done' : ''}${nw ? ' isnew' : ''}${POP === t.no && t.done ? ' pop' : ''}"><button class="row" onclick="toggle(${t.no})" ${t.done ? '' : `data-sw="${t.no}"`}>
+  let h = `<div id="task${t.no}" class="task${t.done ? ' done' : ''}${nw ? ' isnew' : ''}${POP === t.no && t.done ? ' pop' : ''}"><button class="row" onclick="toggle(${t.no})" ${t.done ? '' : `data-sw="${t.no}"`}>
     <span class="box">${t.done ? '✓' : ''}</span>
     <span style="flex-grow:1;min-width:0"><div class="tt">${nw}${t.urgent ? '<span class="urg">ด่วน </span>' : ''}${esc(t.rest || t.task)}</div>
     ${t.result ? `<div class="res${t.done ? '' : ' upd'}">→ ${esc(t.result)}</div>` : ''}
