@@ -37,7 +37,7 @@ body.loading .loadbar{opacity:1;animation:lb 1s ease-in-out infinite}
 .chip.on{background:var(--inv);color:var(--invt);font-weight:600}
 .ww{font-size:13px;color:var(--bl);margin-top:3px}
 .gbar{display:flex;gap:6px;overflow-x:auto;padding:8px 16px;scrollbar-width:none}
-.gchip{flex-shrink:0;min-height:30px;padding:2px 12px;border-radius:999px;border:0;background:var(--bg2);color:var(--mu);font-size:13px}
+.gchip{display:inline-flex;align-items:center;justify-content:center;line-height:1;flex-shrink:0;min-height:30px;padding:2px 12px;border-radius:999px;border:0;background:var(--bg2);color:var(--mu);font-size:13px}
 .gchip.on{background:var(--inv);color:var(--invt);font-weight:600}
 .gchip.warn{color:var(--rd)}.gchip.warn.on{background:var(--rd);color:#fff}
 .who{font-size:12px;color:var(--mu);margin-top:2px}.nobody{color:var(--rd);font-weight:500}
@@ -58,6 +58,8 @@ textarea.inp{resize:vertical;line-height:1.45;min-height:72px;overflow:hidden;fo
 .fsel.on{background:var(--inv);color:var(--invt);font-weight:600}.fsel.on:after{color:var(--invt)}
 .fsel select{position:absolute;inset:0;opacity:0;width:100%;height:100%}
 .fbar2{display:flex;gap:6px;padding:4px 16px 6px;flex-wrap:wrap}.fbar2:empty{display:none}
+.fut{opacity:.55}.fut .meta{color:var(--or);font-weight:600}
+.seg3{display:inline-flex;background:var(--bg2);border-radius:999px;padding:2px}.seg3 button{border:0;background:none;color:var(--mu);font-size:13px;padding:4px 10px;border-radius:999px;min-height:28px}.seg3 button.on{background:var(--inv);color:var(--invt);font-weight:600}
 .bldh{margin-top:14px;padding:10px 16px;font-size:14px;font-weight:700;color:var(--tx);background:var(--bg2);border-top:3px solid var(--hd)}
 .sec{font-size:12px;font-weight:600;color:var(--mu);padding:12px 16px 2px;letter-spacing:.3px}
 .card{background:transparent}
@@ -142,7 +144,7 @@ let LOADING = 0;
 const busyOn = () => { LOADING++; document.body.classList.add('loading'); };
 const busyOff = () => { LOADING = Math.max(0, LOADING - 1); if (!LOADING) document.body.classList.remove('loading'); };
 const call = (q, ok) => { busyOn(); return fetch(API + '?' + new URLSearchParams(Object.assign({ t: TOK }, q))).then(r => r.json()).then(d => { busyOff(); ok(d); }).catch(e => { busyOff(); fail(e); }); };
-let OFF = 0, TAB = 'task', R = null, RBLD = 'ทั้งหมด', RG = 'ทุกคน', RST = '', ROPEN = null, D = null, BLD = 'ทั้งหมด', OPEN = null, QEDIT = null, QDRAFT = null, ARM = null;
+let OFF = 0, TAB = 'task', R = null, RBLD = 'ทั้งหมด', RG = 'ทุกคน', RST = '', RACT = 'active', ROPEN = null, D = null, BLD = 'ทั้งหมด', OPEN = null, QEDIT = null, QDRAFT = null, ARM = null;
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 // 🎨 สีหัวแอพตามสีประจำวัน (วันใหม่เริ่ม 06:00 เหมือนบอท)
@@ -253,25 +255,28 @@ function renderRound() {
   if (!blds.includes(RBLD)) RBLD = 'ทั้งหมด';
   $('chips').innerHTML = '';   // ราวด์: ใช้แถบตัวกรองแบบเลือก (ด้านล่าง) แทนปุ่มเลื่อน
   // 👥 ใครดูใคร: กลุ่มจาก Tags (ชื่อคน / ทุกวัน… / ว่าง)
-  const cnt = {}; all.forEach(p => { if (p.inactive) { cnt.inactive = (cnt.inactive || 0) + 1; return; } p.tags.filter(g => g !== 'inactive').forEach(g => cnt[g] = (cnt[g] || 0) + 1); });
+  const actOk = p => RACT === 'all' || (RACT === 'inactive' ? p.inactive : !p.inactive);   // active / ทั้งหมด / inactive
+  const nIn = all.filter(p => p.inactive).length;
+  const cnt = {}; all.filter(actOk).forEach(p => p.tags.filter(g => g !== 'inactive').forEach(g => cnt[g] = (cnt[g] || 0) + 1));
   const gs = Object.keys(cnt).sort((a, b) => (a === 'ว่าง' ? -1 : b === 'ว่าง' ? 1 : 0) || (/^ทุก/.test(a) - /^ทุก/.test(b)) || ((a === 'inactive') - (b === 'inactive')) || a.localeCompare(b));
   if (RG !== 'ทุกคน' && !cnt[RG]) RG = 'ทุกคน';
   // 👨‍⚕️ เลือกอาจารย์
-  const sc = {}; all.filter(p => RG === 'inactive' ? p.inactive : !p.inactive).forEach(p => { if (p.staff) sc[p.staff] = (sc[p.staff] || 0) + 1; });
+  const sc = {}; all.filter(actOk).forEach(p => { if (p.staff) sc[p.staff] = (sc[p.staff] || 0) + 1; });
   if (RST && !sc[RST]) RST = '';
   const me = (D && D.me) || '', meKey = gs.find(g => me && g.toLowerCase() === me.toLowerCase().split(/\s+/)[0]);
   const sel = (v, opts, on, cb, lbl) => `<label class="fsel${on ? ' on' : ''}"><span>${esc(lbl)}</span><select onchange="${cb}">${opts.map(([val, t]) => `<option value="${esc(val)}"${val === v ? ' selected' : ''}>${esc(t)}</option>`).join('')}</select></label>`;
   const bSel = sel(RBLD, blds.map(b => [b, b === 'ทั้งหมด' ? 'ทุกตึก' : short(b)]), RBLD !== 'ทั้งหมด', "RBLD=this.value;renderRound()", RBLD === 'ทั้งหมด' ? 'ตึก' : short(RBLD));
   const gSel = sel(RG, [['ทุกคน', 'ทุกคน']].concat(gs.map(g => [g, `${g} (${cnt[g]})`])), RG !== 'ทุกคน', "RG=this.value;renderRound()", RG === 'ทุกคน' ? 'คนดู' : RG);
-  const sSel = sel(RST, [['', 'ทุกอาจารย์']].concat(Object.keys(sc).sort().map(s => [s, `${s} (${sc[s]})`])), !!RST, "RST=this.value;renderRound()", RST || 'อาจารย์');
+  const sSel = sel(RST, [['', 'ทุกอาจารย์']].concat(Object.keys(sc).sort().map(s => [s, `${s} (${sc[s]})`])), !!RST, "RST=this.value;if(RST){RG='ทุกคน';RBLD='ทั้งหมด'}renderRound()", RST || 'อาจารย์');
   // ของฉัน: จำชื่อทีมของตัวเองในเครื่อง (ชื่อไลน์อาจไม่ตรงชื่อทีม) ; ยังไม่ตั้ง → เดาจากชื่อไลน์
   let mine = LS.get('ww_myteam'); if (mine && !cnt[mine]) mine = null; mine = mine || meKey || '';
   const myBtn = mine ? `<button class="gchip${RG === mine ? ' on' : ''}" onclick="RG=RG==='${esc(mine)}'?'ทุกคน':'${esc(mine)}';renderRound()">ของฉัน</button>` : '';
   const mySel = `<label class="gchip" style="position:relative">${mine ? '✎ ' + esc(mine) : 'ฉันคือ… ▾'}<select style="position:absolute;inset:0;opacity:0" onchange="LS.set('ww_myteam',this.value);RG=this.value||'ทุกคน';renderRound()"><option value="">เลือกชื่อของคุณในทีม</option>${gs.filter(g => g !== 'ว่าง' && g !== 'inactive' && !/^ทุก/.test(g)).map(g => `<option${g === mine ? ' selected' : ''}>${esc(g)}</option>`).join('')}</select></label>`;
   const quick = myBtn + mySel + (cnt['ว่าง'] ? `<button class="gchip warn${RG === 'ว่าง' ? ' on' : ''}" onclick="RG=RG==='ว่าง'?'ทุกคน':'ว่าง';renderRound()">ว่าง ${cnt['ว่าง']}</button>` : '');
-  const any = RBLD !== 'ทั้งหมด' || RG !== 'ทุกคน' || RST;
-  $('notices').innerHTML = `<div class="fbar">${bSel}${gSel}${sSel}</div><div class="fbar2">${quick}${any ? `<button class="gchip" onclick="RBLD='ทั้งหมด';RG='ทุกคน';RST='';renderRound()">✕ ล้างตัวกรอง</button>` : ''}</div>`;
-  const ps = all.filter(p => (RBLD === 'ทั้งหมด' || p.bld === RBLD) && (RG === 'inactive' ? p.inactive : !p.inactive && (RG === 'ทุกคน' || p.tags.includes(RG))) && (!RST || p.staff === RST));   // inactive ขึ้นเฉพาะตอนเลือกกลุ่ม inactive
+  const seg = `<span class="seg3">${[['active', 'active'], ['all', 'ทั้งหมด'], ['inactive', 'inactive ' + nIn]].map(([v, t]) => `<button class="${RACT === v ? 'on' : ''}" onclick="RACT='${v}';renderRound()">${t}</button>`).join('')}</span>`;
+  const any = RBLD !== 'ทั้งหมด' || RG !== 'ทุกคน' || RST || RACT !== 'active';
+  $('notices').innerHTML = `<div class="fbar">${bSel}${gSel}${sSel}</div><div class="fbar2">${seg}${quick}${any ? `<button class="gchip" onclick="RBLD='ทั้งหมด';RG='ทุกคน';RST='';RACT='active';renderRound()">✕ ล้างตัวกรอง</button>` : ''}</div>`;
+  const ps = all.filter(p => (RBLD === 'ทั้งหมด' || p.bld === RBLD) && actOk(p) && (RG === 'ทุกคน' || p.tags.includes(RG)) && (!RST || p.staff === RST));
   $('count').textContent = ps.length + ' คน';
   const wards = [...new Set(ps.map(p => p.ward))];
   let lastB = null;
@@ -282,11 +287,11 @@ function renderRound() {
       const i = all.indexOf(p), op = ROPEN === i;
       return `<div class="task prow${p.inactive ? ' inact' : ''}"><button class="row" onclick="ROPEN=ROPEN===${i}?null:${i};renderRound()" style="align-items:flex-start">
         <span style="flex-grow:1;min-width:0"><div><b>${esc(p.name)}</b>${p.inactive ? '<span class="itag">inactive</span>' : ''} <span class="hn">${p.hn ? 'HN ' + esc(p.hn) : ''}</span></div>
-        <div style="font-size:13px">${esc(p.dx)}${p.staff ? ' · ' + esc(p.staff) : ''}</div>
+        <div style="font-size:13px">${[p.dx, p.staff].filter(Boolean).map(esc).join(' · ')}</div>
         <div class="who">${p.tags.includes('ว่าง') ? '<span class="nobody">ยังไม่มีคนดู</span>' : esc(p.team || p.tags.join(', '))}${p.remark ? ' · ' + esc(p.remark) : ''}</div>
         ${p.ww ? `<div class="ww">${esc(p.ww)}</div>` : ''}</span>
         <span style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;flex-shrink:0">${p.open ? `<span class="badge">ค้าง ${p.open}</span>` : p.done ? '<span class="badge ok">✓ เสร็จ</span>' : ''}${p.flap ? '<span class="badge fl">flap</span>' : ''}</span></button>
-        ${op ? `<div class="panel" style="padding-left:16px">${p.hist.length ? `<div class="hist">${p.hist.map(x => `<div><div class="meta">${esc(x.day)}</div><div style="display:flex;gap:8px;align-items:center"><span style="flex:1">${x.mark} ${esc(x.task)}${x.res ? ` <span class="${x.upd ? 'arr upd' : 'arr'}">→ ${esc(x.res)}</span>` : ''}</span>${x.canClose ? `<button class="b" style="min-height:34px;padding:0 10px" onclick="event.stopPropagation();closeRound(${x.no}, this)">✓ เสร็จ</button>` : ''}</div></div>`).join('')}</div>` : '<div class="meta">ไม่มีงานใน 3 วันล่าสุด</div>'}
+        ${op ? `<div class="panel" style="padding-left:16px">${p.hist.length ? `<div class="hist">${p.hist.map(x => `<div${x.fut ? ' class="fut"' : ''}><div class="meta">${x.fut ? '⏭ ' : ''}${esc(x.day)}</div><div style="display:flex;gap:8px;align-items:center"><span style="flex:1">${x.mark} ${esc(x.task)}${x.res ? ` <span class="${x.upd ? 'arr upd' : 'arr'}">→ ${esc(x.res)}</span>` : ''}</span>${x.canClose ? `<button class="b" style="min-height:34px;padding:0 10px" onclick="event.stopPropagation();closeRound(${x.no}, this)">✓ เสร็จ</button>` : ''}</div></div>`).join('')}</div>` : '<div class="meta">ไม่มีงานใน 3 วันล่าสุด และไม่มีงานล่วงหน้า</div>'}
           <div class="links"><button onclick="openPhoto(${i})"><svg viewBox="0 0 24 24"><path d="M4 7h3l2-3h6l2 3h3v13H4z"/><circle cx="12" cy="13" r="3.5"/></svg>ลงรูป</button><a target="_blank" rel="noopener" href="https://drive.google.com/drive/search?q=${encodeURIComponent('type:folder ' + (p.hn || p.name.split(/\s+/)[0]))}"><svg viewBox="0 0 24 24"><path d="M3 7h6l2 2h10v10H3z"/></svg>Drive</a>${R.canEdit ? `<button onclick="openEdit(${i})"><svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg>แก้ไข</button>` : ''}</div>
           <div class="btns" style="flex-wrap:nowrap"><input class="inp" id="radd${i}" placeholder="งาน เช่น CBC" style="flex:1;width:auto;min-width:0" onkeydown="if(event.key==='Enter')addR(${i})">
           <button class="b p" style="flex-grow:0" onclick="addR(${i})">เพิ่ม</button></div></div>` : ''}</div>`;
