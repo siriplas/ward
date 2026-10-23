@@ -224,7 +224,7 @@ const nowHM = () => new Date(Date.now() + 7 * 3600e3).toISOString().slice(11, 16
 
 function setTab(t) {
   TAB = t; document.body.classList.toggle('rtab', t === 'round'); if (t === "round") $("ttl").textContent = "ราวด์"; $('tabT').classList.toggle('on', t === 'task'); $('tabR').classList.toggle('on', t === 'round');
-  $('newt').parentNode.style.display = t === 'task' ? 'flex' : 'none'; $('dnav').style.display = t === 'task' ? 'flex' : 'none';
+  if (t === 'round') document.body.classList.remove('adding'); $('dnav').style.display = t === 'task' ? 'flex' : 'none';
   if (t === 'round') { if (R) renderRound(); else { $('main').innerHTML = '<div class="empty">กำลังโหลด…</div>'; }
     call({ api: 'round' }, r => { if (r.error) { $('main').innerHTML = '<div class="empty">' + (r.error === 'expired' ? '🔒 ลิงก์หมดอายุ' : '❗ อ่านตารางราวด์ไม่ได้') + '</div>'; return; } R = r; if (TAB === 'round') renderRound(); }); }
   else if (D) render();
