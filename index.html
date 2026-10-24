@@ -487,9 +487,18 @@ function findNew(name, n) {
 function edCall(q, after) {
   call(Object.assign({ api: 'edit', rid: ED.p.rid, name: ED.p.name }, q), r => { if (r.error) return toast(r.msg || 'แก้ไม่สำเร็จ'); toast(r.msg); closePhoto(); ED = null; R = null; setTab('round'); });
 }
+// ⚡ บันทึก: ปิดฟอร์ม + แก้การ์ดทันที แล้วส่งเบื้องหลัง · พลาด → แถบเตือน + โหลดค่าจริงกลับ
 function saveEdit() {
   const v = {}; EF.forEach(([k]) => v[k] = $('ef_' + k).value.trim());
-  edCall({ act: 'save', vals: JSON.stringify(v), orig: JSON.stringify(ED.o) });
+  const { p, o } = ED; if (EF.every(([k]) => v[k] === String(o[k] || '').trim())) return closePhoto();
+  const q = { api: 'edit', rid: p.rid, name: p.name, act: 'save', vals: JSON.stringify(v), orig: JSON.stringify(o) };
+  Object.assign(p, { hn: v.hn, dx: v.dx, plan: v.plan, proc: v.proc, ww: v.ww, staffRaw: v.staff, staff: v.staff.split('/').pop().trim() });
+  closePhoto(); ED = null; if (R) setR(R); if (TAB === 'round') renderRound(); else if (D) render();
+  toast('💾 กำลังบันทึก ' + p.name + '…');
+  call(q, r => {
+    if (r.error) { toast('❗ ' + (r.msg || 'บันทึกไม่สำเร็จ') + '\nโหลดค่าจริงกลับแล้ว'); R = null; return setTab(TAB === 'round' ? 'round' : 'task', true); }
+    toast('✅ ' + (r.msg || 'บันทึกแล้ว'));
+  });
 }
 function edAct(a) {
   if (a === 'team') return edCall({ act: 'team', ward: ED.p.ward, team: $('ef_team').value.trim() });
