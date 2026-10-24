@@ -333,7 +333,7 @@ function renderRound() {
   const quick = (nDue ? `<button class="gchip due${RDUE ? ' on' : ''}" onclick="RDUE=!RDUE;if(RDUE){RST='';RG='ทุกคน';RBLD='ทั้งหมด';RACT='active'}renderRound()">วันนี้ต้องดู ${nDue}</button>` : '') + myBtn + mySel + (cnt['ว่าง'] ? `<button class="gchip warn${RG === 'ว่าง' ? ' on' : ''}" onclick="RG=RG==='ว่าง'?'ทุกคน':'ว่าง';renderRound()">ไม่มีคนดู ${cnt['ว่าง']}</button>` : '');
   const seg = `<span class="seg3">${[['active', 'กำลังดู'], ['all', 'ทั้งหมด'], ['inactive', 'ไม่ต้องดู ' + nIn]].map(([v, t]) => `<button class="${RACT === v ? 'on' : ''}" onclick="RACT='${v}';renderRound()">${t}</button>`).join('')}</span>`;
   const any = RBLD !== 'ทั้งหมด' || RG !== 'ทุกคน' || RST || RACT !== 'active' || RDUE;
-  $('notices').innerHTML = `<div class="fbar">${bSel}${gSel}${sSel}</div><div class="fbar2">${seg}${quick}${any ? `<button class="gchip" onclick="RBLD='ทั้งหมด';RG='ทุกคน';RST='';RACT='active';RDUE=false;renderRound()">✕ ล้างตัวกรอง</button>` : ''}</div>`;
+  $('notices').innerHTML = `<div class="fbar">${bSel}${gSel}${sSel}</div>${R.canEdit ? '<div style="padding:4px 16px 0"><button class="gchip" style="min-height:34px" onclick="openAdd()">＋ เพิ่มคนไข้</button></div>' : ''}<div class="fbar2">${seg}${quick}${any ? `<button class="gchip" onclick="RBLD='ทั้งหมด';RG='ทุกคน';RST='';RACT='active';RDUE=false;renderRound()">✕ ล้างตัวกรอง</button>` : ''}</div>`;
   const ps = all.filter(p => (RBLD === 'ทั้งหมด' || p.bld === RBLD) && (RDUE ? dueToday(p) : actOk(p)) && (RG === 'ทุกคน' || p.tags.includes(RG)) && (!RST || p.staff === RST));
   $('count').textContent = ps.length + ' คน';
   const wards = [...new Set(ps.map(p => p.ward))];
@@ -442,6 +442,22 @@ function drawEdit() {
     <button class="b r" onclick="edAct('remove')">${ED.arm === 'remove' ? 'กดอีกครั้ง = ลบออกจากตาราง' : 'ลบ / D/C'}</button></div>`;
   document.querySelectorAll('#pbox textarea').forEach(grow);
   if (!$('pbox').closest('#psheet').onclick) $('psheet').onclick = e => { if (e.target.id === 'psheet') closePhoto(); };
+}
+// ➕ เพิ่มคนไข้ (ลิงก์แก้ไขได้) → คิว Add
+function openAdd() {
+  ED = { add: true, p: {} };
+  const F = [['name', 'ชื่อ *'], ['hn', 'HN'], ['dx', 'Diagnosis'], ['staff', 'อาจารย์ (ภาควิชา/อาจารย์)'], ['plan', 'Plan / consult'], ['proc', 'Procedure'], ['ww', 'Ward work']];
+  $('pbox').innerHTML = `<h3>＋ เพิ่มคนไข้</h3>
+    <div class="lbl">Ward</div><select class="inp" id="af_ward"><option value="">รอ admit (ยังไม่รู้ ward)</option>${(R.wards || []).map(w => `<option>${esc(w)}</option>`).join('')}</select>
+    ${F.map(([k, l]) => `<div class="lbl">${l}</div><input class="inp" id="af_${k}" ${k === 'hn' ? 'inputmode="numeric"' : ''}>`).join('')}
+    <div class="btns"><button class="b p" onclick="saveAdd()">เพิ่ม</button><button class="b" onclick="closePhoto()">ปิด</button></div>
+    <div class="meta">เข้าตารางราวด์ภายในประมาณ 1 นาที (ผ่านคิว Add ของ AppSheet)</div>`;
+  $('psheet').style.display = 'flex';
+}
+function saveAdd() {
+  const v = { ward: $('af_ward').value }; ['name', 'hn', 'dx', 'staff', 'plan', 'proc', 'ww'].forEach(k => v[k] = $('af_' + k).value.trim());
+  if (!v.name) return toast('ใส่ชื่อก่อน');
+  call({ api: 'edit', act: 'add', vals: JSON.stringify(v) }, r => { if (r.error) return toast(r.msg || 'ไม่สำเร็จ'); toast(r.msg); closePhoto(); });
 }
 function edCall(q, after) {
   call(Object.assign({ api: 'edit', rid: ED.p.rid, name: ED.p.name }, q), r => { if (r.error) return toast(r.msg || 'แก้ไม่สำเร็จ'); toast(r.msg); closePhoto(); ED = null; R = null; setTab('round'); });
