@@ -185,8 +185,8 @@ input[type=date]{color-scheme:light dark}
 <button class="fab" id="fab" aria-label="เพิ่มงาน" onclick="if(TAB==='round'){openAdd()}else{document.body.classList.add('adding');$('newt').focus()}">+</button>
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbw9dsYKGy8pELEBeIatNSjJLFv6W7MGjxhnjj584Z4BUlXN6WEfon-JID4f4eHR9wQ/exec';   // ← วาง URL ของบอท (ลงท้าย /exec)
-const APP_VER = 'v1.1';   // 🔖 ต้องตรงกับ SERVER_VER
-const APP_DATE = '24/10/69 23:59';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
+const APP_VER = 'v1.4';   // 🔖 ต้องตรงกับ SERVER_VER
+const APP_DATE = '25/10/69 00:30';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
 const TOK = new URLSearchParams(location.search).get('t') || '';
 // 🔄 แถบสีด้านบนวิ่งระหว่างโหลด / บันทึก
 let LOADING = 0;
@@ -529,9 +529,14 @@ const AD_SECS = ['ADMISSION', 'CONSULT'];
 const thd = iso => { const [y, m, d] = String(iso).split('-'); return d ? `${+d}/${+m}` : iso; };
 const DOW = ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'];
 const dow = iso => { const d = new Date(iso + 'T00:00:00'); return isNaN(d) ? '' : DOW[d.getDay()]; };
-function openAdmit() {
-  AD = { step: 'list', plan: null, rows: [], busy: false, log: '' }; drawAdmit();
-  call({ api: 'admits' }, r => { if (!AD) return; AD.plan = r.rows || []; if (r.error) AD.log = r.msg || 'โหลดรายการไม่ได้'; drawAdmit(); });
+// ⚡ admit/admin: โชว์ของที่จำไว้ทันที → ดึงใหม่เบื้องหลัง (ไม่ดึงซ้ำถ้าเพิ่งดึงไม่ถึง 2 นาที เว้นกด ⟳)
+let ADT = 0, AXT = 0;
+function openAdmit(force) {
+  if (AD && AD.step === 'review' && !force) return drawAdmit();
+  const keep = AD && AD.plan;
+  AD = { step: 'list', plan: keep || LS.get('ww_c_adm'), rows: [], busy: false, log: '' }; drawAdmit();
+  if (!force && keep && Date.now() - ADT < 120e3) return;
+  call({ api: 'admits' }, r => { if (!AD) return; if (r.error) { AD.log = r.msg || 'โหลดรายการไม่ได้'; return drawAdmit(); } AD.plan = r.rows || []; ADT = Date.now(); LS.set('ww_c_adm', AD.plan); drawAdmit(); });
 }
 function drawAdmit() {
   const s = AD; if (!s || TAB !== 'admit') return;
@@ -540,7 +545,7 @@ function drawAdmit() {
     const plan = s.plan, by = {};
     (plan || []).forEach(p => (by[p.date] = by[p.date] || []).push(p));
     const list = plan == null ? '<div class="meta">กำลังโหลด…</div>' : !plan.length ? '<div class="meta">ยังไม่มีรายการที่รอเพิ่ม</div>' :
-      Object.keys(by).map(d => `<div class="lbl">${dow(d)} ${thd(d)} · ${by[d].length} คน</div>` + by[d].map(p => `<div class="adc"><div class="adt"><b>${esc(p.name)}</b>${p.hn ? ` <span class="meta">HN ${esc(p.hn)}</span>` : ''}<span class="ads${p.st ? ' ok' : ''}">${p.st ? (/^มี/.test(p.st) ? 'มีในตารางแล้ว' : '✓ เข้าตารางแล้ว') : 'รอเข้าตาราง'}</span></div><div class="meta">${p.sec === 'CONSULT' ? '<b>consult</b> · ' : ''}อ. ${esc(p.staff || '-')}</div>${p.dx ? `<div>${esc(p.dx)}</div>` : ''}${p.proc ? `<div class="ww">${esc(p.proc)}</div>` : ''}</div>`).join('')).join('');
+      Object.keys(by).map(d => `<div class="lbl">${dow(d)} ${thd(d)} · ${by[d].length} คน</div>` + by[d].map(p => `<div class="adc"><div class="adt"><b>${esc(String(p.name).replace(/^(นาย|นางสาว|นาง|น\.ส\.|ด\.ช\.|ด\.ญ\.|เด็กชาย|เด็กหญิง)\s*/, '').split(/\s+/)[0])}</b>${p.hn ? ` <span class="meta">HN ${esc(p.hn)}</span>` : ''}<span class="ads${p.st ? ' ok' : ''}">${p.st ? (/^มี/.test(p.st) ? 'มีในตารางแล้ว' : '✓ เข้าตารางแล้ว') : 'รอเข้าตาราง'}</span></div><div class="meta">${p.sec === 'CONSULT' ? '<b>consult</b> · ' : ''}อ. ${esc(p.staff || '-')}</div>${p.dx ? `<div>${esc(p.dx)}</div>` : ''}${p.proc ? `<div class="ww">${esc(p.proc)}</div>` : ''}</div>`).join('')).join('');
     $('main').innerHTML = '<div class="amain">' + head + `<label class="b p" style="display:flex;align-items:center;justify-content:center;cursor:pointer;min-height:46px">${s.busy ? '⏳ บอทกำลังอ่านรูป… (~10–20 วิ)' : '🖼 เลือกรูปตาราง admit'}<input type="file" accept="image/*" style="display:none" ${s.busy ? 'disabled' : ''} onchange="admitPick(this.files[0])"></label>${s.log ? `<div class="prog">${esc(s.log)}</div>` : ''}<div class="lbl" style="margin-top:6px">รอ admit (วันนี้เป็นต้นไป)</div>${list}</div>`;
     return;
   }
@@ -576,7 +581,7 @@ async function admitSave() {
   busyOn(); let r; try { r = await (await fetch(API, { method: 'POST', body: JSON.stringify({ app: 'admitsave', t: TOK, rows }) })).json(); } catch (e) { r = { error: 'msg', msg: 'ส่งไม่ได้ ลองใหม่' }; } finally { busyOff(); }
   s.busy = false;
   if (!r.ok) { toast('❗ ' + (r.msg || 'บันทึกไม่ได้')); return drawAdmit(); }
-  toast(r.msg); R = null; openAdmit();
+  toast(r.msg); R = null; AD.step = 'list'; openAdmit(true);
 }
 const isPend = w => !String(w || '').trim() || /รอ\s*admit|รับใหม่/i.test(w);
 // 🚚 ย้ายคนไข้ "รอ admit" ไป ward จริง แตะเดียว (ทุกลิงก์)
@@ -589,7 +594,7 @@ function qMove(i, w) {
 let AX = null;
 const agoTxt = ms => { if (!ms) return 'ไม่เคย'; const m = Math.round((Date.now() - ms) / 60000); return m < 1 ? 'เมื่อกี้' : m < 60 ? m + ' นาทีก่อน' : m < 1440 ? Math.round(m / 60) + ' ชม.ก่อน' : Math.round(m / 1440) + ' วันก่อน'; };
 const hmTxt = ms => new Date(ms + 7 * 3600e3).toISOString().replace(/^\d{4}-(\d\d)-(\d\d)T(\d\d:\d\d).*/, '$2/$1 $3');
-function openAdminX() { AX = AX || {}; AX.data = null; drawAdminX(); call({ api: 'admin' }, r => { AX.data = r; drawAdminX(); }); }
+function openAdminX(force) { AX = AX || {}; if (!AX.data) { const c = LS.get('ww_c_adx'); if (c && c.ok) AX.data = c; } drawAdminX(); if (!force && AX.data && Date.now() - AXT < 120e3) return; call({ api: 'admin' }, r => { AX.data = r; if (r.ok) { AXT = Date.now(); LS.set('ww_c_adx', r); } drawAdminX(); }); }
 function drawAdminX() {
   if (TAB !== 'admin') return; const d = AX && AX.data;
   if (!d) return $('main').innerHTML = '<div class="amain"><div class="meta">กำลังโหลด…</div></div>';
@@ -597,13 +602,16 @@ function drawAdminX() {
   const okJob = j => j.on && j.last && (j.last.ok !== false);
   const jobs = d.jobs.map(j => `<div class="xrow"><span class="xdot ${!j.on ? 'bad' : j.last && j.last.ok === false ? 'bad' : j.last ? 'ok' : 'wait'}"></span><div style="flex:1"><b>${esc(j.name)}</b>
     <div class="meta">${!j.on ? '❗ ยังไม่ได้ตั้งเวลา — รัน install ใน Apps Script' : j.last ? (j.last.day ? 'ล่าสุด ' + esc(j.last.day) : (j.last.ok === false ? '❗ พัง ' : '✓ ') + agoTxt(j.last.t) + (j.last.r ? ' · ' + esc(j.last.r) : '')) : 'ยังไม่เคยรัน'}${j.dup ? ' · ⚠️ ตั้งซ้ำ' : ''}</div></div><input class="inp adi" type="time" style="width:auto;min-height:36px;padding:4px 8px" value="${j.when}" onchange="adminTime('${j.key}', this.value)"></div>`).join('');
-  const errs = d.errors.length ? d.errors.slice(0, 8).map(e => `<div class="xrow"><div style="flex:1"><div class="meta">${hmTxt(e.t)} · ${esc(e.w)}</div><div style="font-size:13px">${esc(e.m)}</div></div></div>`).join('') : '<div class="meta">ไม่มี error 👍</div>';
+  const realErr = d.errors.filter(e => e.w !== 'admin'), adminLog = d.errors.filter(e => e.w === 'admin');
+  const alog = adminLog.length ? adminLog.slice(0, 5).map(e => `<div class="xrow"><div style="flex:1"><span class="meta">${hmTxt(e.t)}</span> ${esc(e.m)}</div></div>`).join('') : '<div class="meta">—</div>';
+  const errs = realErr.length ? realErr.slice(0, 8).map(e => `<div class="xrow"><div style="flex:1"><div class="meta">${hmTxt(e.t)} · ${esc(e.w)}</div><div style="font-size:13px">${esc(e.m)}</div></div></div>`).join('') : '<div class="meta">ไม่มี error 👍</div>';
   const users = d.users.map(u => `<div class="xrow"><span class="xdot ${u.seen && Date.now() - u.seen < 864e5 ? 'ok' : 'wait'}"></span><div style="flex:1"><b>${esc(u.name)}</b>${u.me ? ' <span class="meta">(คุณ)</span>' : ''}${u.inGroup ? '' : ' <span class="itag">ออกจากกลุ่มแล้ว</span>'}<div class="meta">เปิดแอพล่าสุด ${agoTxt(u.seen)}</div></div>${u.me ? '<span class="meta">🛠 admin</span>' : `<div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end"><select class="inp adi" style="min-height:34px;padding:4px 8px;font-size:14px;width:auto" onchange="adminRole('${u.uid}', this.value)">${[['', '👁 ปกติ'], ['edit', '✏️ แก้ไขได้'], ['block', '⛔ ปิดการใช้']].map(([v, l]) => `<option value="${v}"${(u.role || '') === v ? ' selected' : ''}>${l}</option>`).join('')}</select><button class="b r" style="min-height:30px;font-size:12px" onclick="adminRevoke('${u.uid}', this)">${AX.arm === u.uid ? 'กดอีกครั้ง = ยกเลิก' : 'ยกเลิกลิงก์'}</button></div>`}</div>`).join('');
   $('main').innerHTML = `<div class="amain">
-    <div class="xsum">${d.jobs.every(okJob) && !d.errors.filter(e => Date.now() - e.t < 864e5).length ? '✅ ระบบปกติ' : '⚠️ มีเรื่องต้องดู'} <span class="meta">· เซิร์ฟเวอร์ ${esc(d.ver)} · แอพ ${esc(APP_VER)} <span class="meta">(${esc(d.date || '')})</span>${d.ver === APP_VER ? '' : ' ⚠️ ไม่ตรง'}</span></div>
+    <div class="xsum">${d.jobs.every(okJob) && !realErr.filter(e => Date.now() - e.t < 864e5).length ? '✅ ระบบปกติ' : '⚠️ มีเรื่องต้องดู'} <span class="meta">· เซิร์ฟเวอร์ ${esc(d.ver)} · แอพ ${esc(APP_VER)} <span class="meta">(${esc(d.date || '')})</span>${d.ver === APP_VER ? '' : ' ⚠️ ไม่ตรง'}</span></div>
     <div class="lbl">✏️ แก้ข้อมูลทุกช่อง</div>${rawUI()}
     <div class="lbl">🩺 งานตั้งเวลา</div>${jobs}
     <div class="lbl">🐞 error ล่าสุด</div>${errs}
+    <div class="lbl">📝 สิ่งที่ admin เปลี่ยนล่าสุด</div>${alog}
     <div class="lbl">👥 ผู้ใช้ (${d.users.length})</div>${users}
     <div class="meta">ชีต Tasks ${d.sizes.tasks || '?'} แถว${d.sizes.backup ? ' · ไฟล์สำรอง ' + d.sizes.backup + ' แถว' : ''}</div></div>`;
 }
@@ -634,11 +642,13 @@ function rawSave(k) {
   if (vals.every((v, j) => v === r.vals[j])) return toast('ไม่มีอะไรเปลี่ยน');
   call({ api: 'adminsave', sh: X.sh, row: r.row, orig: JSON.stringify(r.vals), vals: JSON.stringify(vals) }, res => { toast(res.ok ? res.msg : '❗ ' + (res.msg || 'ไม่สำเร็จ')); if (res.ok) { X.open = null; rawLoad(); D && load(); } });
 }
-function adminTime(job, hm) { if (!hm) return; call({ api: 'admintime', job, hm }, r => { toast(r.ok ? r.msg : '❗ ' + (r.msg || 'ไม่สำเร็จ')); openAdminX(); }); }
-function adminRole(uid, role) { call({ api: 'adminrole', uid, role }, r => { toast(r.ok ? r.msg : '❗ ' + (r.msg || 'ไม่สำเร็จ')); openAdminX(); }); }
+let ATM = null;
+function adminTime(job, hm) { if (!hm) return; clearTimeout(ATM); ATM = setTimeout(() => adminTime0(job, hm), 1500); }   // รอหมุนเลือกเวลาเสร็จก่อน ค่อยส่งครั้งเดียว
+function adminTime0(job, hm) { call({ api: 'admintime', job, hm }, r => { toast(r.ok ? r.msg : '❗ ' + (r.msg || 'ไม่สำเร็จ')); openAdminX(true); }); }
+function adminRole(uid, role) { call({ api: 'adminrole', uid, role }, r => { toast(r.ok ? r.msg : '❗ ' + (r.msg || 'ไม่สำเร็จ')); openAdminX(true); }); }
 function adminRevoke(uid) {
   if (AX.arm !== uid) { AX.arm = uid; return drawAdminX(); }
-  AX.arm = null; call({ api: 'adminrevoke', uid }, r => { toast(r.ok ? r.msg : '❗ ' + (r.msg || 'ไม่สำเร็จ')); openAdminX(); });
+  AX.arm = null; call({ api: 'adminrevoke', uid }, r => { toast(r.ok ? r.msg : '❗ ' + (r.msg || 'ไม่สำเร็จ')); openAdminX(true); });
 }
 function openAdd() {
   ED = { add: true, p: {} };
@@ -762,7 +772,7 @@ function autoRefresh(force) {
 setInterval(() => { stamp(); autoRefresh(false); }, 20000);
 let HIDDEN_AT = 0;
 document.addEventListener('visibilitychange', () => { if (document.hidden) { HIDDEN_AT = Date.now(); return; } if (TAB === 'task' && HIDDEN_AT && Date.now() - HIDDEN_AT >= BACK_MIN * 60000) autoRefresh(true); else autoRefresh(false); });
-function refreshNow() { $('rf').classList.add('spin'); setTimeout(() => $('rf').classList.remove('spin'), 1500); TAB === 'round' ? setTab('round', true) : TAB === 'admit' ? openAdmit() : TAB === 'admin' ? openAdminX() : load(); }
+function refreshNow() { $('rf').classList.add('spin'); setTimeout(() => $('rf').classList.remove('spin'), 1500); TAB === 'round' ? setTab('round', true) : TAB === 'admit' ? openAdmit(true) : TAB === 'admin' ? openAdminX(true) : load(); }
 function go(n) { OFF = n === 0 ? 0 : OFF + n; OPEN = null; QEDIT = null; load(); }
 function render() {
   if (TAB === 'round') return;
