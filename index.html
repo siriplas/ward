@@ -100,6 +100,7 @@ textarea.inp{resize:vertical;line-height:1.45;min-height:44px;overflow:hidden;fo
 .qmv{margin:6px 0 2px}.qmv .inp{min-height:38px;padding:6px 10px;font-size:15px;border-color:var(--or)}
 #tabX{display:none}body.isadmin #tabX{display:block}.atab .fab,.atab .add,.atab #chips,.atab #notices,.atab #count{display:none!important}
 .amain .ehead{position:static;margin:0;padding:10px 0;border:0;background:none}.amain .adbar{bottom:0;margin:0 -16px}
+.adday{margin:14px -16px 2px;padding:9px 16px;background:var(--bg2);border-top:3px solid var(--hd);font-weight:700;font-size:15px;display:flex;justify-content:space-between}.adday span{font-weight:500;color:var(--mu);font-size:13px}.adday+.adc,.adday+.adr{border-top:0}
 .adc{border-bottom:1px solid var(--ln);padding:8px 0;display:flex;flex-direction:column;gap:2px}.adt{display:flex;gap:6px;align-items:baseline;flex-wrap:wrap}.adt .ads{margin-left:auto}
 .amain{padding:4px 16px 24px;display:flex;flex-direction:column;gap:10px;max-width:600px;margin:0 auto}
 .ver{display:none;text-align:center;font-size:11px;color:var(--mu);opacity:.6;padding:8px 0 90px}
@@ -185,8 +186,8 @@ input[type=date]{color-scheme:light dark}
 <button class="fab" id="fab" aria-label="เพิ่มงาน" onclick="if(TAB==='round'){openAdd()}else{document.body.classList.add('adding');$('newt').focus()}">+</button>
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbw9dsYKGy8pELEBeIatNSjJLFv6W7MGjxhnjj584Z4BUlXN6WEfon-JID4f4eHR9wQ/exec';   // ← วาง URL ของบอท (ลงท้าย /exec)
-const APP_VER = 'v2.0';   // 🔖 ต้องตรงกับ SERVER_VER
-const APP_DATE = '25/10/69 00:30';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
+const APP_VER = 'v2.1';   // 🔖 ต้องตรงกับ SERVER_VER
+const APP_DATE = '25/10/69 00:35';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
 const TOK = new URLSearchParams(location.search).get('t') || '';
 // 🔄 แถบสีด้านบนวิ่งระหว่างโหลด / บันทึก
 let LOADING = 0;
@@ -545,7 +546,7 @@ function drawAdmit() {
     const plan = s.plan, by = {};
     (plan || []).forEach(p => (by[p.date] = by[p.date] || []).push(p));
     const list = plan == null ? '<div class="meta">กำลังโหลด…</div>' : !plan.length ? '<div class="meta">ยังไม่มีรายการที่รอเพิ่ม</div>' :
-      Object.keys(by).map(d => `<div class="lbl">${dow(d)} ${thd(d)} · ${by[d].length} คน</div>` + by[d].map(p => AD.edit === p.row ? admEditForm(p) : `<div class="adc"${R && R.canEdit && !p.st ? ` onclick="AD.edit=${p.row};AD.arm=0;drawAdmit()" style="cursor:pointer"` : ''}><div class="adt"><b>${esc(String(p.name).replace(/^(นาย|นางสาว|นาง|น\.ส\.|ด\.ช\.|ด\.ญ\.|เด็กชาย|เด็กหญิง)\s*/, '').split(/\s+/)[0])}</b>${p.hn ? ` <span class="meta">HN ${esc(p.hn)}</span>` : ''}<span class="ads${p.st ? ' ok' : ''}">${p.st ? (/^มี/.test(p.st) ? 'มีในตารางแล้ว' : '✓ เข้าตารางแล้ว') : 'รอเข้าตาราง'}</span></div><div class="meta">${p.sec === 'CONSULT' ? '<b>consult</b> · ' : ''}อ. ${esc(p.staff || '-')}</div>${p.dx ? `<div>${esc(p.dx)}</div>` : ''}${p.proc ? `<div class="ww">${esc(p.proc)}</div>` : ''}</div>`).join('')).join('');
+      Object.keys(by).map(d => `<div class="adday">${d === todayIsoBkk() ? 'วันนี้ · ' : d === new Date(Date.parse(todayIsoBkk()) + 864e5).toISOString().slice(0, 10) ? 'พรุ่งนี้ · ' : ''}${dow(d)} ${thd(d)} <span>${by[d].length} คน</span></div>` + by[d].map(p => AD.edit === p.row ? admEditForm(p) : `<div class="adc"${R && R.canEdit && !p.st ? ` onclick="AD.edit=${p.row};AD.arm=0;drawAdmit()" style="cursor:pointer"` : ''}><div class="adt"><b>${esc(String(p.name).replace(/^(นาย|นางสาว|นาง|น\.ส\.|ด\.ช\.|ด\.ญ\.|เด็กชาย|เด็กหญิง)\s*/, '').split(/\s+/)[0])}</b>${p.hn ? ` <span class="meta">HN ${esc(p.hn)}</span>` : ''}<span class="ads${p.st ? ' ok' : ''}">${p.st ? (/^มี/.test(p.st) ? 'มีในตารางแล้ว' : '✓ เข้าตารางแล้ว') : 'รอเข้าตาราง'}</span></div><div class="meta">${p.sec === 'CONSULT' ? '<b>consult</b> · ' : ''}อ. ${esc(p.staff || '-')}</div>${p.dx ? `<div>${esc(p.dx)}</div>` : ''}${p.proc ? `<div class="ww">${esc(p.proc)}</div>` : ''}</div>`).join('')).join('');
     $('main').innerHTML = '<div class="amain">' + head + (!(R && R.canEdit) ? '' : `<label class="b p" style="display:flex;align-items:center;justify-content:center;cursor:pointer;min-height:46px">${s.busy ? '⏳ บอทกำลังอ่านรูป… (~10–20 วิ)' : '🖼 เลือกรูปตาราง admit'}<input type="file" accept="image/*" style="display:none" ${s.busy ? 'disabled' : ''} onchange="admitPick(this.files[0])"></label>`) + `${s.log ? `<div class="prog">${esc(s.log)}</div>` : ''}<div class="lbl" style="margin-top:6px">รอ admit (วันนี้เป็นต้นไป)</div>${list}</div>`;
     return;
   }
