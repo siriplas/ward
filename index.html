@@ -109,6 +109,7 @@ textarea.inp{resize:vertical;line-height:1.45;min-height:44px;overflow:hidden;fo
 .xraw{display:flex;justify-content:space-between;gap:8px;width:100%;text-align:left;background:none;border:0;border-bottom:1px solid var(--ln);color:var(--tx);font:inherit;font-size:14px;padding:9px 0}.xraw span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .xsum{font-weight:700;font-size:16px;padding:6px 0}
 body.isadmin .ver{display:block}
+.newver{position:sticky;top:0;z-index:12;display:block;width:100%;border:0;background:#2563eb;color:#fff;font:inherit;font-size:14px;font-weight:600;padding:10px 12px;text-align:center}
 .bldh{margin-top:14px;padding:10px 16px;font-size:14px;font-weight:700;color:var(--tx);background:var(--bg2);border-top:3px solid var(--hd)}
 .sec{font-size:12px;font-weight:600;color:var(--mu);padding:12px 16px 2px;letter-spacing:.3px}
 .card{background:transparent}
@@ -187,8 +188,8 @@ input[type=date]{color-scheme:light dark}
 <button class="fab" id="fab" aria-label="เพิ่มงาน" onclick="if(TAB==='round'){openAdd()}else{document.body.classList.add('adding');$('newt').focus()}">+</button>
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbw9dsYKGy8pELEBeIatNSjJLFv6W7MGjxhnjj584Z4BUlXN6WEfon-JID4f4eHR9wQ/exec';   // ← วาง URL ของบอท (ลงท้าย /exec)
-const APP_VER = 'v2.4';   // 🔖 ต้องตรงกับ SERVER_VER
-const APP_DATE = '25/10/69 01:00';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
+const APP_VER = 'v1.00';   // 🔖 ต้องตรงกับ SERVER_VER
+const APP_DATE = '25/10/69 01:15';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
 const TOK = new URLSearchParams(location.search).get('t') || '';
 // 🔄 แถบสีด้านบนวิ่งระหว่างโหลด / บันทึก
 let LOADING = 0;
@@ -293,7 +294,7 @@ function goTask(no) {
 function set(d) {
   document.body.classList.remove('busy');
   if (!d || d.error) { $('main').innerHTML = '<div class="empty">🔒 ลิงก์หมดอายุ<br>พิมพ์ ww app ในแชท 1:1 กับบอท</div>'; return; }
-  D = d; LAST = Date.now(); if (OFF === 0) LS.set('ww_c_d', d); $('stale') && $('stale').remove(); computeNews(); render(); stamp();
+  D = d; LAST = Date.now(); verCheck(d.ver); if (OFF === 0) LS.set('ww_c_d', d); $('stale') && $('stale').remove(); computeNews(); render(); stamp();
 }
 function fail(e) { document.body.classList.remove('busy'); toast('❗ เชื่อมต่อไม่ได้ ลองใหม่'); }
 // ✅ ปิดงานแบบรอ 5 วินาที (กดยกเลิกได้) แล้วค่อยส่งให้บอท
@@ -371,7 +372,14 @@ function run(cmd, patch) {
 }
 const nowHM = () => new Date(Date.now() + 7 * 3600e3).toISOString().slice(11, 16);
 
-function setR(r) { R = r; document.body.classList.toggle('canedit', !!(r && r.canEdit)); document.body.classList.toggle('isadmin', !!(r && r.admin)); try { r._t = Date.now(); localStorage.setItem('ww_c_r', JSON.stringify(r)); } catch (e) {} }
+function setR(r) { R = r; verCheck(r && r.ver); document.body.classList.toggle('canedit', !!(r && r.canEdit)); document.body.classList.toggle('isadmin', !!(r && r.admin)); try { r._t = Date.now(); localStorage.setItem('ww_c_r', JSON.stringify(r)); } catch (e) {} }
+// 🔔 เซิร์ฟเวอร์ใหม่กว่าหน้าแอพ → แถบ "มีเวอร์ชันใหม่ · แตะเพื่อโหลด" (โหลดแบบไม่ใช้หน้าเก่าในเครื่อง)
+const verNum = v => { const m = String(v || '').match(/^v(\d+)\.(\d+)/); return m ? +m[1] * 1000 + +m[2] : 0; };
+function verCheck(sv) {
+  if (!sv || verNum(sv) <= verNum(APP_VER) || $('newver')) return;
+  document.body.insertAdjacentHTML('afterbegin', `<button id="newver" class="newver" onclick="verReload()">🔔 มีเวอร์ชันใหม่ (${esc(sv)}) · แตะเพื่อโหลด</button>`);
+}
+function verReload() { const u = new URL(location.href); u.searchParams.set('nc', Date.now()); location.replace(u.toString()); }
 function setTab(t, force) {
   TAB = t; document.body.classList.toggle('rtab', t === 'round'); document.body.classList.toggle('atab', t === 'admit' || t === 'admin'); stamp(); if (t === "round") $("ttl").textContent = "ราวด์"; if (t === 'admit') $('ttl').textContent = 'รับใหม่'; $('tabT').classList.toggle('on', t === 'task'); $('tabR').classList.toggle('on', t === 'round'); $('tabA').classList.toggle('on', t === 'admit'); $('tabX').classList.toggle('on', t === 'admin');
   if (t === 'admit') { document.body.classList.remove('adding'); $('dnav').style.display = 'none'; return openAdmit(); }
