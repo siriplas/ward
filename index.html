@@ -4,7 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
-<title>งานวันนี้</title>
+<title>SiriplasWW</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="SiriplasWW">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <style>
 :root{--hd:#1d4ed8;--bg:#fff;--bg2:#f4f5f7;--tx:#111827;--tx2:#374151;--mu:#6b7280;--ln:#eceef1;--g:#059669;--g2:#059669;--or:#d97706;--orbg:#fff7ed;--orx:#9a3412;--rd:#dc2626;--bl:#1e40af;--card:#fff;--inv:#111827;--invt:#fff}
 @media (prefers-color-scheme: dark){:root{--bg:#0f1115;--bg2:#1c1f26;--tx:#e5e7eb;--tx2:#d1d5db;--mu:#9ca3af;--ln:#262a31;--g:#34d399;--g2:#10b981;--or:#fbbf24;--orbg:#2a1d10;--orx:#fdba74;--rd:#f87171;--bl:#93c5fd;--card:#161a20;--inv:#e5e7eb;--invt:#0f1115}}
@@ -84,6 +91,7 @@ textarea.inp{resize:vertical;line-height:1.45;min-height:44px;overflow:hidden;fo
 .pod{font-size:12px;font-weight:600;color:var(--or,#d97706)}
 .sec.cp{cursor:pointer;display:flex;justify-content:space-between;align-items:center}.cpi{font-size:11px;font-weight:600;color:var(--hd);border:1px solid var(--hd);border-radius:999px;padding:0 7px;line-height:18px}
 .stale{position:fixed;bottom:34px;left:50%;transform:translateX(-50%);background:var(--inv,#111);color:var(--invt,#fff);font-size:12px;padding:3px 12px;border-radius:999px;z-index:8;opacity:.85}
+.outb{position:fixed;left:50%;transform:translateX(-50%);bottom:34px;z-index:8;border:0;border-radius:999px;background:#b45309;color:#fff;font:inherit;font-size:13px;font-weight:600;padding:6px 14px;box-shadow:0 4px 12px rgba(0,0,0,.25)}
 .bldh{margin-top:14px;padding:10px 16px;font-size:14px;font-weight:700;color:var(--tx);background:var(--bg2);border-top:3px solid var(--hd)}
 .sec{font-size:12px;font-weight:600;color:var(--mu);padding:12px 16px 2px;letter-spacing:.3px}
 .card{background:transparent}
@@ -167,7 +175,43 @@ const TOK = new URLSearchParams(location.search).get('t') || '';
 let LOADING = 0;
 const busyOn = () => { LOADING++; document.body.classList.add('loading'); };
 const busyOff = () => { LOADING = Math.max(0, LOADING - 1); if (!LOADING) document.body.classList.remove('loading'); };
-const call = (q, ok) => { busyOn(); return fetch(API + '?' + new URLSearchParams(Object.assign({ t: TOK }, q))).then(r => r.json()).then(d => { busyOff(); ok(d); }).catch(e => { busyOff(); fail(e); }); };
+const WRITE = { run: 1, edit: 1, thank: 1 };
+const call = (q, ok) => {
+  if (WRITE[q.api] && !navigator.onLine) return outPush(q);
+  busyOn(); return fetch(API + '?' + new URLSearchParams(Object.assign({ t: TOK }, q))).then(r => r.json()).then(d => { busyOff(); ok(d); })
+    .catch(e => { busyOff(); if (WRITE[q.api] && (!navigator.onLine || e instanceof TypeError)) outPush(q); else fail(e); });
+};
+// 📴 เน็ตหลุด → เก็บคำสั่งไว้ในเครื่อง แล้วส่งเองเมื่อเน็ตกลับ (เฉพาะวันเดียวกัน · ข้ามตี 6 = ทิ้ง กันปิดงานผิดวัน)
+const dayKey = () => new Date(Date.now() + 7 * 3600e3 - 6 * 3600e3).toISOString().slice(0, 10);
+function outPush(q) {
+  const box = LS.get('ww_out') || []; box.push({ q, day: dayKey(), at: Date.now() }); LS.set('ww_out', box);
+  if (q.api === 'run' && PENDING > 0) PENDING--; if (D && TAB === 'task') render();
+  outBadge(); toast('📴 ไม่มีเน็ต · เก็บไว้ส่งเองเมื่อเน็ตกลับ (' + box.length + ')');
+}
+function outBadge() {
+  const n = (LS.get('ww_out') || []).length; let b = $('outb');
+  if (!n) { if (b) b.remove(); return; }
+  if (!b) { document.body.insertAdjacentHTML('beforeend', '<button id="outb" class="outb" onclick="outFlush()"></button>'); b = $('outb'); }
+  b.textContent = '📴 รอส่ง ' + n + ' · แตะเพื่อส่ง';
+}
+let FLUSHING = false;
+async function outFlush() {
+  if (FLUSHING || !navigator.onLine) return; let box = LS.get('ww_out') || []; if (!box.length) return outBadge();
+  FLUSHING = true; const today = dayKey(), old = box.filter(x => x.day !== today);
+  if (old.length) toast('🗑 ทิ้ง ' + old.length + ' คำสั่งค้างจากเมื่อวาน (ข้ามตี 6) — พิมพ์ใหม่ถ้ายังต้องการ');
+  box = box.filter(x => x.day === today); let sent = 0, errs = [];
+  while (box.length) {
+    const x = box[0];
+    try { const r = await fetch(API + '?' + new URLSearchParams(Object.assign({ t: TOK }, x.q))).then(r => r.json()); if (r.error) errs.push(r.msg || r.error); else if (/^❗/.test(r.msg || '')) errs.push(r.msg); sent++; }
+    catch (e) { break; }   // ยังไม่มีเน็ต → เก็บที่เหลือไว้
+    box.shift(); LS.set('ww_out', box);
+  }
+  LS.set('ww_out', box); FLUSHING = false; outBadge();
+  if (sent) { toast('📶 ส่งงานที่ค้างแล้ว ' + sent + (errs.length ? '\n❗ ' + errs.join('\n') : '')); R = null; load(); if (TAB === 'round') setTab('round', true); }
+}
+window.addEventListener('online', () => setTimeout(outFlush, 1500));
+setInterval(outFlush, 30000);
+
 let OFF = 0, TAB = 'task', R = null, RBLD = 'ทั้งหมด', RG = 'ทุกคน', RST = '', RACT = 'active', RDUE = false, ROPEN = null, D = null, BLD = 'ทั้งหมด', OPEN = null, QEDIT = null, QDRAFT = null, ARM = null;
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -693,7 +737,7 @@ function addTask(e) { e.preventDefault(); const v = $('newt').value.trim(); if (
   const cr = LS.get('ww_c_r'); if (cr && cr.pts) { R = cr; LASTR = cr._t || 0; }
   const cd = LS.get('ww_c_d'); if (cd && cd.tasks) { D = cd; render(); document.body.insertAdjacentHTML('beforeend', '<div id="stale" class="stale">กำลังอัปเดต…</div>'); }
 })();
-load();
+load(); outBadge(); setTimeout(outFlush, 3000);
 call({ api: 'round' }, r => { if (!r.error) { setR(r); LASTR = Date.now(); if (TAB === 'task' && D) render(); } });
 
 // ⌨️ คีย์บอร์ดขึ้น → ย่อแผ่น/ยกแถบพิมพ์ขึ้นเหนือคีย์บอร์ด แล้วเลื่อนช่องที่พิมพ์ให้อยู่ในจอ
