@@ -98,7 +98,7 @@ textarea.inp{resize:vertical;line-height:1.45;min-height:44px;overflow:hidden;fo
 .adh{display:flex;align-items:center;gap:8px}.adg{display:flex;gap:6px}.adg .inp{min-width:0}.adi{min-height:40px;padding:8px 10px}
 .adbar{position:sticky;bottom:-16px;background:var(--bg);margin:0 -16px -16px;padding:10px 16px 16px;border-top:1px solid var(--ln);display:flex;gap:8px}.adbar .b{flex:1;min-height:46px}
 .qmv{margin:6px 0 2px}.qmv .inp{min-height:38px;padding:6px 10px;font-size:15px;border-color:var(--or)}
-#tabA,#tabX{display:none}body.canedit #tabA,body.isadmin #tabX{display:block}.atab .fab,.atab .add,.atab #chips,.atab #notices,.atab #count{display:none!important}
+#tabX{display:none}body.isadmin #tabX{display:block}.atab .fab,.atab .add,.atab #chips,.atab #notices,.atab #count{display:none!important}
 .amain .ehead{position:static;margin:0;padding:10px 0;border:0;background:none}.amain .adbar{bottom:0;margin:0 -16px}
 .adc{border-bottom:1px solid var(--ln);padding:8px 0;display:flex;flex-direction:column;gap:2px}.adt{display:flex;gap:6px;align-items:baseline;flex-wrap:wrap}.adt .ads{margin-left:auto}
 .amain{padding:4px 16px 24px;display:flex;flex-direction:column;gap:10px;max-width:600px;margin:0 auto}
@@ -168,7 +168,7 @@ input[type=date]{color-scheme:light dark}
     <div><div class="date" id="date"></div><h1 id="ttl">งานวันนี้</h1></div>
     <span style="display:flex;align-items:center;gap:6px"><span class="pill" id="count">…</span><span class="upd" id="updAt"></span><button class="rf" id="rf" onclick="refreshNow()" aria-label="รีเฟรช"><svg viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg></button></span>
   </div>
-  <div class="tabs"><button id="tabT" class="tab on" onclick="setTab('task')">งาน</button><button id="tabR" class="tab" onclick="setTab('round')">ราวด์</button><button id="tabA" class="tab" onclick="setTab('admit')">admit</button><button id="tabX" class="tab" onclick="setTab('admin')">admin</button></div>
+  <div class="tabs"><button id="tabT" class="tab on" onclick="setTab('task')">งาน</button><button id="tabR" class="tab" onclick="setTab('round')">ราวด์</button><button id="tabA" class="tab" onclick="setTab('admit')">รับใหม่</button><button id="tabX" class="tab" onclick="setTab('admin')">ผู้ดูแล</button></div>
   <div class="dnav" id="dnav"></div>
   <div class="chips" id="chips"></div>
 </header>
@@ -185,8 +185,8 @@ input[type=date]{color-scheme:light dark}
 <button class="fab" id="fab" aria-label="เพิ่มงาน" onclick="if(TAB==='round'){openAdd()}else{document.body.classList.add('adding');$('newt').focus()}">+</button>
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbw9dsYKGy8pELEBeIatNSjJLFv6W7MGjxhnjj584Z4BUlXN6WEfon-JID4f4eHR9wQ/exec';   // ← วาง URL ของบอท (ลงท้าย /exec)
-const APP_VER = 'v1.5';   // 🔖 ต้องตรงกับ SERVER_VER
-const APP_DATE = '25/10/69 00:35';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
+const APP_VER = 'v1.9';   // 🔖 ต้องตรงกับ SERVER_VER
+const APP_DATE = '25/10/69 00:20';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
 const TOK = new URLSearchParams(location.search).get('t') || '';
 // 🔄 แถบสีด้านบนวิ่งระหว่างโหลด / บันทึก
 let LOADING = 0;
@@ -371,9 +371,9 @@ const nowHM = () => new Date(Date.now() + 7 * 3600e3).toISOString().slice(11, 16
 
 function setR(r) { R = r; document.body.classList.toggle('canedit', !!(r && r.canEdit)); document.body.classList.toggle('isadmin', !!(r && r.admin)); try { r._t = Date.now(); localStorage.setItem('ww_c_r', JSON.stringify(r)); } catch (e) {} }
 function setTab(t, force) {
-  TAB = t; document.body.classList.toggle('rtab', t === 'round'); document.body.classList.toggle('atab', t === 'admit' || t === 'admin'); stamp(); if (t === "round") $("ttl").textContent = "ราวด์"; if (t === 'admit') $('ttl').textContent = 'admit'; $('tabT').classList.toggle('on', t === 'task'); $('tabR').classList.toggle('on', t === 'round'); $('tabA').classList.toggle('on', t === 'admit'); $('tabX').classList.toggle('on', t === 'admin');
+  TAB = t; document.body.classList.toggle('rtab', t === 'round'); document.body.classList.toggle('atab', t === 'admit' || t === 'admin'); stamp(); if (t === "round") $("ttl").textContent = "ราวด์"; if (t === 'admit') $('ttl').textContent = 'รับใหม่'; $('tabT').classList.toggle('on', t === 'task'); $('tabR').classList.toggle('on', t === 'round'); $('tabA').classList.toggle('on', t === 'admit'); $('tabX').classList.toggle('on', t === 'admin');
   if (t === 'admit') { document.body.classList.remove('adding'); $('dnav').style.display = 'none'; return openAdmit(); }
-  if (t === 'admin') { document.body.classList.remove('adding'); $('dnav').style.display = 'none'; $('ttl').textContent = 'admin'; return openAdminX(); }
+  if (t === 'admin') { document.body.classList.remove('adding'); $('dnav').style.display = 'none'; $('ttl').textContent = 'ผู้ดูแล'; return openAdminX(); }
   if (t === 'round') document.body.classList.remove('adding'); $('dnav').style.display = t === 'task' ? 'flex' : 'none';
   if (t === 'round') { if (R) renderRound(); else { $('main').innerHTML = '<div class="empty">กำลังโหลด…</div>'; }
     if (R && !force && LASTR && LASTR >= last5am()) return;   // ⚡ โหลดไว้แล้ว ไม่ต้องดึงใหม่
@@ -545,8 +545,8 @@ function drawAdmit() {
     const plan = s.plan, by = {};
     (plan || []).forEach(p => (by[p.date] = by[p.date] || []).push(p));
     const list = plan == null ? '<div class="meta">กำลังโหลด…</div>' : !plan.length ? '<div class="meta">ยังไม่มีรายการที่รอเพิ่ม</div>' :
-      Object.keys(by).map(d => `<div class="lbl">${dow(d)} ${thd(d)} · ${by[d].length} คน</div>` + by[d].map(p => `<div class="adc"><div class="adt"><b>${esc(String(p.name).replace(/^(นาย|นางสาว|นาง|น\.ส\.|ด\.ช\.|ด\.ญ\.|เด็กชาย|เด็กหญิง)\s*/, '').split(/\s+/)[0])}</b>${p.hn ? ` <span class="meta">HN ${esc(p.hn)}</span>` : ''}<span class="ads${p.st ? ' ok' : ''}">${p.st ? (/^มี/.test(p.st) ? 'มีในตารางแล้ว' : '✓ เข้าตารางแล้ว') : 'รอเข้าตาราง'}</span></div><div class="meta">${p.sec === 'CONSULT' ? '<b>consult</b> · ' : ''}อ. ${esc(p.staff || '-')}</div>${p.dx ? `<div>${esc(p.dx)}</div>` : ''}${p.proc ? `<div class="ww">${esc(p.proc)}</div>` : ''}</div>`).join('')).join('');
-    $('main').innerHTML = '<div class="amain">' + head + `<label class="b p" style="display:flex;align-items:center;justify-content:center;cursor:pointer;min-height:46px">${s.busy ? '⏳ บอทกำลังอ่านรูป… (~10–20 วิ)' : '🖼 เลือกรูปตาราง admit'}<input type="file" accept="image/*" style="display:none" ${s.busy ? 'disabled' : ''} onchange="admitPick(this.files[0])"></label>${s.log ? `<div class="prog">${esc(s.log)}</div>` : ''}<div class="lbl" style="margin-top:6px">รอ admit (วันนี้เป็นต้นไป)</div>${list}</div>`;
+      Object.keys(by).map(d => `<div class="lbl">${dow(d)} ${thd(d)} · ${by[d].length} คน</div>` + by[d].map(p => AD.edit === p.row ? admEditForm(p) : `<div class="adc"${R && R.canEdit && !p.st ? ` onclick="AD.edit=${p.row};AD.arm=0;drawAdmit()" style="cursor:pointer"` : ''}><div class="adt"><b>${esc(String(p.name).replace(/^(นาย|นางสาว|นาง|น\.ส\.|ด\.ช\.|ด\.ญ\.|เด็กชาย|เด็กหญิง)\s*/, '').split(/\s+/)[0])}</b>${p.hn ? ` <span class="meta">HN ${esc(p.hn)}</span>` : ''}<span class="ads${p.st ? ' ok' : ''}">${p.st ? (/^มี/.test(p.st) ? 'มีในตารางแล้ว' : '✓ เข้าตารางแล้ว') : 'รอเข้าตาราง'}</span></div><div class="meta">${p.sec === 'CONSULT' ? '<b>consult</b> · ' : ''}อ. ${esc(p.staff || '-')}</div>${p.dx ? `<div>${esc(p.dx)}</div>` : ''}${p.proc ? `<div class="ww">${esc(p.proc)}</div>` : ''}</div>`).join('')).join('');
+    $('main').innerHTML = '<div class="amain">' + head + (!(R && R.canEdit) ? '' : `<label class="b p" style="display:flex;align-items:center;justify-content:center;cursor:pointer;min-height:46px">${s.busy ? '⏳ บอทกำลังอ่านรูป… (~10–20 วิ)' : '🖼 เลือกรูปตาราง admit'}<input type="file" accept="image/*" style="display:none" ${s.busy ? 'disabled' : ''} onchange="admitPick(this.files[0])"></label>`) + `${s.log ? `<div class="prog">${esc(s.log)}</div>` : ''}<div class="lbl" style="margin-top:6px">รอ admit (วันนี้เป็นต้นไป)</div>${list}</div>`;
     return;
   }
   // ตรวจ/แก้
@@ -558,6 +558,22 @@ function drawAdmit() {
       ${r.on ? `<div class="adg">${F(i, 'name', 'ชื่อ', 2)}${F(i, 'hn', 'HN', 1)}</div><div class="adg"><input class="inp adi" type="date" style="flex:1.4" value="${esc(r.date)}" onchange="AD.rows[${i}].date=this.value">${F(i, 'staff', 'อ.', 0.6)}</div>${F(i, 'dx', 'Dx')}${F(i, 'proc', 'Procedure')}` : `<div class="meta">${esc(r.name)}</div>`}
     </div>`).join('') +
     `<div class="adbar"><button class="b p" ${s.busy || !n ? 'disabled' : ''} onclick="admitSave()">${s.busy ? 'กำลังบันทึก…' : 'ยืนยัน ' + n + ' คน'}</button><button class="b" onclick="AD.step='list';drawAdmit()">กลับ</button></div></div>`;
+}
+// ✏️ แตะรายการที่ยังรอ = แก้ / ยกเลิก (ลิงก์แก้ไข)
+function admEditForm(p) {
+  const F = (k, ph, w) => `<input class="inp adi" id="ae_${k}" style="${w ? 'flex:' + w : ''}" placeholder="${ph}" value="${esc(p[k] || '')}" ${k === 'hn' ? 'inputmode="numeric"' : ''}>`;
+  return `<div class="adr" onclick="event.stopPropagation()"><div class="adh"><b>แก้รายการ</b><span class="meta" style="margin-left:auto;cursor:pointer" onclick="AD.edit=null;drawAdmit()">ปิด ⌃</span></div>
+    <div class="adg">${F('name', 'ชื่อ', 2)}${F('hn', 'HN', 1)}</div>
+    <div class="adg"><input class="inp adi" id="ae_date" type="date" style="flex:1.4" value="${esc(p.date)}">${F('staff', 'อ.', 0.6)}<select class="inp adi" id="ae_sec" style="flex:1.2">${[['ADMISSION', 'admit'], ['CONSULT', 'consult']].map(([s, l]) => `<option value="${s}"${p.sec === s ? ' selected' : ''}>${l}</option>`).join('')}</select></div>
+    ${F('dx', 'Dx')}${F('proc', 'Procedure')}
+    <div class="adg"><button class="b p" style="flex:2" onclick="admEditSave(${p.row})">บันทึก</button><button class="b r" style="flex:1" onclick="admEditSave(${p.row}, true)">${AD.arm === p.row ? 'กดอีกครั้ง = ยกเลิก' : 'ยกเลิกคนนี้'}</button></div></div>`;
+}
+async function admEditSave(row, cancel) {
+  const p = (AD.plan || []).find(x => x.row === row); if (!p) return;
+  if (cancel && AD.arm !== row) { AD.arm = row; return drawAdmit(); }
+  const vals = {}; ['name', 'hn', 'date', 'staff', 'sec', 'dx', 'proc'].forEach(k => { const e = $('ae_' + k); vals[k] = e ? e.value.trim() : p[k]; });
+  busyOn(); let r; try { r = await (await fetch(API, { method: 'POST', body: JSON.stringify({ app: 'admitedit', t: TOK, row, origName: p.name, origDate: p.date, cancel: !!cancel, vals }) })).json(); } catch (e) { r = { msg: 'ส่งไม่ได้ ลองใหม่' }; } finally { busyOff(); }
+  toast(r.ok ? r.msg : '❗ ' + (r.msg || 'ไม่สำเร็จ')); if (r.ok) { AD.edit = null; AD.arm = 0; openAdmit(true); }
 }
 async function admitPick(file) {
   if (!file || !AD) return; AD.busy = true; AD.log = ''; drawAdmit();
@@ -767,7 +783,7 @@ function autoRefresh(force) {
   const busyUI = OPEN !== null || QEDIT !== null || ROPEN !== null || ED || PH || document.body.classList.contains('adding') || /INPUT|TEXTAREA|SELECT/.test((document.activeElement || {}).tagName || '');
   if (busyUI) return;
   if (TAB === 'round') { if (force || (LASTR && LASTR < last5am())) setTab('round', true); }   // ราวด์: รีเฟรชเองเฉพาะเมื่อข้ามตี 5 แล้ว
-  else if (force || Date.now() - LAST >= AUTO_MIN * 60000) load();
+  else if (TAB === 'task' && (force || Date.now() - LAST >= AUTO_MIN * 60000)) load();
 }
 setInterval(() => { stamp(); autoRefresh(false); }, 20000);
 let HIDDEN_AT = 0;
@@ -775,6 +791,7 @@ document.addEventListener('visibilitychange', () => { if (document.hidden) { HID
 function refreshNow() { $('rf').classList.add('spin'); setTimeout(() => $('rf').classList.remove('spin'), 1500); TAB === 'round' ? setTab('round', true) : TAB === 'admit' ? openAdmit(true) : TAB === 'admin' ? openAdminX(true) : load(); }
 function go(n) { OFF = n === 0 ? 0 : OFF + n; OPEN = null; QEDIT = null; load(); }
 function render() {
+  if (TAB !== 'task') { if (TAB === 'round' && R) renderRound(); return; }   // อยู่แท็บอื่น → ไม่วาดหน้างานทับ (เบื้องหลังยังอัปเดตข้อมูล)
   if (TAB === 'round') return;
   const names = { '-1': 'เมื่อวาน', '0': 'วันนี้', '1': 'พรุ่งนี้' };
   $('date').textContent = D.day;
