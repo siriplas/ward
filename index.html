@@ -189,8 +189,8 @@ input[type=date]{color-scheme:light dark}
 <button class="fab" id="fab" aria-label="เพิ่มงาน" onclick="if(TAB==='round'){openAdd()}else{document.body.classList.add('adding');$('newt').focus()}">+</button>
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbw9dsYKGy8pELEBeIatNSjJLFv6W7MGjxhnjj584Z4BUlXN6WEfon-JID4f4eHR9wQ/exec';   // ← วาง URL ของบอท (ลงท้าย /exec)
-const APP_VER = 'v1.03';   // 🔖 ต้องตรงกับ SERVER_VER
-const APP_DATE = '25/10/69 01:40';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
+const APP_VER = 'v1.05';   // 🔖 ต้องตรงกับ SERVER_VER
+const APP_DATE = '25/10/69 02:00';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
 const TOK = new URLSearchParams(location.search).get('t') || '';
 // 🔄 แถบสีด้านบนวิ่งระหว่างโหลด / บันทึก
 let LOADING = 0;
@@ -644,6 +644,7 @@ function drawAdminX() {
     <div class="lbl">✏️ แก้ข้อมูลทุกช่อง</div>${rawUI()}
     <div class="lbl">🩺 งานตั้งเวลา</div>${jobs}
     <div class="lbl">🐞 error ล่าสุด</div>${errs}
+    <div class="lbl">🔁 เพิ่มแล้วยกเลิกเร็ว (อาจพิมพ์ผิด · 14 วัน)</div>${(d.oops || []).length ? d.oops.map(o => `<div class="xrow"><div style="flex:1"><div class="meta">${hmTxt(o.t)} · ${esc(o.by)} · ยกเลิกหลัง ${o.mins} นาที</div><div style="font-size:13px">❌ ${esc(o.ward)} ${esc(o.task)}</div>${o.fix ? `<div style="font-size:13px;color:var(--g)">✅ ลงใหม่: ${esc(o.fix)}</div>` : ''}</div></div>`).join('') : '<div class="meta">ไม่มี 👍</div>'}
     <div class="lbl">📝 สิ่งที่ admin เปลี่ยนล่าสุด</div>${alog}
     <div class="lbl">👥 ผู้ใช้ (${d.users.length})</div>${users}
     <div class="meta">ชีต Tasks ${d.sizes.tasks || '?'} แถว${d.sizes.backup ? ' · ไฟล์สำรอง ' + d.sizes.backup + ' แถว' : ''}</div></div>`;
