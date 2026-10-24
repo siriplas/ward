@@ -92,6 +92,16 @@ textarea.inp{resize:vertical;line-height:1.45;min-height:44px;overflow:hidden;fo
 .sec.cp{cursor:pointer;display:flex;justify-content:space-between;align-items:center}.cpi{font-size:11px;font-weight:600;color:var(--hd);border:1px solid var(--hd);border-radius:999px;padding:0 7px;line-height:18px}
 .stale{position:fixed;bottom:34px;left:50%;transform:translateX(-50%);background:var(--inv,#111);color:var(--invt,#fff);font-size:12px;padding:3px 12px;border-radius:999px;z-index:8;opacity:.85}
 .outb{position:fixed;left:50%;transform:translateX(-50%);bottom:34px;z-index:8;border:0;border-radius:999px;background:#b45309;color:#fff;font:inherit;font-size:13px;font-weight:600;padding:6px 14px;box-shadow:0 4px 12px rgba(0,0,0,.25)}
+.adl{display:flex;align-items:baseline;gap:6px;padding:6px 0;border-bottom:1px solid var(--ln);flex-wrap:wrap}.adl .meta{flex:1}
+.ads{font-size:12px;color:var(--or);white-space:nowrap}.ads.ok{color:var(--g)}
+.adr{border:1px solid var(--ln);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:6px}.adr.off{opacity:.5}.adr.warn{border-color:var(--or)}
+.adh{display:flex;align-items:center;gap:8px}.adg{display:flex;gap:6px}.adg .inp{min-width:0}.adi{min-height:40px;padding:8px 10px}
+.adbar{position:sticky;bottom:-16px;background:var(--bg);margin:0 -16px -16px;padding:10px 16px 16px;border-top:1px solid var(--ln);display:flex;gap:8px}.adbar .b{flex:1;min-height:46px}
+.qmv{margin:6px 0 2px}.qmv .inp{min-height:38px;padding:6px 10px;font-size:15px;border-color:var(--or)}
+#tabA{display:none}body.canedit #tabA{display:block}.atab .fab,.atab .add,.atab #chips,.atab #notices,.atab #count{display:none!important}
+.amain .ehead{position:static;margin:0;padding:10px 0;border:0;background:none}.amain .adbar{bottom:0;margin:0 -16px}
+.adc{border-bottom:1px solid var(--ln);padding:8px 0;display:flex;flex-direction:column;gap:2px}.adt{display:flex;gap:6px;align-items:baseline;flex-wrap:wrap}.adt .ads{margin-left:auto}
+.amain{padding:4px 16px 24px;display:flex;flex-direction:column;gap:10px;max-width:600px;margin:0 auto}
 .bldh{margin-top:14px;padding:10px 16px;font-size:14px;font-weight:700;color:var(--tx);background:var(--bg2);border-top:3px solid var(--hd)}
 .sec{font-size:12px;font-weight:600;color:var(--mu);padding:12px 16px 2px;letter-spacing:.3px}
 .card{background:transparent}
@@ -153,7 +163,7 @@ input[type=date]{color-scheme:light dark}
     <div><div class="date" id="date"></div><h1 id="ttl">งานวันนี้</h1></div>
     <span style="display:flex;align-items:center;gap:6px"><span class="pill" id="count">…</span><span class="upd" id="updAt"></span><button class="rf" id="rf" onclick="refreshNow()" aria-label="รีเฟรช"><svg viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg></button></span>
   </div>
-  <div class="tabs"><button id="tabT" class="tab on" onclick="setTab('task')">งาน</button><button id="tabR" class="tab" onclick="setTab('round')">ราวด์</button></div>
+  <div class="tabs"><button id="tabT" class="tab on" onclick="setTab('task')">งาน</button><button id="tabR" class="tab" onclick="setTab('round')">ราวด์</button><button id="tabA" class="tab" onclick="setTab('admit')">admit</button></div>
   <div class="dnav" id="dnav"></div>
   <div class="chips" id="chips"></div>
 </header>
@@ -352,9 +362,10 @@ function run(cmd, patch) {
 }
 const nowHM = () => new Date(Date.now() + 7 * 3600e3).toISOString().slice(11, 16);
 
-function setR(r) { R = r; try { r._t = Date.now(); localStorage.setItem('ww_c_r', JSON.stringify(r)); } catch (e) {} }
+function setR(r) { R = r; document.body.classList.toggle('canedit', !!(r && r.canEdit)); try { r._t = Date.now(); localStorage.setItem('ww_c_r', JSON.stringify(r)); } catch (e) {} }
 function setTab(t, force) {
-  TAB = t; document.body.classList.toggle('rtab', t === 'round'); stamp(); if (t === "round") $("ttl").textContent = "ราวด์"; $('tabT').classList.toggle('on', t === 'task'); $('tabR').classList.toggle('on', t === 'round');
+  TAB = t; document.body.classList.toggle('rtab', t === 'round'); document.body.classList.toggle('atab', t === 'admit'); stamp(); if (t === "round") $("ttl").textContent = "ราวด์"; if (t === 'admit') $('ttl').textContent = 'admit'; $('tabT').classList.toggle('on', t === 'task'); $('tabR').classList.toggle('on', t === 'round'); $('tabA').classList.toggle('on', t === 'admit');
+  if (t === 'admit') { document.body.classList.remove('adding'); $('dnav').style.display = 'none'; return openAdmit(); }
   if (t === 'round') document.body.classList.remove('adding'); $('dnav').style.display = t === 'task' ? 'flex' : 'none';
   if (t === 'round') { if (R) renderRound(); else { $('main').innerHTML = '<div class="empty">กำลังโหลด…</div>'; }
     if (R && !force && LASTR && LASTR >= last5am()) return;   // ⚡ โหลดไว้แล้ว ไม่ต้องดึงใหม่
@@ -405,6 +416,7 @@ function renderRound() {
         <div class="who">${p.tags.includes('ว่าง') ? '<span class="nobody">ยังไม่มีคนดู</span>' : esc(p.team || p.tags.join(', '))}${p.remark ? ' · ' + esc(p.remark) : ''}</div>
         ${p.ww ? `<div class="ww">${esc(p.ww)}</div>` : ''}</span>
         <span style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;flex-shrink:0">${p.open ? `<span class="badge">ค้าง ${p.open}</span>` : p.done ? '<span class="badge ok">✓ เสร็จ</span>' : ''}${p.flap ? '<span class="badge fl">flap</span>' : ''}${op ? '<span class="chev" style="margin-top:4px"><svg viewBox="0 0 24 24"><path d="M6 15l6-6 6 6"/></svg></span>' : ''}</span></button>
+        ${R.canEdit && isPend(p.ward) ? `<div class="qmv" style="padding:0 16px 10px" onclick="event.stopPropagation()"><select class="inp" onchange="qMove(${i}, this.value)"><option value="">🚚 ย้ายไป ward จริง…</option>${(R.wards || []).filter(w => !isPend(w)).map(w => `<option>${esc(w)}</option>`).join('')}</select></div>` : ''}
         ${op ? `<div class="panel" style="padding-left:16px">${p.hist.length ? `<div class="hist">${p.hist.map(x => `<div${x.fut ? ' class="fut"' : ''}><div class="meta">${x.fut ? '⏭ ' : ''}${esc(x.day)}</div><div style="display:flex;gap:8px;align-items:center"><span style="flex:1;display:flex;gap:8px;align-items:flex-start">${x.mark === '✅' ? '<span class="mk d">✓</span>' : x.mark === '👁' ? '<span class="mk f"></span>' : '<span class="mk"></span>'}<span>${x.mark === '👁' ? '<span class="fltag">flap</span> ' : ''}${esc(x.task)}${x.res ? ` <span class="${x.upd ? 'arr upd' : 'arr'}">→ ${esc(x.res)}</span>` : ''}</span></span>${x.canClose ? `<button class="b" style="min-height:34px;padding:0 10px" onclick="event.stopPropagation();closeRound(${x.no}, this)">✓ เสร็จ</button>` : ''}</div></div>`).join('')}</div>` : '<div class="meta">ไม่มีงานใน 3 วันล่าสุด และไม่มีงานล่วงหน้า</div>'}
           <div class="links"><button onclick="openPhoto(${i})"><svg viewBox="0 0 24 24"><path d="M4 7h3l2-3h6l2 3h3v13H4z"/><circle cx="12" cy="13" r="3.5"/></svg>ลงรูป</button><a target="_blank" rel="noopener" href="https://drive.google.com/drive/search?q=${encodeURIComponent('type:folder ' + (p.hn || p.name.split(/\s+/)[0]))}"><svg viewBox="0 0 24 24"><path d="M3 7h6l2 2h10v10H3z"/></svg>Drive</a>${R.canEdit ? `<button onclick="openEdit(${i})"><svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg>แก้ไข</button>` : ''}</div>
           <div class="btns" style="flex-wrap:nowrap"><input class="inp" id="radd${i}" placeholder="งาน เช่น CBC" style="flex:1;width:auto;min-width:0" onkeydown="if(event.key==='Enter')addR(${i})">
@@ -503,6 +515,68 @@ function drawEdit() {
   document.querySelectorAll('#pbox textarea').forEach(grow);
 }
 // ➕ เพิ่มคนไข้ (ลิงก์แก้ไขได้) → คิว Add
+// ═══ 📅 ตาราง admit: รูป → บอทอ่าน → ตรวจ/แก้ → ยืนยัน → เข้าตารางราวด์เอง 13:00 ของแต่ละวัน ═══
+let AD = null;
+const AD_SECS = ['ADMISSION', 'CONSULT'];
+const thd = iso => { const [y, m, d] = String(iso).split('-'); return d ? `${+d}/${+m}` : iso; };
+const DOW = ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'];
+const dow = iso => { const d = new Date(iso + 'T00:00:00'); return isNaN(d) ? '' : DOW[d.getDay()]; };
+function openAdmit() {
+  AD = { step: 'list', plan: null, rows: [], busy: false, log: '' }; drawAdmit();
+  call({ api: 'admits' }, r => { if (!AD) return; AD.plan = r.rows || []; if (r.error) AD.log = r.msg || 'โหลดรายการไม่ได้'; drawAdmit(); });
+}
+function drawAdmit() {
+  const s = AD; if (!s || TAB !== 'admit') return;
+  const head = `<div class="ehead"><div><h3>📅 ตาราง admit</h3><div class="meta">ADMISSION + CONSULT · เข้า "รอ admit" เอง 13:00 ของวันนั้น</div></div></div>`;
+  if (s.step === 'list') {
+    const plan = s.plan, by = {};
+    (plan || []).forEach(p => (by[p.date] = by[p.date] || []).push(p));
+    const list = plan == null ? '<div class="meta">กำลังโหลด…</div>' : !plan.length ? '<div class="meta">ยังไม่มีรายการที่รอเพิ่ม</div>' :
+      Object.keys(by).map(d => `<div class="lbl">${dow(d)} ${thd(d)} · ${by[d].length} คน</div>` + by[d].map(p => `<div class="adc"><div class="adt"><b>${esc(p.name)}</b>${p.hn ? ` <span class="meta">HN ${esc(p.hn)}</span>` : ''}<span class="ads${p.st ? ' ok' : ''}">${p.st ? (/^มี/.test(p.st) ? 'มีในตารางแล้ว' : '✓ เข้าตารางแล้ว') : 'รอ 13:00'}</span></div><div class="meta">${p.sec === 'CONSULT' ? '<b>consult</b> · ' : ''}อ. ${esc(p.staff || '-')}</div>${p.dx ? `<div>${esc(p.dx)}</div>` : ''}${p.proc ? `<div class="ww">${esc(p.proc)}</div>` : ''}</div>`).join('')).join('');
+    $('main').innerHTML = '<div class="amain">' + head + `<label class="b p" style="display:flex;align-items:center;justify-content:center;cursor:pointer;min-height:46px">${s.busy ? '⏳ บอทกำลังอ่านรูป… (~10–20 วิ)' : '🖼 เลือกรูปตาราง admit'}<input type="file" accept="image/*" style="display:none" ${s.busy ? 'disabled' : ''} onchange="admitPick(this.files[0])"></label>${s.log ? `<div class="prog">${esc(s.log)}</div>` : ''}<div class="lbl" style="margin-top:6px">รอ admit (วันนี้เป็นต้นไป)</div>${list}</div>`;
+    return;
+  }
+  // ตรวจ/แก้
+  const n = s.rows.filter(r => r.on).length;
+  const F = (i, k, ph, w) => `<input class="inp adi" style="${w ? 'flex:' + w : ''}" placeholder="${ph}" value="${esc(s.rows[i][k] || '')}" oninput="AD.rows[${i}].${k}=this.value" ${k === 'hn' ? 'inputmode="numeric"' : ''}>`;
+  $('main').innerHTML = '<div class="amain">' + head + `<div class="meta">ตรวจทุกแถว แก้ช่องที่ผิดได้ · ติ๊กออก = ไม่เพิ่ม · <b>HN ผิด = รูปแผลไปผิดคน</b></div>` +
+    s.rows.map((r, i) => `<div class="adr${r.on ? '' : ' off'}${r.on && !r.hn ? ' warn' : ''}">
+      <label class="adh"><input type="checkbox" ${r.on ? 'checked' : ''} onchange="AD.rows[${i}].on=this.checked;drawAdmit()"> <b>${esc(r.sec || '?')}</b> <span class="meta">${dow(r.date)} ${thd(r.date)}</span></label>
+      ${r.on ? `<div class="adg">${F(i, 'name', 'ชื่อ', 2)}${F(i, 'hn', 'HN', 1)}</div><div class="adg"><input class="inp adi" type="date" style="flex:1.4" value="${esc(r.date)}" onchange="AD.rows[${i}].date=this.value">${F(i, 'staff', 'อ.', 0.6)}</div>${F(i, 'dx', 'Dx')}${F(i, 'proc', 'Procedure')}` : `<div class="meta">${esc(r.name)}</div>`}
+    </div>`).join('') +
+    `<div class="adbar"><button class="b p" ${s.busy || !n ? 'disabled' : ''} onclick="admitSave()">${s.busy ? 'กำลังบันทึก…' : 'ยืนยัน ' + n + ' คน'}</button><button class="b" onclick="AD.step='list';drawAdmit()">กลับ</button></div></div>`;
+}
+async function admitPick(file) {
+  if (!file || !AD) return; AD.busy = true; AD.log = ''; drawAdmit();
+  try {
+    const bm = await createImageBitmap(file), k = Math.min(1, 2400 / Math.max(bm.width, bm.height)), c = document.createElement('canvas');
+    c.width = Math.round(bm.width * k); c.height = Math.round(bm.height * k); c.getContext('2d').drawImage(bm, 0, 0, c.width, c.height);
+    const blob = await new Promise(res => c.toBlob(res, 'image/jpeg', 0.92));
+    busyOn(); let r; try { r = await (await fetch(API, { method: 'POST', body: JSON.stringify({ app: 'admitocr', t: TOK, mime: 'image/jpeg', data: await b64(blob) }) })).json(); } finally { busyOff(); }
+    AD.busy = false;
+    if (!r.ok) { AD.log = '❗ ' + (r.msg || r.error || 'อ่านไม่ได้'); return drawAdmit(); }
+    if (!r.rows.length) { AD.log = '❗ อ่านแล้วไม่เจอแถวที่มีวันที่ ลองถ่ายให้ตรงและชัดขึ้น'; return drawAdmit(); }
+    AD.rows = r.rows.map(x => Object.assign(x, { on: !x.sec || AD_SECS.includes(x.sec) })); AD.step = 'review'; drawAdmit();
+  } catch (e) { AD.busy = false; AD.log = '❗ ส่งรูปไม่ได้ ลองใหม่'; drawAdmit(); }
+}
+async function admitSave() {
+  const s = AD; if (!s || s.busy) return;
+  const rows = s.rows.filter(r => r.on).map(({ on, wardRaw, ...r }) => Object.assign(r, { ward: '' }));
+  const bad = rows.find(r => !String(r.name).trim() || !/^\d{4}-\d\d-\d\d$/.test(r.date) || (r.hn && !/^\d{7,8}$/.test(String(r.hn).trim())));
+  if (bad) return toast('❗ ตรวจแถว ' + (bad.name || '(ไม่มีชื่อ)') + ': ต้องมีชื่อ วันที่ และ HN 7–8 หลัก');
+  s.busy = true; drawAdmit();
+  busyOn(); let r; try { r = await (await fetch(API, { method: 'POST', body: JSON.stringify({ app: 'admitsave', t: TOK, rows }) })).json(); } catch (e) { r = { error: 'msg', msg: 'ส่งไม่ได้ ลองใหม่' }; } finally { busyOff(); }
+  s.busy = false;
+  if (!r.ok) { toast('❗ ' + (r.msg || 'บันทึกไม่ได้')); return drawAdmit(); }
+  toast(r.msg); R = null; openAdmit();
+}
+const isPend = w => !String(w || '').trim() || /รอ\s*admit|รับใหม่/i.test(w);
+// 🚚 ย้ายคนไข้ "รอ admit" ไป ward จริง แตะเดียว (ลิงก์แก้ไขเท่านั้น)
+function qMove(i, w) {
+  const p = R.pts[i]; if (!w || !p) return;
+  toast('🚚 ย้าย ' + p.name + ' → ' + w + '…');
+  call({ api: 'edit', rid: p.rid, name: p.name, act: 'move', ward: w }, r => { if (r.error) return toast('❗ ' + (r.msg || 'ย้ายไม่สำเร็จ')); toast(r.msg || 'ย้ายแล้ว'); R = null; setTab('round'); });
+}
 function openAdd() {
   ED = { add: true, p: {} };
   const F = [['name', 'ชื่อ *'], ['hn', 'HN'], ['dx', 'Diagnosis'], ['staff', 'อาจารย์ (ภาควิชา/อาจารย์)'], ['plan', 'Plan / consult'], ['proc', 'Procedure'], ['ww', 'Ward work']];
@@ -625,7 +699,7 @@ function autoRefresh(force) {
 setInterval(() => { stamp(); autoRefresh(false); }, 20000);
 let HIDDEN_AT = 0;
 document.addEventListener('visibilitychange', () => { if (document.hidden) { HIDDEN_AT = Date.now(); return; } if (TAB === 'task' && HIDDEN_AT && Date.now() - HIDDEN_AT >= BACK_MIN * 60000) autoRefresh(true); else autoRefresh(false); });
-function refreshNow() { $('rf').classList.add('spin'); setTimeout(() => $('rf').classList.remove('spin'), 1500); TAB === 'round' ? setTab('round', true) : load(); }
+function refreshNow() { $('rf').classList.add('spin'); setTimeout(() => $('rf').classList.remove('spin'), 1500); TAB === 'round' ? setTab('round', true) : TAB === 'admit' ? openAdmit() : load(); }
 function go(n) { OFF = n === 0 ? 0 : OFF + n; OPEN = null; QEDIT = null; load(); }
 function render() {
   if (TAB === 'round') return;
