@@ -52,7 +52,7 @@ body.loading .loadbar{opacity:1;animation:lb 1s ease-in-out infinite}
 .notice{padding:8px 16px;font-size:13px;color:var(--or)}
 main{padding:4px 0 120px;display:flex;flex-direction:column;gap:4px}
 .inact .row{opacity:.5}.itag{font-size:11px;font-weight:600;color:var(--mu);border:1px solid var(--ln);border-radius:6px;padding:0 6px;margin-left:6px;vertical-align:2px}
-textarea.inp{resize:vertical;line-height:1.45;min-height:72px;overflow:hidden;font-family:inherit;font-size:15px}select.inp{appearance:auto}
+textarea.inp{resize:vertical;line-height:1.45;min-height:44px;overflow:hidden;font-family:inherit;font-size:15px}select.inp{appearance:auto}
 .stsel{flex-shrink:0;min-height:30px;padding:2px 10px;border-radius:999px;border:0;background:var(--bg2);color:var(--mu);font-family:inherit}.stsel.on{background:var(--inv);color:var(--invt);font-weight:600}
 .fbar{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;padding:10px 16px 4px}
 .fsel{position:relative;display:flex;align-items:center;justify-content:center;gap:4px;min-height:36px;padding:0 10px;border-radius:10px;background:var(--bg2);color:var(--tx2);font-size:14px;overflow:hidden}
@@ -75,6 +75,14 @@ textarea.inp{resize:vertical;line-height:1.45;min-height:72px;overflow:hidden;fo
 .mk{width:16px;height:16px;border-radius:50%;border:1.6px solid var(--mu);flex-shrink:0;margin-top:3px;display:inline-flex;align-items:center;justify-content:center;font-size:10px;color:#fff;font-weight:700}.mk.d{background:var(--g2);border-color:var(--g2)}.mk.f{border-color:var(--orx);border-style:dashed}.fltag{font-size:11px;color:var(--orx);font-weight:600}
 .nitem{display:block;width:100%;text-align:left;border:0;background:var(--bg2);border-radius:10px;padding:10px 12px;color:var(--tx);margin-bottom:6px}
 .flash{animation:flash 2.2s ease}@keyframes flash{0%,40%{background:rgba(29,78,216,.18)}100%{background:transparent}}
+.sbox{max-width:600px;margin:0 auto}
+.ehead{position:sticky;top:-16px;z-index:2;background:var(--bg);margin:-16px -16px 0;padding:14px 16px 10px;border-bottom:1px solid var(--ln);display:flex;justify-content:space-between;align-items:flex-start;gap:8px}.ehead .b{min-height:36px;padding:0 12px}
+.egrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.ef{display:flex;flex-direction:column;gap:4px;min-width:0}.ef.w{grid-column:1/-1}
+.ef textarea.inp{min-height:44px}
+.esave{width:100%;min-height:46px}
+.emore{border-top:1px solid var(--ln);padding-top:10px}.emore summary{cursor:pointer;color:var(--mu);font-size:14px;padding:6px 0;list-style:none}.emore summary:before{content:'▸ '}.emore[open] summary:before{content:'▾ '}.emore .lbl{margin-top:8px;display:block}
+.pod{font-size:12px;font-weight:600;color:var(--or,#d97706)}
+.sec.cp{cursor:pointer;display:flex;justify-content:space-between;align-items:center}.cpi{font-size:11px;font-weight:600;color:var(--hd);border:1px solid var(--hd);border-radius:999px;padding:0 7px;line-height:18px}
 .bldh{margin-top:14px;padding:10px 16px;font-size:14px;font-weight:700;color:var(--tx);background:var(--bg2);border-top:3px solid var(--hd)}
 .sec{font-size:12px;font-weight:600;color:var(--mu);padding:12px 16px 2px;letter-spacing:.3px}
 .card{background:transparent}
@@ -103,8 +111,8 @@ textarea.inp{resize:vertical;line-height:1.45;min-height:72px;overflow:hidden;fo
 .qb{min-height:34px;padding:2px 12px;border-radius:999px;border:0;background:var(--card);color:var(--orx)}
 .qb.on{background:var(--or);color:#fff;font-weight:600}
 .qb.stop.on{background:var(--mu);color:#fff}
-.add{position:fixed;left:0;right:0;bottom:0;background:var(--bg);border-top:1px solid var(--ln);padding:10px 12px 16px;display:none;gap:8px;z-index:6}
-body.adding .add{display:flex}.rtab .fab{display:none}body.adding .fab{display:none}
+.add{position:fixed;left:0;right:0;bottom:var(--kb,0px);background:var(--bg);border-top:1px solid var(--ln);padding:10px 12px 16px;display:none;gap:8px;z-index:6}
+body.adding .add{display:flex}.rtab .fab{display:none}.rtab.canedit .fab{display:block}body.adding .fab{display:none}
 .add .b.p{flex-grow:0}
 .fab{position:fixed;right:18px;bottom:22px;width:54px;height:54px;border-radius:50%;border:0;background:var(--hd);color:#fff;font-size:28px;line-height:1;box-shadow:0 6px 16px rgba(0,0,0,.25);z-index:6}
 .qr{display:flex;gap:6px;flex-wrap:wrap}
@@ -117,8 +125,8 @@ body.adding .add{display:flex}.rtab .fab{display:none}body.adding .fab{display:n
 .links{display:flex;gap:18px;margin-top:6px}.links a,.links button{background:none;border:0;padding:4px 0;color:var(--mu);font-size:13px;text-decoration:none;display:flex;align-items:center;gap:4px;cursor:pointer}
 .links svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .prow{border-bottom:1px solid var(--ln)}
-.sheet{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:20;display:flex;align-items:flex-end}
-.sbox{background:var(--bg);width:100%;max-height:90vh;overflow:auto;border-radius:16px 16px 0 0;padding:16px;display:flex;flex-direction:column;gap:12px}
+.sheet{position:fixed;left:0;right:0;top:var(--vvt,0px);height:var(--vvh,100%);background:rgba(0,0,0,.45);z-index:20;display:flex;align-items:flex-end}
+.sbox{background:var(--bg);width:100%;max-height:calc(var(--vvh,100vh) - 24px);overflow:auto;border-radius:16px 16px 0 0;padding:16px;display:flex;flex-direction:column;gap:12px}
 .sbox h3{margin:0;font-size:18px}.lbl{font-size:12px;font-weight:600;color:var(--mu)}
 .chip2{min-height:34px;padding:0 12px;border-radius:999px;border:0;background:var(--bg2);color:var(--tx2)}
 .chip2.on{background:var(--inv);color:var(--invt);font-weight:600}
@@ -150,7 +158,7 @@ input[type=date]{color-scheme:light dark}
   <button class="b p" type="submit">เพิ่ม</button>
   <button class="b" type="button" onclick="document.body.classList.remove('adding')" aria-label="ปิด">✕</button>
 </form>
-<button class="fab" id="fab" aria-label="เพิ่มงาน" onclick="document.body.classList.add('adding');$('newt').focus()">+</button>
+<button class="fab" id="fab" aria-label="เพิ่มงาน" onclick="if(TAB==='round'){openAdd()}else{document.body.classList.add('adding');$('newt').focus()}">+</button>
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbw9dsYKGy8pELEBeIatNSjJLFv6W7MGjxhnjj584Z4BUlXN6WEfon-JID4f4eHR9wQ/exec';   // ← วาง URL ของบอท (ลงท้าย /exec)
 const TOK = new URLSearchParams(location.search).get('t') || '';
@@ -307,6 +315,7 @@ function setTab(t) {
   else if (D) render();
 }
 function renderRound() {
+  document.body.classList.toggle('canedit', !!(R && R.canEdit));   // ราวด์: ปุ่ม ＋ = เพิ่มคนไข้ (เฉพาะลิงก์แก้ไขได้)
   const all = R.pts;
   const blds = ['ทั้งหมด', ...new Set(all.map(p => p.bld))];
   if (!blds.includes(RBLD)) RBLD = 'ทั้งหมด';
@@ -333,7 +342,7 @@ function renderRound() {
   const quick = (nDue ? `<button class="gchip due${RDUE ? ' on' : ''}" onclick="RDUE=!RDUE;if(RDUE){RST='';RG='ทุกคน';RBLD='ทั้งหมด';RACT='active'}renderRound()">วันนี้ต้องดู ${nDue}</button>` : '') + myBtn + mySel + (cnt['ว่าง'] ? `<button class="gchip warn${RG === 'ว่าง' ? ' on' : ''}" onclick="RG=RG==='ว่าง'?'ทุกคน':'ว่าง';renderRound()">ไม่มีคนดู ${cnt['ว่าง']}</button>` : '');
   const seg = `<span class="seg3">${[['active', 'กำลังดู'], ['all', 'ทั้งหมด'], ['inactive', 'ไม่ต้องดู ' + nIn]].map(([v, t]) => `<button class="${RACT === v ? 'on' : ''}" onclick="RACT='${v}';renderRound()">${t}</button>`).join('')}</span>`;
   const any = RBLD !== 'ทั้งหมด' || RG !== 'ทุกคน' || RST || RACT !== 'active' || RDUE;
-  $('notices').innerHTML = `<div class="fbar">${bSel}${gSel}${sSel}</div>${R.canEdit ? '<div style="padding:4px 16px 0"><button class="gchip" style="min-height:34px" onclick="openAdd()">＋ เพิ่มคนไข้</button></div>' : ''}<div class="fbar2">${seg}${quick}${any ? `<button class="gchip" onclick="RBLD='ทั้งหมด';RG='ทุกคน';RST='';RACT='active';RDUE=false;renderRound()">✕ ล้างตัวกรอง</button>` : ''}</div>`;
+  $('notices').innerHTML = `<div class="fbar">${bSel}${gSel}${sSel}</div><div class="fbar2">${seg}${quick}${any ? `<button class="gchip" onclick="RBLD='ทั้งหมด';RG='ทุกคน';RST='';RACT='active';RDUE=false;renderRound()">✕ ล้างตัวกรอง</button>` : ''}</div>`;
   const ps = all.filter(p => (RBLD === 'ทั้งหมด' || p.bld === RBLD) && (RDUE ? dueToday(p) : actOk(p)) && (RG === 'ทุกคน' || p.tags.includes(RG)) && (!RST || p.staff === RST));
   $('count').textContent = ps.length + ' คน';
   const wards = [...new Set(ps.map(p => p.ward))];
@@ -341,11 +350,11 @@ function renderRound() {
   $('main').innerHTML = wards.map(w => {
     const list = ps.filter(p => p.ward === w), bd = list[0].bld;
     const bh = bd !== lastB ? `<div class="bldh">${esc(bd)} · ${ps.filter(p => p.bld === bd).length} คน</div>` : ''; lastB = bd;
-    return bh + `<div><div class="sec">${esc(w)} · ${list.length} คน</div><div class="card">${list.map(p => {
+    return bh + `<div><div class="sec cp" onclick="copyWard(this)" data-w="${esc(w)}" data-n="${esc(JSON.stringify(list.map(p => p.name)))}">${esc(w)} · ${list.length} คน <span class="cpi">⧉ คัดลอก</span></div><div class="card">${list.map(p => {
       const i = all.indexOf(p), op = ROPEN === i;
       return `<div class="task prow${p.inactive ? ' inact' : ''}"><button class="row" onclick="ROPEN=ROPEN===${i}?null:${i};renderRound()" style="align-items:flex-start">
         <span style="flex-grow:1;min-width:0"><div><b>${esc(p.name)}</b>${p.inactive ? '<span class="itag">ไม่ต้องดู</span>' : ''}${dueToday(p) ? `<span class="itag duet">${p.inactive && setIn(p) === 1 && visitIn(p) !== 0 ? 'วันนี้ (พรุ่งนี้ set)' : 'วันนี้'}</span>` : ''} <span class="hn">${p.hn ? 'HN ' + esc(p.hn) : ''}</span></div>
-        <div style="font-size:13px">${[p.dx, p.staff].filter(Boolean).map(esc).join(' · ')}</div>
+        <div style="font-size:13px">${[p.dx, p.staff].filter(Boolean).map(esc).join(' · ')}</div>${podTxt(p.proc) ? `<div class="pod">${esc(podTxt(p.proc))}</div>` : ''}
         <div class="who">${p.tags.includes('ว่าง') ? '<span class="nobody">ยังไม่มีคนดู</span>' : esc(p.team || p.tags.join(', '))}${p.remark ? ' · ' + esc(p.remark) : ''}</div>
         ${p.ww ? `<div class="ww">${esc(p.ww)}</div>` : ''}</span>
         <span style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;flex-shrink:0">${p.open ? `<span class="badge">ค้าง ${p.open}</span>` : p.done ? '<span class="badge ok">✓ เสร็จ</span>' : ''}${p.flap ? '<span class="badge fl">flap</span>' : ''}${op ? '<span class="chev" style="margin-top:4px"><svg viewBox="0 0 24 24"><path d="M6 15l6-6 6 6"/></svg></span>' : ''}</span></button>
@@ -431,17 +440,20 @@ function openEdit(i) {
 const grow = t => { t.style.height = 'auto'; t.style.height = (t.scrollHeight + 2) + 'px'; };
 function drawEdit() {
   const { p, o } = ED;
-  $('pbox').innerHTML = `<h3>✏️ ${esc(p.name)}</h3><div class="meta">${esc(p.ward)}${p.inactive ? ' · ไม่ต้องดู' : ''}</div>
-    ${EF.map(([k, l]) => `<div class="lbl">${l}</div>${k === 'ww' || k === 'plan' ? `<textarea class="inp" id="ef_${k}" rows="3" oninput="grow(this)">${esc(o[k] || '')}</textarea>` : `<input class="inp" id="ef_${k}" value="${esc(o[k] || '')}" ${k === 'hn' ? 'inputmode="numeric"' : ''}>`}`).join('')}
-    <div class="btns"><button class="b p" onclick="saveEdit()">บันทึก</button><button class="b" onclick="closePhoto()">ปิด</button></div>
-    <div class="lbl" style="margin-top:8px">ย้าย ward</div>
-    <div class="btns" style="flex-wrap:nowrap"><select class="inp" id="ef_ward" style="flex:1">${['<option value="">เลือก ward…</option>'].concat((R.wards || []).filter(w => w !== p.ward).map(w => `<option>${esc(w)}</option>`)).join('')}</select><button class="b" onclick="edAct('move')">ย้าย</button></div>
-    <div class="lbl" style="margin-top:8px">คนดูของ ${esc(p.ward)} (ทั้ง ward · ภาษาอังกฤษ คั่นด้วย ,)</div>
-    <div class="btns" style="flex-wrap:nowrap"><input class="inp" id="ef_team" style="flex:1" value="${esc(p.team || '')}" placeholder="ว่าง = ไม่มีคนดู"><button class="b" onclick="edAct('team')">เปลี่ยน</button></div>
-    <div class="btns"><button class="b" onclick="edAct('toggle')">${ED.arm === 'toggle' ? 'กดอีกครั้งเพื่อยืนยัน' : (p.inactive ? 'กลับมาดู (กำลังดู)' : 'ย้ายไป ไม่ต้องดู')}</button>
-    <button class="b r" onclick="edAct('remove')">${ED.arm === 'remove' ? 'กดอีกครั้ง = ลบออกจากตาราง' : 'ลบ / D/C'}</button></div>`;
+  const fld = (k, l, wide) => `<label class="ef${wide ? ' w' : ''}"><span class="lbl">${l}</span>${k === 'ww' || k === 'plan' ? `<textarea class="inp" id="ef_${k}" rows="1" oninput="grow(this)">${esc(o[k] || '')}</textarea>` : `<input class="inp" id="ef_${k}" value="${esc(o[k] || '')}" ${k === 'hn' ? 'inputmode="numeric"' : ''}>`}</label>`;
+  $('pbox').innerHTML = `<div class="ehead"><div><h3>${esc(p.name)}</h3><div class="meta">${esc(p.ward)}${p.inactive ? ' · ไม่ต้องดู' : ''}</div></div><button class="b" onclick="closePhoto()" aria-label="ปิด">✕</button></div>
+    <div class="egrid">${fld('hn', 'HN')}${fld('staff', 'อาจารย์')}${fld('dx', 'Diagnosis', 1)}${fld('ww', 'Ward work', 1)}${fld('plan', 'Plan / consult', 1)}${fld('proc', 'Procedure', 1)}</div>
+    <button class="b p esave" onclick="saveEdit()">บันทึก</button>
+    <details class="emore"><summary>ย้าย ward · คนดู · ไม่ต้องดู · ลบ</summary>
+      <div class="lbl">ย้าย ward</div>
+      <div class="btns" style="flex-wrap:nowrap"><select class="inp" id="ef_ward" style="flex:1">${['<option value="">เลือก ward…</option>'].concat((R.wards || []).filter(w => w !== p.ward).map(w => `<option>${esc(w)}</option>`)).join('')}</select><button class="b" onclick="edAct('move')">ย้าย</button></div>
+      <div class="lbl">คนดูของ ${esc(p.ward)} (ทั้ง ward)</div>
+      <div class="btns" style="flex-wrap:nowrap"><input class="inp" id="ef_team" style="flex:1" value="${esc(p.team || '')}" placeholder="เช่น Kiang, Nat · ว่าง = ไม่มีคนดู"><button class="b" onclick="edAct('team')">เปลี่ยน</button></div>
+      <div class="btns" style="margin-top:6px"><button class="b" onclick="edAct('toggle')">${ED.arm === 'toggle' ? 'กดอีกครั้งเพื่อยืนยัน' : (p.inactive ? 'กลับมาดู' : 'ย้ายไป ไม่ต้องดู')}</button>
+      <button class="b r" onclick="edAct('remove')">${ED.arm === 'remove' ? 'กดอีกครั้ง = ลบออกจากตาราง' : 'ลบ / D/C'}</button></div>
+    </details>`;
+  if (ED.arm) { const d = document.querySelector('.emore'); if (d) d.open = true; }
   document.querySelectorAll('#pbox textarea').forEach(grow);
-  if (!$('pbox').closest('#psheet').onclick) $('psheet').onclick = e => { if (e.target.id === 'psheet') closePhoto(); };
 }
 // ➕ เพิ่มคนไข้ (ลิงก์แก้ไขได้) → คิว Add
 function openAdd() {
@@ -451,13 +463,23 @@ function openAdd() {
     <div class="lbl">Ward</div><select class="inp" id="af_ward"><option value="">รอ admit (ยังไม่รู้ ward)</option>${(R.wards || []).map(w => `<option>${esc(w)}</option>`).join('')}</select>
     ${F.map(([k, l]) => `<div class="lbl">${l}</div><input class="inp" id="af_${k}" ${k === 'hn' ? 'inputmode="numeric"' : ''}>`).join('')}
     <div class="btns"><button class="b p" onclick="saveAdd()">เพิ่ม</button><button class="b" onclick="closePhoto()">ปิด</button></div>
-    <div class="meta">เข้าตารางราวด์ภายในประมาณ 1 นาที (ผ่านคิว Add ของ AppSheet)</div>`;
+`;
   $('psheet').style.display = 'flex';
 }
 function saveAdd() {
   const v = { ward: $('af_ward').value }; ['name', 'hn', 'dx', 'staff', 'plan', 'proc', 'ww'].forEach(k => v[k] = $('af_' + k).value.trim());
   if (!v.name) return toast('ใส่ชื่อก่อน');
-  call({ api: 'edit', act: 'add', vals: JSON.stringify(v) }, r => { if (r.error) return toast(r.msg || 'ไม่สำเร็จ'); toast(r.msg); closePhoto(); });
+  call({ api: 'edit', act: 'add', vals: JSON.stringify(v) }, r => { if (r.error) return toast(r.msg || 'ไม่สำเร็จ'); toast(r.msg); closePhoto(); findNew(v.name, 0); });
+}
+// โหลดราวด์ใหม่จนเห็นคนไข้ที่เพิ่ง เพิ่ม (ลองซ้ำทุก 5 วิ ไม่เกิน ~1.5 นาที) แล้วเลื่อนไปหา + กะพริบ
+function findNew(name, n) {
+  call({ api: 'round', fresh: 1 }, r => {
+    if (r.error) return;
+    R = r; LASTR = Date.now(); if (TAB === 'round') renderRound();
+    const i = R.pts.findIndex(p => p.name.split(/\s+/)[0] === name.split(/\s+/)[0]);
+    if (i >= 0) { RBLD = 'ทั้งหมด'; RG = 'ทุกคน'; RST = ''; RACT = 'all'; RDUE = false; ROPEN = i; renderRound(); const el = document.querySelectorAll('.prow')[[...document.querySelectorAll('.prow')].findIndex(e => e.textContent.includes(R.pts[i].name))]; if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); el.classList.add('flash'); setTimeout(() => el.classList.remove('flash'), 2200); } toast('➕ ' + name + ' อยู่ในตารางแล้ว'); return; }
+    if (n < 18) setTimeout(() => findNew(name, n + 1), 5000);
+  });
 }
 function edCall(q, after) {
   call(Object.assign({ api: 'edit', rid: ED.p.rid, name: ED.p.name }, q), r => { if (r.error) return toast(r.msg || 'แก้ไม่สำเร็จ'); toast(r.msg); closePhoto(); ED = null; R = null; setTab('round'); });
@@ -494,6 +516,27 @@ function dayIn(d, m) {
   return Math.round((t - today) / 864e5);
 }
 function setIn(p) { const m = [p.remark, p.ww, p.plan].join(' ').match(/\bset\b[^\d\n]{0,60}?(\d{1,2})\/(\d{1,2})/i); return m ? dayIn(Number(m[1]), Number(m[2])) : null; }
+// "debridement 15/10/69" → "debridement POD 9"
+function podTxt(s) {
+  if (!s) return '';
+  const now = new Date(); now.setHours(0, 0, 0, 0); const out = [];
+  String(s).replace(/([^\d,;\n]*?)\s*(\d{1,2})\/(\d{1,2})\/(\d{2,4})/g, (m, name, d, mo, y) => {
+    y = +y; if (y < 100) y += y >= 60 ? 2500 : 2000; if (y > 2400) y -= 543;
+    const dt = new Date(y, mo - 1, +d), n = Math.round((now - dt) / 864e5);
+    name = name.replace(/^\s*s\/p\s*/i, '').replace(/^[\s\-+&·/]+|\b(s\/p|on|at|วันที่|เมื่อ)\s*$/gi, '').trim();
+    if (n >= 0 && n <= 400) out.push((name ? name + ' ' : '') + 'POD ' + n);
+    return m;
+  });
+  return out.join(' · ');
+}
+// ⧉ กดหัว ward → คัดลอก "ฉก 7 ต\n-สมชาย: \n..." ไว้พิมพ์ progress ต่อในไลน์ (เฉพาะคนที่แสดงอยู่ ไม่มี HN)
+function copyWard(el) {
+  const names = JSON.parse(el.dataset.n), txt = el.dataset.w + '\n' + names.map(n => '-' + n + ': ').join('\n');
+  const done = () => toast('คัดลอก ' + el.dataset.w + ' · ' + names.length + ' คน');
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(done, () => fallbackCopy(txt, done));
+  else fallbackCopy(txt, done);
+}
+function fallbackCopy(t, cb) { const a = document.createElement('textarea'); a.value = t; a.style.cssText = 'position:fixed;opacity:0'; document.body.appendChild(a); a.select(); try { document.execCommand('copy'); cb(); } catch (e) {} a.remove(); }
 function dueToday(p, off) {
   off = off || 0;
   if (p.inactive && (visitIn(p) === off || setIn(p) === off + 1)) return true;   // ไม่ต้องดู: ถึงวันนัด หรือวันก่อน set   // วันนัด (next …) ใช้เฉพาะคน ไม่ต้องดู — คนกำลังดูดูทุกวันอยู่แล้ว (next ในนั้นมักเป็นวันทำแผล)
@@ -635,6 +678,21 @@ function saveQ(no) {
 function addTask(e) { e.preventDefault(); const v = $('newt').value.trim(); if (!v) return; $('newt').value = ''; document.body.classList.remove('adding'); run('ww ' + v); }
 load();
 call({ api: 'round' }, r => { if (!r.error) { R = r; LASTR = Date.now(); if (TAB === 'task' && D) render(); } });
+
+// ⌨️ คีย์บอร์ดขึ้น → ย่อแผ่น/ยกแถบพิมพ์ขึ้นเหนือคีย์บอร์ด แล้วเลื่อนช่องที่พิมพ์ให้อยู่ในจอ
+(function () {
+  const vv = window.visualViewport; if (!vv) return;
+  const fit = () => {
+    const kb = Math.max(0, window.innerHeight - vv.height - vv.offsetTop), r = document.documentElement.style;
+    r.setProperty('--vvh', vv.height + 'px'); r.setProperty('--vvt', vv.offsetTop + 'px'); r.setProperty('--kb', kb + 'px');
+    document.body.style.paddingBottom = kb ? (kb + 80) + 'px' : '';
+  };
+  vv.addEventListener('resize', fit); vv.addEventListener('scroll', fit); fit();
+  document.addEventListener('focusin', e => {
+    const el = e.target; if (!/^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName)) return;
+    setTimeout(() => { fit(); if (!el.closest('.add')) el.scrollIntoView({ block: 'center', behavior: 'smooth' }); }, 350);
+  });
+})();
 </script>
 </body>
 </html>
