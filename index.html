@@ -98,11 +98,13 @@ textarea.inp{resize:vertical;line-height:1.45;min-height:44px;overflow:hidden;fo
 .adh{display:flex;align-items:center;gap:8px}.adg{display:flex;gap:6px}.adg .inp{min-width:0}.adi{min-height:40px;padding:8px 10px}
 .adbar{position:sticky;bottom:-16px;background:var(--bg);margin:0 -16px -16px;padding:10px 16px 16px;border-top:1px solid var(--ln);display:flex;gap:8px}.adbar .b{flex:1;min-height:46px}
 .qmv{margin:6px 0 2px}.qmv .inp{min-height:38px;padding:6px 10px;font-size:15px;border-color:var(--or)}
-#tabA{display:none}body.canedit #tabA{display:block}.atab .fab,.atab .add,.atab #chips,.atab #notices,.atab #count{display:none!important}
+#tabA,#tabX{display:none}body.canedit #tabA,body.isadmin #tabX{display:block}.atab .fab,.atab .add,.atab #chips,.atab #notices,.atab #count{display:none!important}
 .amain .ehead{position:static;margin:0;padding:10px 0;border:0;background:none}.amain .adbar{bottom:0;margin:0 -16px}
 .adc{border-bottom:1px solid var(--ln);padding:8px 0;display:flex;flex-direction:column;gap:2px}.adt{display:flex;gap:6px;align-items:baseline;flex-wrap:wrap}.adt .ads{margin-left:auto}
 .amain{padding:4px 16px 24px;display:flex;flex-direction:column;gap:10px;max-width:600px;margin:0 auto}
 .ver{text-align:center;font-size:11px;color:var(--mu);opacity:.6;padding:8px 0 90px}
+.xrow{display:flex;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--ln)}.xdot{width:10px;height:10px;border-radius:50%;flex-shrink:0;background:var(--mu)}.xdot.ok{background:var(--g)}.xdot.bad{background:var(--rd)}.xdot.wait{background:var(--or)}
+.xsum{font-weight:700;font-size:16px;padding:6px 0}
 .bldh{margin-top:14px;padding:10px 16px;font-size:14px;font-weight:700;color:var(--tx);background:var(--bg2);border-top:3px solid var(--hd)}
 .sec{font-size:12px;font-weight:600;color:var(--mu);padding:12px 16px 2px;letter-spacing:.3px}
 .card{background:transparent}
@@ -164,7 +166,7 @@ input[type=date]{color-scheme:light dark}
     <div><div class="date" id="date"></div><h1 id="ttl">งานวันนี้</h1></div>
     <span style="display:flex;align-items:center;gap:6px"><span class="pill" id="count">…</span><span class="upd" id="updAt"></span><button class="rf" id="rf" onclick="refreshNow()" aria-label="รีเฟรช"><svg viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg></button></span>
   </div>
-  <div class="tabs"><button id="tabT" class="tab on" onclick="setTab('task')">งาน</button><button id="tabR" class="tab" onclick="setTab('round')">ราวด์</button><button id="tabA" class="tab" onclick="setTab('admit')">admit</button></div>
+  <div class="tabs"><button id="tabT" class="tab on" onclick="setTab('task')">งาน</button><button id="tabR" class="tab" onclick="setTab('round')">ราวด์</button><button id="tabA" class="tab" onclick="setTab('admit')">admit</button><button id="tabX" class="tab" onclick="setTab('admin')">admin</button></div>
   <div class="dnav" id="dnav"></div>
   <div class="chips" id="chips"></div>
 </header>
@@ -181,7 +183,7 @@ input[type=date]{color-scheme:light dark}
 <button class="fab" id="fab" aria-label="เพิ่มงาน" onclick="if(TAB==='round'){openAdd()}else{document.body.classList.add('adding');$('newt').focus()}">+</button>
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbw9dsYKGy8pELEBeIatNSjJLFv6W7MGjxhnjj584Z4BUlXN6WEfon-JID4f4eHR9wQ/exec';   // ← วาง URL ของบอท (ลงท้าย /exec)
-const APP_VER = '24/10/69 22:45';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
+const APP_VER = '24/10/69 23:10';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
 const TOK = new URLSearchParams(location.search).get('t') || '';
 // 🔄 แถบสีด้านบนวิ่งระหว่างโหลด / บันทึก
 let LOADING = 0;
@@ -364,10 +366,11 @@ function run(cmd, patch) {
 }
 const nowHM = () => new Date(Date.now() + 7 * 3600e3).toISOString().slice(11, 16);
 
-function setR(r) { R = r; document.body.classList.toggle('canedit', !!(r && r.canEdit)); try { r._t = Date.now(); localStorage.setItem('ww_c_r', JSON.stringify(r)); } catch (e) {} }
+function setR(r) { R = r; document.body.classList.toggle('canedit', !!(r && r.canEdit)); document.body.classList.toggle('isadmin', !!(r && r.admin)); try { r._t = Date.now(); localStorage.setItem('ww_c_r', JSON.stringify(r)); } catch (e) {} }
 function setTab(t, force) {
-  TAB = t; document.body.classList.toggle('rtab', t === 'round'); document.body.classList.toggle('atab', t === 'admit'); stamp(); if (t === "round") $("ttl").textContent = "ราวด์"; if (t === 'admit') $('ttl').textContent = 'admit'; $('tabT').classList.toggle('on', t === 'task'); $('tabR').classList.toggle('on', t === 'round'); $('tabA').classList.toggle('on', t === 'admit');
+  TAB = t; document.body.classList.toggle('rtab', t === 'round'); document.body.classList.toggle('atab', t === 'admit' || t === 'admin'); stamp(); if (t === "round") $("ttl").textContent = "ราวด์"; if (t === 'admit') $('ttl').textContent = 'admit'; $('tabT').classList.toggle('on', t === 'task'); $('tabR').classList.toggle('on', t === 'round'); $('tabA').classList.toggle('on', t === 'admit'); $('tabX').classList.toggle('on', t === 'admin');
   if (t === 'admit') { document.body.classList.remove('adding'); $('dnav').style.display = 'none'; return openAdmit(); }
+  if (t === 'admin') { document.body.classList.remove('adding'); $('dnav').style.display = 'none'; $('ttl').textContent = 'admin'; return openAdminX(); }
   if (t === 'round') document.body.classList.remove('adding'); $('dnav').style.display = t === 'task' ? 'flex' : 'none';
   if (t === 'round') { if (R) renderRound(); else { $('main').innerHTML = '<div class="empty">กำลังโหลด…</div>'; }
     if (R && !force && LASTR && LASTR >= last5am()) return;   // ⚡ โหลดไว้แล้ว ไม่ต้องดึงใหม่
@@ -579,6 +582,31 @@ function qMove(i, w) {
   toast('🚚 ย้าย ' + p.name + ' → ' + w + '…');
   call({ api: 'edit', rid: p.rid, name: p.name, act: 'move', ward: w }, r => { if (r.error) return toast('❗ ' + (r.msg || 'ย้ายไม่สำเร็จ')); toast(r.msg || 'ย้ายแล้ว'); R = null; setTab('round'); });
 }
+// ═══ 🛠 admin: สุขภาพระบบ · error ล่าสุด · ใครใช้แอพ · ยกเลิกลิงก์ ═══
+let AX = null;
+const agoTxt = ms => { if (!ms) return 'ไม่เคย'; const m = Math.round((Date.now() - ms) / 60000); return m < 1 ? 'เมื่อกี้' : m < 60 ? m + ' นาทีก่อน' : m < 1440 ? Math.round(m / 60) + ' ชม.ก่อน' : Math.round(m / 1440) + ' วันก่อน'; };
+const hmTxt = ms => new Date(ms + 7 * 3600e3).toISOString().replace(/^\d{4}-(\d\d)-(\d\d)T(\d\d:\d\d).*/, '$2/$1 $3');
+function openAdminX() { AX = AX || {}; AX.data = null; drawAdminX(); call({ api: 'admin' }, r => { AX.data = r; drawAdminX(); }); }
+function drawAdminX() {
+  if (TAB !== 'admin') return; const d = AX && AX.data;
+  if (!d) return $('main').innerHTML = '<div class="amain"><div class="meta">กำลังโหลด…</div></div>';
+  if (!d.ok) return $('main').innerHTML = `<div class="amain"><div class="empty">${esc(d.msg || 'โหลดไม่ได้')}</div></div>`;
+  const okJob = j => j.on && j.last && (j.last.ok !== false);
+  const jobs = d.jobs.map(j => `<div class="xrow"><span class="xdot ${!j.on ? 'bad' : j.last && j.last.ok === false ? 'bad' : j.last ? 'ok' : 'wait'}"></span><div style="flex:1"><b>${esc(j.name)}</b> <span class="meta">${j.when}</span>
+    <div class="meta">${!j.on ? '❗ ยังไม่ได้ตั้งเวลา — รัน install ใน Apps Script' : j.last ? (j.last.day ? 'ล่าสุด ' + esc(j.last.day) : (j.last.ok === false ? '❗ พัง ' : '✓ ') + agoTxt(j.last.t) + (j.last.r ? ' · ' + esc(j.last.r) : '')) : 'ยังไม่เคยรัน'}${j.dup ? ' · ⚠️ ตั้งซ้ำ' : ''}</div></div></div>`).join('');
+  const errs = d.errors.length ? d.errors.slice(0, 8).map(e => `<div class="xrow"><div style="flex:1"><div class="meta">${hmTxt(e.t)} · ${esc(e.w)}</div><div style="font-size:13px">${esc(e.m)}</div></div></div>`).join('') : '<div class="meta">ไม่มี error 👍</div>';
+  const users = d.users.map(u => `<div class="xrow"><span class="xdot ${u.seen && Date.now() - u.seen < 864e5 ? 'ok' : 'wait'}"></span><div style="flex:1"><b>${esc(u.name)}</b>${u.me ? ' <span class="meta">(คุณ)</span>' : ''}${u.inGroup ? '' : ' <span class="itag">ออกจากกลุ่มแล้ว</span>'}<div class="meta">เปิดแอพล่าสุด ${agoTxt(u.seen)}</div></div>${u.me ? '' : `<button class="b r" style="min-height:34px;font-size:13px" onclick="adminRevoke('${u.uid}', this)">${AX.arm === u.uid ? 'กดอีกครั้ง = ยกเลิก' : 'ยกเลิกลิงก์'}</button>`}</div>`).join('');
+  $('main').innerHTML = `<div class="amain">
+    <div class="xsum">${d.jobs.every(okJob) && !d.errors.filter(e => Date.now() - e.t < 864e5).length ? '✅ ระบบปกติ' : '⚠️ มีเรื่องต้องดู'} <span class="meta">· เซิร์ฟเวอร์ ${esc(d.ver)} · แอพ ${esc(APP_VER)}${d.ver === APP_VER ? '' : ' ⚠️ ไม่ตรง'}</span></div>
+    <div class="lbl">🩺 งานตั้งเวลา</div>${jobs}
+    <div class="lbl">🐞 error ล่าสุด</div>${errs}
+    <div class="lbl">👥 ผู้ใช้ (${d.users.length})</div>${users}
+    <div class="meta">ชีต Tasks ${d.sizes.tasks || '?'} แถว${d.sizes.backup ? ' · ไฟล์สำรอง ' + d.sizes.backup + ' แถว' : ''}</div></div>`;
+}
+function adminRevoke(uid) {
+  if (AX.arm !== uid) { AX.arm = uid; return drawAdminX(); }
+  AX.arm = null; call({ api: 'adminrevoke', uid }, r => { toast(r.ok ? r.msg : '❗ ' + (r.msg || 'ไม่สำเร็จ')); openAdminX(); });
+}
 function openAdd() {
   ED = { add: true, p: {} };
   const F = [['name', 'ชื่อ *'], ['hn', 'HN'], ['dx', 'Diagnosis'], ['staff', 'อาจารย์ (ภาควิชา/อาจารย์)'], ['plan', 'Plan / consult'], ['proc', 'Procedure'], ['ww', 'Ward work']];
@@ -701,7 +729,7 @@ function autoRefresh(force) {
 setInterval(() => { stamp(); autoRefresh(false); }, 20000);
 let HIDDEN_AT = 0;
 document.addEventListener('visibilitychange', () => { if (document.hidden) { HIDDEN_AT = Date.now(); return; } if (TAB === 'task' && HIDDEN_AT && Date.now() - HIDDEN_AT >= BACK_MIN * 60000) autoRefresh(true); else autoRefresh(false); });
-function refreshNow() { $('rf').classList.add('spin'); setTimeout(() => $('rf').classList.remove('spin'), 1500); TAB === 'round' ? setTab('round', true) : TAB === 'admit' ? openAdmit() : load(); }
+function refreshNow() { $('rf').classList.add('spin'); setTimeout(() => $('rf').classList.remove('spin'), 1500); TAB === 'round' ? setTab('round', true) : TAB === 'admit' ? openAdmit() : TAB === 'admin' ? openAdminX() : load(); }
 function go(n) { OFF = n === 0 ? 0 : OFF + n; OPEN = null; QEDIT = null; load(); }
 function render() {
   if (TAB === 'round') return;
