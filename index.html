@@ -83,6 +83,7 @@ textarea.inp{resize:vertical;line-height:1.45;min-height:44px;overflow:hidden;fo
 .emore{border-top:1px solid var(--ln);padding-top:10px}.emore summary{cursor:pointer;color:var(--mu);font-size:14px;padding:6px 0;list-style:none}.emore summary:before{content:'▸ '}.emore[open] summary:before{content:'▾ '}.emore .lbl{margin-top:8px;display:block}
 .pod{font-size:12px;font-weight:600;color:var(--or,#d97706)}
 .sec.cp{cursor:pointer;display:flex;justify-content:space-between;align-items:center}.cpi{font-size:11px;font-weight:600;color:var(--hd);border:1px solid var(--hd);border-radius:999px;padding:0 7px;line-height:18px}
+.stale{position:fixed;bottom:34px;left:50%;transform:translateX(-50%);background:var(--inv,#111);color:var(--invt,#fff);font-size:12px;padding:3px 12px;border-radius:999px;z-index:8;opacity:.85}
 .bldh{margin-top:14px;padding:10px 16px;font-size:14px;font-weight:700;color:var(--tx);background:var(--bg2);border-top:3px solid var(--hd)}
 .sec{font-size:12px;font-weight:600;color:var(--mu);padding:12px 16px 2px;letter-spacing:.3px}
 .card{background:transparent}
@@ -229,7 +230,7 @@ function goTask(no) {
 function set(d) {
   document.body.classList.remove('busy');
   if (!d || d.error) { $('main').innerHTML = '<div class="empty">🔒 ลิงก์หมดอายุ<br>พิมพ์ ww app ในแชท 1:1 กับบอท</div>'; return; }
-  D = d; LAST = Date.now(); computeNews(); render(); stamp();
+  D = d; LAST = Date.now(); if (OFF === 0) LS.set('ww_c_d', d); $('stale') && $('stale').remove(); computeNews(); render(); stamp();
 }
 function fail(e) { document.body.classList.remove('busy'); toast('❗ เชื่อมต่อไม่ได้ ลองใหม่'); }
 // ✅ ปิดงานแบบรอ 5 วินาที (กดยกเลิกได้) แล้วค่อยส่งให้บอท
@@ -267,7 +268,7 @@ function sendClose(job) {
   HOLD = HOLD.filter(j => j !== job);
   const cmd = `ww ${job.off && job.day ? job.day + ' ' : ''}เสร็จ ${job.no} ${job.res || 'เสร็จ'}`;
   PENDING++; if (TAB === 'task' && D) render();
-  call({ api: 'run', cmd, off: OFF }, r => { PENDING--; if (r.error) return set(r); if (/^❗/.test(r.msg || '')) toast(r.msg); if (!HOLD.length) set(r.data); if (TAB === 'round') setTab('round'); });
+  call({ api: 'run', cmd, off: OFF }, r => { PENDING--; if (r.error) return set(r); if (/^❗/.test(r.msg || '')) toast(r.msg); if (!HOLD.length) set(r.data); if (TAB === 'round') setTab('round', true); });
 }
 function undo(job) {
   clearTimeout(job.tm); HOLD = HOLD.filter(j => j !== job);
@@ -307,11 +308,13 @@ function run(cmd, patch) {
 }
 const nowHM = () => new Date(Date.now() + 7 * 3600e3).toISOString().slice(11, 16);
 
-function setTab(t) {
+function setR(r) { R = r; try { r._t = Date.now(); localStorage.setItem('ww_c_r', JSON.stringify(r)); } catch (e) {} }
+function setTab(t, force) {
   TAB = t; document.body.classList.toggle('rtab', t === 'round'); stamp(); if (t === "round") $("ttl").textContent = "ราวด์"; $('tabT').classList.toggle('on', t === 'task'); $('tabR').classList.toggle('on', t === 'round');
   if (t === 'round') document.body.classList.remove('adding'); $('dnav').style.display = t === 'task' ? 'flex' : 'none';
   if (t === 'round') { if (R) renderRound(); else { $('main').innerHTML = '<div class="empty">กำลังโหลด…</div>'; }
-    call({ api: 'round' }, r => { if (!r.error) { LASTR = Date.now(); stamp(); } if (r.error) { $('main').innerHTML = '<div class="empty">' + (r.error === 'expired' ? '🔒 ลิงก์หมดอายุ' : '❗ อ่านตารางราวด์ไม่ได้') + '</div>'; return; } R = r; if (TAB === 'round') renderRound(); }); }
+    if (R && !force && LASTR && LASTR >= last5am()) return;   // ⚡ โหลดไว้แล้ว ไม่ต้องดึงใหม่
+    call({ api: 'round' }, r => { if (!r.error) { LASTR = Date.now(); stamp(); } if (r.error) { $('main').innerHTML = '<div class="empty">' + (r.error === 'expired' ? '🔒 ลิงก์หมดอายุ' : '❗ อ่านตารางราวด์ไม่ได้') + '</div>'; return; } setR(r); if (TAB === 'round') renderRound(); }); }
   else if (D) render();
 }
 function renderRound() {
@@ -371,7 +374,7 @@ function addR(i) {
   if (!v) return toast('พิมพ์งานก่อน เช่น CBC');
   const nm = p.name.split(/\s+/)[0], cmd = (/รอ\s*admit/i.test(p.ward) ? `ww ${nm} ${v}` : `ww ${p.ward} ${nm} ${v}`);
   document.body.classList.add('busy');
-  call({ api: 'run', cmd, off: 0 }, r => { document.body.classList.remove('busy'); if (r.error) return set(r); toast(r.msg); if (OFF === 0) D = r.data; setTab('round'); });
+  call({ api: 'run', cmd, off: 0 }, r => { document.body.classList.remove('busy'); if (r.error) return set(r); toast(r.msg); if (OFF === 0) D = r.data; setTab('round', true); });
 }
 // 📷 ลงรูปจากแอพ → Drive (ทีละไฟล์)
 let PH = null;
@@ -442,7 +445,7 @@ function drawEdit() {
   const { p, o } = ED;
   const fld = (k, l, wide) => `<label class="ef${wide ? ' w' : ''}"><span class="lbl">${l}</span>${k === 'ww' || k === 'plan' ? `<textarea class="inp" id="ef_${k}" rows="1" oninput="grow(this)">${esc(o[k] || '')}</textarea>` : `<input class="inp" id="ef_${k}" value="${esc(o[k] || '')}" ${k === 'hn' ? 'inputmode="numeric"' : ''}>`}</label>`;
   $('pbox').innerHTML = `<div class="ehead"><div><h3>${esc(p.name)}</h3><div class="meta">${esc(p.ward)}${p.inactive ? ' · ไม่ต้องดู' : ''}</div></div><button class="b" onclick="closePhoto()" aria-label="ปิด">✕</button></div>
-    <div class="egrid">${fld('hn', 'HN')}${fld('staff', 'อาจารย์')}${fld('dx', 'Diagnosis', 1)}${fld('ww', 'Ward work', 1)}${fld('plan', 'Plan / consult', 1)}${fld('proc', 'Procedure', 1)}</div>
+    <div class="egrid">${fld('hn', 'HN')}${fld('staff', 'อาจารย์')}${fld('dx', 'Diagnosis', 1)}${fld('ww', 'ww ประจำ', 1)}${fld('plan', 'Plan / consult', 1)}${fld('proc', 'Procedure', 1)}</div>
     <button class="b p esave" onclick="saveEdit()">บันทึก</button>
     <details class="emore"><summary>ย้าย ward · คนดู · ไม่ต้องดู · ลบ</summary>
       <div class="lbl">ย้าย ward</div>
@@ -475,7 +478,7 @@ function saveAdd() {
 function findNew(name, n) {
   call({ api: 'round', fresh: 1 }, r => {
     if (r.error) return;
-    R = r; LASTR = Date.now(); if (TAB === 'round') renderRound();
+    setR(r); LASTR = Date.now(); if (TAB === 'round') renderRound();
     const i = R.pts.findIndex(p => p.name.split(/\s+/)[0] === name.split(/\s+/)[0]);
     if (i >= 0) { RBLD = 'ทั้งหมด'; RG = 'ทุกคน'; RST = ''; RACT = 'all'; RDUE = false; ROPEN = i; renderRound(); const el = document.querySelectorAll('.prow')[[...document.querySelectorAll('.prow')].findIndex(e => e.textContent.includes(R.pts[i].name))]; if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); el.classList.add('flash'); setTimeout(() => el.classList.remove('flash'), 2200); } toast('➕ ' + name + ' อยู่ในตารางแล้ว'); return; }
     if (n < 18) setTimeout(() => findNew(name, n + 1), 5000);
@@ -563,13 +566,13 @@ function autoRefresh(force) {
   if (document.hidden || LOADING || HOLD.length) return;
   const busyUI = OPEN !== null || QEDIT !== null || ROPEN !== null || ED || PH || document.body.classList.contains('adding') || /INPUT|TEXTAREA|SELECT/.test((document.activeElement || {}).tagName || '');
   if (busyUI) return;
-  if (TAB === 'round') { if (force || (LASTR && LASTR < last5am())) setTab('round'); }   // ราวด์: รีเฟรชเองเฉพาะเมื่อข้ามตี 5 แล้ว
+  if (TAB === 'round') { if (force || (LASTR && LASTR < last5am())) setTab('round', true); }   // ราวด์: รีเฟรชเองเฉพาะเมื่อข้ามตี 5 แล้ว
   else if (force || Date.now() - LAST >= AUTO_MIN * 60000) load();
 }
 setInterval(() => { stamp(); autoRefresh(false); }, 20000);
 let HIDDEN_AT = 0;
 document.addEventListener('visibilitychange', () => { if (document.hidden) { HIDDEN_AT = Date.now(); return; } if (TAB === 'task' && HIDDEN_AT && Date.now() - HIDDEN_AT >= BACK_MIN * 60000) autoRefresh(true); else autoRefresh(false); });
-function refreshNow() { $('rf').classList.add('spin'); setTimeout(() => $('rf').classList.remove('spin'), 1500); TAB === 'round' ? setTab('round') : load(); }
+function refreshNow() { $('rf').classList.add('spin'); setTimeout(() => $('rf').classList.remove('spin'), 1500); TAB === 'round' ? setTab('round', true) : load(); }
 function go(n) { OFF = n === 0 ? 0 : OFF + n; OPEN = null; QEDIT = null; load(); }
 function render() {
   if (TAB === 'round') return;
@@ -676,8 +679,13 @@ function saveQ(no) {
   run(`ww แก้ ${no} ${t.pt} ${rest}`, () => Object.assign(T(no), { q, rest }));
 }
 function addTask(e) { e.preventDefault(); const v = $('newt').value.trim(); if (!v) return; $('newt').value = ''; document.body.classList.remove('adding'); run('ww ' + v); }
+// ⚡ เปิดแอพ: โชว์ข้อมูลที่เครื่องจำไว้ทันที แล้วค่อยอัปเดตทับ
+(() => {
+  const cr = LS.get('ww_c_r'); if (cr && cr.pts) { R = cr; LASTR = cr._t || 0; }
+  const cd = LS.get('ww_c_d'); if (cd && cd.tasks) { D = cd; render(); document.body.insertAdjacentHTML('beforeend', '<div id="stale" class="stale">กำลังอัปเดต…</div>'); }
+})();
 load();
-call({ api: 'round' }, r => { if (!r.error) { R = r; LASTR = Date.now(); if (TAB === 'task' && D) render(); } });
+call({ api: 'round' }, r => { if (!r.error) { setR(r); LASTR = Date.now(); if (TAB === 'task' && D) render(); } });
 
 // ⌨️ คีย์บอร์ดขึ้น → ย่อแผ่น/ยกแถบพิมพ์ขึ้นเหนือคีย์บอร์ด แล้วเลื่อนช่องที่พิมพ์ให้อยู่ในจอ
 (function () {
