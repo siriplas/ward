@@ -102,6 +102,7 @@ textarea.inp{resize:vertical;line-height:1.45;min-height:44px;overflow:hidden;fo
 .amain .ehead{position:static;margin:0;padding:10px 0;border:0;background:none}.amain .adbar{bottom:0;margin:0 -16px}
 .adc{border-bottom:1px solid var(--ln);padding:8px 0;display:flex;flex-direction:column;gap:2px}.adt{display:flex;gap:6px;align-items:baseline;flex-wrap:wrap}.adt .ads{margin-left:auto}
 .amain{padding:4px 16px 24px;display:flex;flex-direction:column;gap:10px;max-width:600px;margin:0 auto}
+.ver{text-align:center;font-size:11px;color:var(--mu);opacity:.6;padding:8px 0 90px}
 .bldh{margin-top:14px;padding:10px 16px;font-size:14px;font-weight:700;color:var(--tx);background:var(--bg2);border-top:3px solid var(--hd)}
 .sec{font-size:12px;font-weight:600;color:var(--mu);padding:12px 16px 2px;letter-spacing:.3px}
 .card{background:transparent}
@@ -180,6 +181,7 @@ input[type=date]{color-scheme:light dark}
 <button class="fab" id="fab" aria-label="เพิ่มงาน" onclick="if(TAB==='round'){openAdd()}else{document.body.classList.add('adding');$('newt').focus()}">+</button>
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbw9dsYKGy8pELEBeIatNSjJLFv6W7MGjxhnjj584Z4BUlXN6WEfon-JID4f4eHR9wQ/exec';   // ← วาง URL ของบอท (ลงท้าย /exec)
+const APP_VER = '24/10/69 22:40';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
 const TOK = new URLSearchParams(location.search).get('t') || '';
 // 🔄 แถบสีด้านบนวิ่งระหว่างโหลด / บันทึก
 let LOADING = 0;
@@ -416,7 +418,7 @@ function renderRound() {
         <div class="who">${p.tags.includes('ว่าง') ? '<span class="nobody">ยังไม่มีคนดู</span>' : esc(p.team || p.tags.join(', '))}${p.remark ? ' · ' + esc(p.remark) : ''}</div>
         ${p.ww ? `<div class="ww">${esc(p.ww)}</div>` : ''}</span>
         <span style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;flex-shrink:0">${p.open ? `<span class="badge">ค้าง ${p.open}</span>` : p.done ? '<span class="badge ok">✓ เสร็จ</span>' : ''}${p.flap ? '<span class="badge fl">flap</span>' : ''}${op ? '<span class="chev" style="margin-top:4px"><svg viewBox="0 0 24 24"><path d="M6 15l6-6 6 6"/></svg></span>' : ''}</span></button>
-        ${R.canEdit && isPend(p.ward) ? `<div class="qmv" style="padding:0 16px 10px" onclick="event.stopPropagation()"><select class="inp" onchange="qMove(${i}, this.value)"><option value="">🚚 ย้ายไป ward จริง…</option>${(R.wards || []).filter(w => !isPend(w)).map(w => `<option>${esc(w)}</option>`).join('')}</select></div>` : ''}
+        ${isPend(p.ward) ? `<div class="qmv" style="padding:0 16px 10px" onclick="event.stopPropagation()"><select class="inp" onchange="qMove(${i}, this.value)"><option value="">🚚 ย้ายไป ward จริง…</option>${(R.wards || []).filter(w => !isPend(w)).map(w => `<option>${esc(w)}</option>`).join('')}</select></div>` : ''}
         ${op ? `<div class="panel" style="padding-left:16px">${p.hist.length ? `<div class="hist">${p.hist.map(x => `<div${x.fut ? ' class="fut"' : ''}><div class="meta">${x.fut ? '⏭ ' : ''}${esc(x.day)}</div><div style="display:flex;gap:8px;align-items:center"><span style="flex:1;display:flex;gap:8px;align-items:flex-start">${x.mark === '✅' ? '<span class="mk d">✓</span>' : x.mark === '👁' ? '<span class="mk f"></span>' : '<span class="mk"></span>'}<span>${x.mark === '👁' ? '<span class="fltag">flap</span> ' : ''}${esc(x.task)}${x.res ? ` <span class="${x.upd ? 'arr upd' : 'arr'}">→ ${esc(x.res)}</span>` : ''}</span></span>${x.canClose ? `<button class="b" style="min-height:34px;padding:0 10px" onclick="event.stopPropagation();closeRound(${x.no}, this)">✓ เสร็จ</button>` : ''}</div></div>`).join('')}</div>` : '<div class="meta">ไม่มีงานใน 3 วันล่าสุด และไม่มีงานล่วงหน้า</div>'}
           <div class="links"><button onclick="openPhoto(${i})"><svg viewBox="0 0 24 24"><path d="M4 7h3l2-3h6l2 3h3v13H4z"/><circle cx="12" cy="13" r="3.5"/></svg>ลงรูป</button><a target="_blank" rel="noopener" href="https://drive.google.com/drive/search?q=${encodeURIComponent('type:folder ' + (p.hn || p.name.split(/\s+/)[0]))}"><svg viewBox="0 0 24 24"><path d="M3 7h6l2 2h10v10H3z"/></svg>Drive</a>${R.canEdit ? `<button onclick="openEdit(${i})"><svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg>แก้ไข</button>` : ''}</div>
           <div class="btns" style="flex-wrap:nowrap"><input class="inp" id="radd${i}" placeholder="งาน เช่น CBC" style="flex:1;width:auto;min-width:0" onkeydown="if(event.key==='Enter')addR(${i})">
@@ -515,7 +517,7 @@ function drawEdit() {
   document.querySelectorAll('#pbox textarea').forEach(grow);
 }
 // ➕ เพิ่มคนไข้ (ลิงก์แก้ไขได้) → คิว Add
-// ═══ 📅 ตาราง admit: รูป → บอทอ่าน → ตรวจ/แก้ → ยืนยัน → เข้าตารางราวด์เอง 13:00 ของแต่ละวัน ═══
+// ═══ 📅 ตาราง admit: รูป → บอทอ่าน → ตรวจ/แก้ → ยืนยัน → เข้าตารางราวด์เอง 10:00 ของแต่ละวัน ═══
 let AD = null;
 const AD_SECS = ['ADMISSION', 'CONSULT'];
 const thd = iso => { const [y, m, d] = String(iso).split('-'); return d ? `${+d}/${+m}` : iso; };
@@ -527,19 +529,19 @@ function openAdmit() {
 }
 function drawAdmit() {
   const s = AD; if (!s || TAB !== 'admit') return;
-  const head = `<div class="ehead"><div><h3>📅 ตาราง admit</h3><div class="meta">ADMISSION + CONSULT · เข้า "รอ admit" เอง 13:00 ของวันนั้น</div></div></div>`;
+  const head = `<div class="ehead"><div><h3>📅 ตาราง admit</h3><div class="meta">ADMISSION + CONSULT · เข้า "รอ admit" เอง 10:00 ของวันนั้น</div></div></div>`;
   if (s.step === 'list') {
     const plan = s.plan, by = {};
     (plan || []).forEach(p => (by[p.date] = by[p.date] || []).push(p));
     const list = plan == null ? '<div class="meta">กำลังโหลด…</div>' : !plan.length ? '<div class="meta">ยังไม่มีรายการที่รอเพิ่ม</div>' :
-      Object.keys(by).map(d => `<div class="lbl">${dow(d)} ${thd(d)} · ${by[d].length} คน</div>` + by[d].map(p => `<div class="adc"><div class="adt"><b>${esc(p.name)}</b>${p.hn ? ` <span class="meta">HN ${esc(p.hn)}</span>` : ''}<span class="ads${p.st ? ' ok' : ''}">${p.st ? (/^มี/.test(p.st) ? 'มีในตารางแล้ว' : '✓ เข้าตารางแล้ว') : 'รอ 13:00'}</span></div><div class="meta">${p.sec === 'CONSULT' ? '<b>consult</b> · ' : ''}อ. ${esc(p.staff || '-')}</div>${p.dx ? `<div>${esc(p.dx)}</div>` : ''}${p.proc ? `<div class="ww">${esc(p.proc)}</div>` : ''}</div>`).join('')).join('');
+      Object.keys(by).map(d => `<div class="lbl">${dow(d)} ${thd(d)} · ${by[d].length} คน</div>` + by[d].map(p => `<div class="adc"><div class="adt"><b>${esc(p.name)}</b>${p.hn ? ` <span class="meta">HN ${esc(p.hn)}</span>` : ''}<span class="ads${p.st ? ' ok' : ''}">${p.st ? (/^มี/.test(p.st) ? 'มีในตารางแล้ว' : '✓ เข้าตารางแล้ว') : 'รอ 10:00'}</span></div><div class="meta">${p.sec === 'CONSULT' ? '<b>consult</b> · ' : ''}อ. ${esc(p.staff || '-')}</div>${p.dx ? `<div>${esc(p.dx)}</div>` : ''}${p.proc ? `<div class="ww">${esc(p.proc)}</div>` : ''}</div>`).join('')).join('');
     $('main').innerHTML = '<div class="amain">' + head + `<label class="b p" style="display:flex;align-items:center;justify-content:center;cursor:pointer;min-height:46px">${s.busy ? '⏳ บอทกำลังอ่านรูป… (~10–20 วิ)' : '🖼 เลือกรูปตาราง admit'}<input type="file" accept="image/*" style="display:none" ${s.busy ? 'disabled' : ''} onchange="admitPick(this.files[0])"></label>${s.log ? `<div class="prog">${esc(s.log)}</div>` : ''}<div class="lbl" style="margin-top:6px">รอ admit (วันนี้เป็นต้นไป)</div>${list}</div>`;
     return;
   }
   // ตรวจ/แก้
   const n = s.rows.filter(r => r.on).length;
   const F = (i, k, ph, w) => `<input class="inp adi" style="${w ? 'flex:' + w : ''}" placeholder="${ph}" value="${esc(s.rows[i][k] || '')}" oninput="AD.rows[${i}].${k}=this.value" ${k === 'hn' ? 'inputmode="numeric"' : ''}>`;
-  $('main').innerHTML = '<div class="amain">' + head + `<div class="meta">ตรวจทุกแถว แก้ช่องที่ผิดได้ · ติ๊กออก = ไม่เพิ่ม · <b>HN ผิด = รูปแผลไปผิดคน</b></div>` +
+  $('main').innerHTML = '<div class="amain">' + head + `<button class="b" style="min-height:36px;font-size:13px" onclick="fallbackCopy(AD.raw,()=>toast('คัดลอกข้อความที่บอทอ่านแล้ว'))">📋 คัดลอกข้อความที่บอทอ่าน (ส่งให้ปรับ)</button><div class="meta">ตรวจทุกแถว แก้ช่องที่ผิดได้ · ติ๊กออก = ไม่เพิ่ม · <b>HN ผิด = รูปแผลไปผิดคน</b></div>` +
     s.rows.map((r, i) => `<div class="adr${r.on ? '' : ' off'}${r.on && !r.hn ? ' warn' : ''}">
       <label class="adh"><input type="checkbox" ${r.on ? 'checked' : ''} onchange="AD.rows[${i}].on=this.checked;drawAdmit()"> <b>${esc(r.sec || '?')}</b> <span class="meta">${dow(r.date)} ${thd(r.date)}</span></label>
       ${r.on ? `<div class="adg">${F(i, 'name', 'ชื่อ', 2)}${F(i, 'hn', 'HN', 1)}</div><div class="adg"><input class="inp adi" type="date" style="flex:1.4" value="${esc(r.date)}" onchange="AD.rows[${i}].date=this.value">${F(i, 'staff', 'อ.', 0.6)}</div>${F(i, 'dx', 'Dx')}${F(i, 'proc', 'Procedure')}` : `<div class="meta">${esc(r.name)}</div>`}
@@ -556,7 +558,7 @@ async function admitPick(file) {
     AD.busy = false;
     if (!r.ok) { AD.log = '❗ ' + (r.msg || r.error || 'อ่านไม่ได้'); return drawAdmit(); }
     if (!r.rows.length) { AD.log = '❗ อ่านแล้วไม่เจอแถวที่มีวันที่ ลองถ่ายให้ตรงและชัดขึ้น'; return drawAdmit(); }
-    AD.rows = r.rows.map(x => Object.assign(x, { on: !x.sec || AD_SECS.includes(x.sec) })); AD.step = 'review'; drawAdmit();
+    AD.raw = r.raw || ''; AD.rows = r.rows.map(x => Object.assign(x, { on: !x.sec || AD_SECS.includes(x.sec) })); AD.step = 'review'; drawAdmit();
   } catch (e) { AD.busy = false; AD.log = '❗ ส่งรูปไม่ได้ ลองใหม่'; drawAdmit(); }
 }
 async function admitSave() {
@@ -571,7 +573,7 @@ async function admitSave() {
   toast(r.msg); R = null; openAdmit();
 }
 const isPend = w => !String(w || '').trim() || /รอ\s*admit|รับใหม่/i.test(w);
-// 🚚 ย้ายคนไข้ "รอ admit" ไป ward จริง แตะเดียว (ลิงก์แก้ไขเท่านั้น)
+// 🚚 ย้ายคนไข้ "รอ admit" ไป ward จริง แตะเดียว (ทุกลิงก์)
 function qMove(i, w) {
   const p = R.pts[i]; if (!w || !p) return;
   toast('🚚 ย้าย ' + p.name + ' → ' + w + '…');
@@ -811,7 +813,7 @@ function addTask(e) { e.preventDefault(); const v = $('newt').value.trim(); if (
   const cr = LS.get('ww_c_r'); if (cr && cr.pts) { R = cr; LASTR = cr._t || 0; }
   const cd = LS.get('ww_c_d'); if (cd && cd.tasks) { D = cd; render(); document.body.insertAdjacentHTML('beforeend', '<div id="stale" class="stale">กำลังอัปเดต…</div>'); }
 })();
-load(); outBadge(); setTimeout(outFlush, 3000);
+load(); outBadge(); document.body.insertAdjacentHTML('beforeend', `<div class="ver">SiriplasWW · ${APP_VER}</div>`); setTimeout(outFlush, 3000);
 call({ api: 'round' }, r => { if (!r.error) { setR(r); LASTR = Date.now(); if (TAB === 'task' && D) render(); } });
 
 // ⌨️ คีย์บอร์ดขึ้น → ย่อแผ่น/ยกแถบพิมพ์ขึ้นเหนือคีย์บอร์ด แล้วเลื่อนช่องที่พิมพ์ให้อยู่ในจอ
