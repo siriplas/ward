@@ -103,6 +103,7 @@ textarea.inp{resize:vertical;line-height:1.45;min-height:44px;overflow:hidden;fo
 .adday{margin:14px -16px 2px;padding:9px 16px;background:var(--bg2);border-top:3px solid var(--hd);font-weight:700;font-size:15px;display:flex;justify-content:space-between}.adday span{font-weight:500;color:var(--mu);font-size:13px}.adday+.adc,.adday+.adr{border-top:0}
 .dstag{background:#7c3aed;color:#fff;border-radius:6px;padding:0 6px;font-size:11px;font-weight:700}.dschk{display:flex;align-items:center;gap:4px;font-size:13px;font-weight:600;white-space:nowrap}.adh .dschk{margin-left:auto}
 .panel.sp{padding:0;border:0;background:none;margin:0}
+@keyframes sp{to{transform:rotate(360deg)}}.spin{width:26px;height:26px;margin:0 auto 10px;border:3px solid var(--ln);border-top-color:var(--hd);border-radius:50%;animation:sp .8s linear infinite}
 .b.adup{border:1.5px dashed var(--hd);color:var(--hd);background:none;font-weight:600}
 .adc{border-bottom:1px solid var(--ln);padding:8px 0;display:flex;flex-direction:column;gap:2px}.adt{display:flex;gap:6px;align-items:baseline;flex-wrap:wrap}.adt .ads{margin-left:auto}
 .amain{padding:4px 16px 24px;display:flex;flex-direction:column;gap:10px;max-width:600px;margin:0 auto}
@@ -174,7 +175,7 @@ input[type=date]{color-scheme:light dark}
     <div><div class="date" id="date"></div><h1 id="ttl">งานวันนี้</h1></div>
     <span style="display:flex;align-items:center;gap:6px"><span class="pill" id="count">…</span><span class="upd" id="updAt"></span><button class="rf" id="rf" onclick="refreshNow()" aria-label="รีเฟรช"><svg viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg></button></span>
   </div>
-  <div class="tabs"><button id="tabT" class="tab on" onclick="setTab('task')">งาน</button><button id="tabR" class="tab" onclick="setTab('round')">ราวด์</button><button id="tabA" class="tab" onclick="setTab('admit')">รับใหม่</button><button id="tabX" class="tab" onclick="setTab('admin')">ผู้ดูแล</button></div>
+  <div class="tabs"><button id="tabT" class="tab on" onclick="if(TAB==='task'&&OFF){go(0)}else setTab('task')">งาน</button><button id="tabR" class="tab" onclick="setTab('round')">ราวด์</button><button id="tabA" class="tab" onclick="setTab('admit')">รับใหม่</button><button id="tabX" class="tab" onclick="setTab('admin')">ผู้ดูแล</button></div>
   <div class="dnav" id="dnav"></div>
   <div class="chips" id="chips"></div>
 </header>
@@ -191,8 +192,8 @@ input[type=date]{color-scheme:light dark}
 <button class="fab" id="fab" aria-label="เพิ่มงาน" onclick="if(TAB==='round'){openAdd()}else{document.body.classList.add('adding');$('newt').focus()}">+</button>
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbw9dsYKGy8pELEBeIatNSjJLFv6W7MGjxhnjj584Z4BUlXN6WEfon-JID4f4eHR9wQ/exec';   // ← วาง URL ของบอท (ลงท้าย /exec)
-const APP_VER = 'v1.14';   // 🔖 ต้องตรงกับ SERVER_VER
-const APP_DATE = '25/10/69 17:35';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
+const APP_VER = 'v1.16';   // 🔖 ต้องตรงกับ SERVER_VER
+const APP_DATE = '25/10/69 17:50';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
 const TOK = new URLSearchParams(location.search).get('t') || '';
 // 🔄 แถบสีด้านบนวิ่งระหว่างโหลด / บันทึก
 let LOADING = 0;
@@ -255,9 +256,26 @@ const DAYCOL = ['#b42318', '#a16207', '#be185d', '#15803d', '#c2410c', '#1d4ed8'
 (() => { const d = new Date(Date.now() + 7 * 3600e3 - 6 * 3600e3).getUTCDay(); const fx = festival(); document.documentElement.style.setProperty('--hd', fx ? fx.hd : DAYCOL[d]); if (fx) { document.documentElement.style.setProperty('--bar', fx.bar); document.documentElement.classList.add('fest'); document.addEventListener('DOMContentLoaded', () => { const h1 = document.getElementById('ttl'); if (h1) h1.insertAdjacentHTML('afterend', `<span class="fxi">${fx.icon}</span>`); }); } document.querySelector('meta[name=theme-color]') || document.head.insertAdjacentHTML('beforeend', `<meta name="theme-color" content="${DAYCOL[d]}">`); })();
 const short = b => String(b).replace(/^ตึก\s*/, '');
 
+// ⚡ เปลี่ยนวัน: ขึ้นวันที่ใหม่ + "กำลังโหลด…" ทันที · วันที่เคยเปิดแล้วโชว์จากที่จำไว้ก่อน · โหลดวันข้างๆ รอไว้
+const DAYC = {};
+const offLabel = n => { const d = new Date(todayUTC() + n * 864e5); return `${d.getUTCDate()}/${d.getUTCMonth() + 1}/${(d.getUTCFullYear() + 543) % 100}`; };
 function load() {
   $('count').textContent = '…';
-  call({ api: 'data', off: OFF }, set);
+  const want = OFF;
+  if (DAYC[want] && (!D || D.off !== want)) { D = DAYC[want]; render(); }
+  else if (!D || D.off !== want) {
+    const names = { 0: 'วันนี้', 1: 'พรุ่งนี้', '-1': 'เมื่อวาน' };
+    $('date').textContent = offLabel(want); $('ttl').textContent = 'งาน' + (names[want] ? names[want] : want < 0 ? ` ${-want} วันก่อน` : ` อีก ${want} วัน`);
+    const md = $('dnav').querySelector('.mid'); if (md && md.firstChild) md.firstChild.textContent = offLabel(want) + ' · กำลังโหลด… ';
+    $('main').innerHTML = `<div class="empty"><div class="spin"></div>กำลังโหลดงาน ${offLabel(want)}…</div>`;
+    if ($('notices')) $('notices').innerHTML = '';
+  }
+  call({ api: 'data', off: want }, d => { if (want !== OFF) { if (d && !d.error) DAYC[want] = d; return; } set(d); prefetchDays(); });
+}
+let PREF = 0;
+function prefetchDays() {   // โหลดเมื่อวาน/พรุ่งนี้ของวันที่ดูอยู่ ไว้เงียบๆ (ครั้งละไม่เกินทุก 2 นาที)
+  if (Date.now() - PREF < 120e3) return; PREF = Date.now();
+  [OFF - 1, OFF + 1].forEach(n => { if (DAYC[n] || n < -30 || n > 14) return; fetch(API + '?' + new URLSearchParams({ t: TOK, api: 'data', off: n })).then(r => r.json()).then(d => { if (d && !d.error) DAYC[n] = d; }).catch(() => {}); });
 }
 // 🆕 งาน/ผลใหม่ตั้งแต่เปิดแอพครั้งก่อน (จำในเครื่องนี้ ; ไม่นับที่ตัวเองทำ)
 const LS = { get: k => { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } }, set: (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} } };
@@ -325,7 +343,7 @@ function goTask(no) {
 function set(d) {
   document.body.classList.remove('busy');
   if (!d || d.error) { $('main').innerHTML = '<div class="empty">🔒 ลิงก์หมดอายุ<br>พิมพ์ ww app ในแชท 1:1 กับบอท</div>'; return; }
-  D = d; LAST = Date.now(); verCheck(d.ver);
+  D = d; LAST = Date.now(); verCheck(d.ver); if (d.off != null) DAYC[d.off] = d;
   if (R && 'canEdit' in d && (R.canEdit !== d.canEdit || R.admin !== d.admin)) { R.canEdit = d.canEdit; R.admin = d.admin; setR(R); if (d.canEdit) try { localStorage.removeItem('ww_req'); } catch (e) {} if (TAB === 'round') renderRound(); }   // สิทธิ์เปลี่ยน (เช่น เพิ่งได้อนุมัติ) → ปุ่มขอสิทธิ์หาย / แท็บโผล่ทันที if (OFF === 0) LS.set('ww_c_d', d); $('stale') && $('stale').remove(); if (!LOADING) document.body.classList.remove('loading'); computeNews(); render(); stamp();
 }
 function fail(e) { document.body.classList.remove('busy'); toast('❗ เชื่อมต่อไม่ได้ ลองใหม่'); }
@@ -855,7 +873,7 @@ function render() {
   $('date').textContent = D.day;
   $('ttl').textContent = 'งาน' + (names[OFF] || (OFF < 0 ? ` ${-OFF} วันก่อน` : ` อีก ${OFF} วัน`));
   const rel = names[OFF] || (OFF < 0 ? `${-OFF} วันก่อน` : `อีก ${OFF} วัน`);
-  $('dnav').innerHTML = `<button class="dn" onclick="go(-1)" aria-label="วันก่อน">‹</button><label class="dn mid${OFF ? '' : ' on'}" style="position:relative;display:flex;align-items:center;justify-content:center;cursor:pointer">${D.day} (${rel})<input type="date" id="dpick" min="${isoOff(-30)}" max="${isoOff(14)}" value="${isoOff(OFF)}" onchange="pickDay(this.value)" style="position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer"></label><button class="dn" onclick="go(1)" aria-label="วันถัดไป">›</button>${OFF ? '<button class="dn today" onclick="go(0)">วันนี้</button>' : ''}`;
+  $('dnav').innerHTML = `<button class="dn" onclick="go(-1)" aria-label="วันก่อน">‹</button><label class="dn mid${OFF ? '' : ' on'}" style="position:relative;display:flex;align-items:center;justify-content:center;cursor:pointer">${D.day} (${rel})<input type="date" id="dpick" min="${isoOff(-30)}" max="${isoOff(14)}" value="${isoOff(OFF)}" onchange="pickDay(this.value)" style="position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer"></label><button class="dn" onclick="go(1)" aria-label="วันถัดไป">›</button>`;
   $('newt').placeholder = OFF ? `เพิ่มงานวันที่ ${D.day}` : 'เพิ่มงาน เช่น สมชาย CBC';
   const all = D.tasks;
   $('count').textContent = (PENDING ? '⏳ ' : '') + 'ค้าง ' + all.filter(t => !t.done && !t.flap).length;
