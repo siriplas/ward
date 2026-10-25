@@ -197,8 +197,8 @@ input[type=date]{color-scheme:light dark}
 <button class="fab" id="fab" aria-label="เพิ่มงาน" onclick="if(TAB==='round'){openAdd()}else{openAddSheet()}">+</button>
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbw9dsYKGy8pELEBeIatNSjJLFv6W7MGjxhnjj584Z4BUlXN6WEfon-JID4f4eHR9wQ/exec';   // ← วาง URL ของบอท (ลงท้าย /exec)
-const APP_VER = 'v1.26';   // 🔖 ต้องตรงกับ SERVER_VER
-const APP_DATE = '25/10/69 19:55';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
+const APP_VER = 'v1.28';   // 🔖 ต้องตรงกับ SERVER_VER
+const APP_DATE = '25/10/69 20:15';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
 const TOK = new URLSearchParams(location.search).get('t') || '';
 // 🔄 แถบสีด้านบนวิ่งระหว่างโหลด / บันทึก
 let LOADING = 0;
@@ -686,6 +686,13 @@ async function shrink(file) {
 const b64 = blob => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(',')[1]); r.onerror = rej; r.readAsDataURL(blob); });
 async function upPhotos() {
   const s = PH; if (!s || s.busy) return;
+  if (!s.okLine) {   // 📷 มีรูปลงผ่านไลน์ภายใน 24 ชม. → เตือนก่อน (กดลงอีกครั้ง = ยืนยัน)
+    s.busy = true; s.log = '⏳ ตรวจรูปซ้ำ…'; drawPhoto();
+    let r = {}; try { r = await (await fetch(API + '?' + new URLSearchParams({ t: TOK, api: 'phcheck', name: s.p.name, hn: s.p.hn || '' }))).json(); } catch (e) {}
+    s.busy = false; s.okLine = true;
+    if (r.line) { s.log = `⚠️ ${firstName(s.p.name)} มีรูปลงผ่านไลน์แล้ว ${r.line.n} รูป (${r.line.at}${r.line.by ? ' โดย ' + r.line.by : ''})\nถ้าเป็นรูปชุดอื่น กด "ลง" อีกครั้ง`; return drawPhoto(); }
+    s.log = '';
+  }
   const tag = s.tag === 'POD' ? (s.pod ? 'POD' + s.pod : '') : s.tag;
   if (s.tag === 'POD' && !s.pod) return toast('ใส่เลข POD ก่อน');
   s.busy = true; let ok = 0, dup = 0, bad = 0, where = '', msgs = []; drawPhoto();
