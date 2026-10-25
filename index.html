@@ -197,8 +197,8 @@ input[type=date]{color-scheme:light dark}
 <button class="fab" id="fab" aria-label="เพิ่มงาน" onclick="if(TAB==='round'){openAdd()}else{openAddSheet()}">+</button>
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbw9dsYKGy8pELEBeIatNSjJLFv6W7MGjxhnjj584Z4BUlXN6WEfon-JID4f4eHR9wQ/exec';   // ← วาง URL ของบอท (ลงท้าย /exec)
-const APP_VER = 'v1.28';   // 🔖 ต้องตรงกับ SERVER_VER
-const APP_DATE = '25/10/69 20:15';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
+const APP_VER = 'v1.29';   // 🔖 ต้องตรงกับ SERVER_VER
+const APP_DATE = '25/10/69 20:30';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
 const TOK = new URLSearchParams(location.search).get('t') || '';
 // 🔄 แถบสีด้านบนวิ่งระหว่างโหลด / บันทึก
 let LOADING = 0;
@@ -469,7 +469,7 @@ function ntAct(act, k) {
 // ＋ เพิ่ม: แผ่นเด้งขึ้น เริ่มที่ "งาน" · เลือกคนไข้จากตารางราวด์ (ไม่ต้องพิมพ์ ward) · เลือกวัน · ด่วน · หรือสลับไป "ประกาศ"
 let AS = null;
 const firstName = s => String(s || '').trim().split(/\s+/)[0];
-function openAddSheet() { AS = { mode: 'task', pt: null, q: '', off: OFF, urg: false, free: false }; drawAddSheet(); $('psheet').style.display = 'flex'; setTimeout(() => { const e = $('asq'); if (e) e.focus(); }, 60); }
+function openAddSheet() { if (!(AD && AD.plan) && !LS.get('ww_c_adm')) call({ api: 'admits' }, r => { if (r && r.rows) { LS.set('ww_c_adm', r.rows); if (AS && !AS.pt) drawAddSheetKeep(); } }); AS = { mode: 'task', pt: null, q: '', off: OFF, urg: false, free: false }; drawAddSheet(); $('psheet').style.display = 'flex'; setTimeout(() => { const e = $('asq'); if (e) e.focus(); }, 60); }
 function asSeg() { return `<div class="seg2">${[['task', '📝 งาน'], ['notice', '📢 ประกาศ']].concat(R && R.canEdit ? [['photo', '📷 รูป']] : []).map(([m, l]) => `<button class="${AS.mode === m ? 'on' : ''}" onclick="AS.mode='${m}';drawAddSheet()">${l}</button>`).join('')}</div>`; }
 function drawAddSheet() {
   if (!AS) return;
@@ -493,7 +493,9 @@ function drawAddSheet() {
   let list = '';
   if (!AS.pt) {
     if (q) { const hits = pts.filter(p => p.name.toLowerCase().includes(q) || String(p.hn || '').includes(q)).slice(0, 8);
-      list = hits.map(p => pick(p)).join('') + (AS.mode === 'photo' ? `<button class="aspt" onclick="AS.ext=true;drawAddSheet()">✏️ คนไข้นอกตาราง (OPD ฯลฯ)</button>` : `<button class="aspt" onclick="asPick('${esc(AS.q.trim()).replace(/'/g, '')}','')">✏️ ใช้ชื่อ "${esc(AS.q.trim())}" (ไม่มีในตาราง)</button>`); }
+      const today = isoOff(0), plan = ((AD && AD.plan) || LS.get('ww_c_adm') || []).filter(a => !a.st && a.date >= today && (String(a.name).toLowerCase().includes(q) || String(a.hn || '').includes(q)) && !pts.some(p => a.hn && p.hn === a.hn)).slice(0, 5);
+      const aOff = d => Math.round((Date.parse(d + 'T00:00:00Z') - todayUTC()) / 864e5);
+      list = hits.map(p => pick(p)).join('') + (AS.mode === 'photo' ? '' : plan.map(a => `<button class="aspt" onclick="AS.pt={name:'${esc(firstName(a.name)).replace(/'/g, '')}',ward:'',adm:'${a.date}'};AS.off=${aOff(a.date)};drawAddSheet();setTimeout(()=>$('astask')&&$('astask').focus(),50)"><b>${esc(firstName(a.name))}</b> <span class="meta">รอ admit ${aOff(a.date) === 0 ? 'วันนี้' : aOff(a.date) === 1 ? 'พรุ่งนี้' : thd(a.date)}${a.staff ? ' · ' + esc(a.staff) : ''}</span></button>`).join('')) + (AS.mode === 'photo' ? `<button class="aspt" onclick="AS.ext=true;drawAddSheet()">✏️ คนไข้นอกตาราง (OPD ฯลฯ)</button>` : `<button class="aspt" onclick="asPick('${esc(AS.q.trim()).replace(/'/g, '')}','')">✏️ ใช้ชื่อ "${esc(AS.q.trim())}" (ไม่มีในตาราง)</button>`); }
     else {
       const mine = me ? pts.filter(p => (p.tags || []).includes(me) && !p.inactive && (AS.mode !== 'photo' || p.hn)) : [];
       const recent = rec.map(k => pts.find(p => p.name + '|' + p.ward === k)).filter(Boolean).filter(p => !mine.includes(p)).slice(0, 4);
@@ -507,7 +509,7 @@ function drawAddSheet() {
   const other = AS.off !== 0;
   $('pbox').innerHTML = `<div class="ehead"><div><h3>＋ เพิ่ม</h3></div><button class="b" onclick="closePhoto()">✕</button></div>${asSeg()}${AS.mode === 'photo' ? `<div class="meta">📷 ${AS.files.length} ไฟล์${AS.exif ? ' · ถ่ายวันที่ ' + esc(AS.exif) : ''} — เลือกคนไข้ (ต้องมี HN ในตาราง)</div>` : ''}
     ${AS.free ? `<div class="lbl">พิมพ์แบบไลน์ (ไม่ต้องมี ww)</div><input class="inp" id="asfree" placeholder="เช่น ฉก 7 ต สมชาย CBC" onkeydown="if(event.key==='Enter')asAdd()">`
-    : AS.pt ? `<div class="aschosen"><b>${AS.pt.ward === 'ทั่วไป' && !AS.pt.name ? '📋 งานทั่วไป' : esc(firstName(AS.pt.name))}</b> <span class="meta">${AS.pt.name ? esc(AS.pt.ward || 'ไม่มีในตาราง') : ''}</span><button class="b" style="margin-left:auto;min-height:32px" onclick="AS.pt=null;AS.q='';drawAddSheet();setTimeout(()=>$('asq')&&$('asq').focus(),50)">เปลี่ยน</button></div>`
+    : AS.pt ? `<div class="aschosen"><b>${AS.pt.ward === 'ทั่วไป' && !AS.pt.name ? '📋 งานทั่วไป' : esc(firstName(AS.pt.name))}</b> <span class="meta">${AS.pt.adm ? 'รอ admit ' + thd(AS.pt.adm) : AS.pt.name ? esc(AS.pt.ward || 'ไม่มีในตาราง') : ''}</span><button class="b" style="margin-left:auto;min-height:32px" onclick="AS.pt=null;AS.q='';drawAddSheet();setTimeout(()=>$('asq')&&$('asq').focus(),50)">เปลี่ยน</button></div>`
     : `<input class="inp" id="asq" placeholder="ค้นชื่อคนไข้ / HN" value="${esc(AS.q)}" oninput="AS.q=this.value;drawAddSheetKeep()">${list}`}
     ${AS.pt || AS.free ? `${AS.free ? '' : `<textarea class="inp" id="astask" rows="2" placeholder="งาน เช่น CBC, ตาม CXR" oninput="grow(this)"></textarea>`}
       <div class="lbl">ลงงานของ</div><div class="qr">${[0, 1, 2].map(n => `<button class="qrb${AS.off === n ? ' on' : ''}" onclick="AS.off=${n};drawAddSheetKeep()">${lab(n)}</button>`).join('')}<label class="qrb${[0, 1, 2].includes(AS.off) ? '' : ' on'}" style="position:relative">${[0, 1, 2].includes(AS.off) ? 'เลือกวัน' : offLabel(AS.off)}<input type="date" min="${isoOff(-7)}" max="${isoOff(30)}" value="${isoOff(AS.off)}" onchange="AS.off=Math.round((Date.parse(this.value+'T00:00:00Z')-todayUTC())/864e5);drawAddSheetKeep()" style="position:absolute;inset:0;opacity:0"></label></div>
