@@ -13,7 +13,7 @@
 <meta name="apple-mobile-web-app-title" content="SiriplasWW">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <style>
-:root{--hd:#1d4ed8;--bg:#fff;--bg2:#f4f5f7;--tx:#111827;--tx2:#374151;--mu:#6b7280;--ln:#eceef1;--g:#059669;--g2:#059669;--or:#d97706;--orbg:#fff7ed;--orx:#9a3412;--rd:#dc2626;--bl:#1e40af;--card:#fff;--inv:#111827;--invt:#fff}
+:root{--hd:#1d4ed8;--bg:#fff;--bg2:#f4f5f7;--tx:#111827;--tx2:#374151;--mu:#6b7280;--ln:#eceef1;--g:#059669;--g2:#059669;--or:#d97706;--orbg:#fff7ed;--orx:#b45309;--rd:#dc2626;--bl:#1e40af;--card:#fff;--inv:#111827;--invt:#fff}
 @media (prefers-color-scheme: dark){:root{--bg:#0f1115;--bg2:#1c1f26;--tx:#e5e7eb;--tx2:#d1d5db;--mu:#9ca3af;--ln:#262a31;--g:#34d399;--g2:#10b981;--or:#fbbf24;--orbg:#2a1d10;--orx:#fdba74;--rd:#f87171;--bl:#93c5fd;--card:#161a20;--inv:#e5e7eb;--invt:#0f1115}}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--tx);font-family:'IBM Plex Sans Thai','Noto Sans Thai',system-ui,-apple-system,sans-serif;font-size:15px;-webkit-text-size-adjust:100%}
@@ -189,13 +189,13 @@ input[type=date]{color-scheme:light dark}
 <button class="fab" id="fab" aria-label="เพิ่มงาน" onclick="if(TAB==='round'){openAdd()}else{document.body.classList.add('adding');$('newt').focus()}">+</button>
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbw9dsYKGy8pELEBeIatNSjJLFv6W7MGjxhnjj584Z4BUlXN6WEfon-JID4f4eHR9wQ/exec';   // ← วาง URL ของบอท (ลงท้าย /exec)
-const APP_VER = 'v1.06';   // 🔖 ต้องตรงกับ SERVER_VER
-const APP_DATE = '25/10/69 01:10';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
+const APP_VER = 'v1.08';   // 🔖 ต้องตรงกับ SERVER_VER
+const APP_DATE = '25/10/69 16:30';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
 const TOK = new URLSearchParams(location.search).get('t') || '';
 // 🔄 แถบสีด้านบนวิ่งระหว่างโหลด / บันทึก
 let LOADING = 0;
 const busyOn = () => { LOADING++; document.body.classList.add('loading'); };
-const busyOff = () => { LOADING = Math.max(0, LOADING - 1); if (!LOADING) document.body.classList.remove('loading'); };
+const busyOff = () => { LOADING = Math.max(0, LOADING - 1); if (!LOADING && !document.getElementById('stale')) document.body.classList.remove('loading'); };
 const WRITE = { run: 1, edit: 1, thank: 1 };
 const call = (q, ok) => {
   if (WRITE[q.api] && !navigator.onLine) return outPush(q);
@@ -296,7 +296,7 @@ function set(d) {
   document.body.classList.remove('busy');
   if (!d || d.error) { $('main').innerHTML = '<div class="empty">🔒 ลิงก์หมดอายุ<br>พิมพ์ ww app ในแชท 1:1 กับบอท</div>'; return; }
   D = d; LAST = Date.now(); verCheck(d.ver);
-  if (R && 'canEdit' in d && (R.canEdit !== d.canEdit || R.admin !== d.admin)) { R.canEdit = d.canEdit; R.admin = d.admin; setR(R); if (d.canEdit) try { localStorage.removeItem('ww_req'); } catch (e) {} if (TAB === 'round') renderRound(); }   // สิทธิ์เปลี่ยน (เช่น เพิ่งได้อนุมัติ) → ปุ่มขอสิทธิ์หาย / แท็บโผล่ทันที if (OFF === 0) LS.set('ww_c_d', d); $('stale') && $('stale').remove(); computeNews(); render(); stamp();
+  if (R && 'canEdit' in d && (R.canEdit !== d.canEdit || R.admin !== d.admin)) { R.canEdit = d.canEdit; R.admin = d.admin; setR(R); if (d.canEdit) try { localStorage.removeItem('ww_req'); } catch (e) {} if (TAB === 'round') renderRound(); }   // สิทธิ์เปลี่ยน (เช่น เพิ่งได้อนุมัติ) → ปุ่มขอสิทธิ์หาย / แท็บโผล่ทันที if (OFF === 0) LS.set('ww_c_d', d); $('stale') && $('stale').remove(); if (!LOADING) document.body.classList.remove('loading'); computeNews(); render(); stamp();
 }
 function fail(e) { document.body.classList.remove('busy'); toast('❗ เชื่อมต่อไม่ได้ ลองใหม่'); }
 // ✅ ปิดงานแบบรอ 5 วินาที (กดยกเลิกได้) แล้วค่อยส่งให้บอท
@@ -439,7 +439,7 @@ function renderRound() {
         <div class="who">${p.tags.includes('ว่าง') ? '<span class="nobody">ยังไม่มีคนดู</span>' : esc(p.team || p.tags.join(', '))}${p.remark ? ' · ' + esc(p.remark) : ''}</div>
         ${p.ww ? `<div class="ww">${esc(p.ww)}</div>` : ''}</span>
         <span style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;flex-shrink:0">${p.open ? `<span class="badge">ค้าง ${p.open}</span>` : p.done ? '<span class="badge ok">✓ เสร็จ</span>' : ''}${p.flap ? '<span class="badge fl">flap</span>' : ''}${op ? '<span class="chev" style="margin-top:4px"><svg viewBox="0 0 24 24"><path d="M6 15l6-6 6 6"/></svg></span>' : ''}</span></button>
-        ${isPend(p.ward) ? `<div class="qmv" style="padding:0 16px 10px" onclick="event.stopPropagation()"><select class="inp" onchange="qMove(${i}, this.value)"><option value="">🚚 ย้ายไป ward จริง…</option>${(R.wards || []).filter(w => !isPend(w)).map(w => `<option>${esc(w)}</option>`).join('')}</select></div>` : ''}
+        ${isPend(p.ward) ? `<div class="qmv" style="padding:0 16px 10px" onclick="event.stopPropagation()"><select class="inp" onchange="qMove(${i}, this.value)"><option value="">🚚 ย้ายไป ward จริง…</option>${(R.wards || []).filter(w => !isPend(w)).map(w => `<option>${esc(w)}</option>`).join('')}</select>${R.canEdit ? `<button class="b r" style="margin-top:6px;min-height:34px;font-size:13px;width:100%" onclick="qGone(${i}, this)">${QGONE === i ? 'กดอีกครั้ง = ลบออกจากตาราง' : '🗑 ไม่มา (ลบออก)'}</button>` : ''}</div>` : ''}
         ${op ? `<div class="panel" style="padding-left:16px">${p.hist.length ? `<div class="hist">${p.hist.map(x => `<div${x.fut ? ' class="fut"' : ''}><div class="meta">${x.fut ? '⏭ ' : ''}${esc(x.day)}</div><div style="display:flex;gap:8px;align-items:center"><span style="flex:1;display:flex;gap:8px;align-items:flex-start">${x.mark === '✅' ? '<span class="mk d">✓</span>' : x.mark === '👁' ? '<span class="mk f"></span>' : '<span class="mk"></span>'}<span>${x.mark === '👁' ? '<span class="fltag">flap</span> ' : ''}${esc(x.task)}${x.res ? ` <span class="${x.upd ? 'arr upd' : 'arr'}">→ ${esc(x.res)}</span>` : ''}</span></span>${x.canClose ? `<button class="b" style="min-height:34px;padding:0 10px" onclick="event.stopPropagation();closeRound(${x.no}, this)">✓ เสร็จ</button>` : ''}</div></div>`).join('')}</div>` : '<div class="meta">ไม่มีงานใน 3 วันล่าสุด และไม่มีงานล่วงหน้า</div>'}
           <div class="links"><button onclick="openPhoto(${i})"><svg viewBox="0 0 24 24"><path d="M4 7h3l2-3h6l2 3h3v13H4z"/><circle cx="12" cy="13" r="3.5"/></svg>ลงรูป</button><a target="_blank" rel="noopener" href="https://drive.google.com/drive/search?q=${encodeURIComponent('type:folder ' + (p.hn || p.name.split(/\s+/)[0]))}"><svg viewBox="0 0 24 24"><path d="M3 7h6l2 2h10v10H3z"/></svg>Drive</a>${R.canEdit ? `<button onclick="openEdit(${i})"><svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg>แก้ไข</button>` : ''}</div>
           <div class="btns" style="flex-wrap:nowrap"><input class="inp" id="radd${i}" placeholder="งาน เช่น CBC" style="flex:1;width:auto;min-width:0" onkeydown="if(event.key==='Enter')addR(${i})">
@@ -617,6 +617,14 @@ async function admitSave() {
 }
 const isPend = w => !String(w || '').trim() || /รอ\s*admit|รับใหม่/i.test(w);
 // 🚚 ย้ายคนไข้ "รอ admit" ไป ward จริง แตะเดียว (ทุกลิงก์)
+let QGONE = null;
+// 🗑 คนไข้รอ admit ไม่มา → ลบออกจากตาราง (ลิงก์แก้ไข · กด 2 ครั้ง)
+function qGone(i) {
+  const p = R.pts[i]; if (!p) return;
+  if (QGONE !== i) { QGONE = i; return renderRound(); }
+  QGONE = null; toast('🗑 ลบ ' + p.name + '…');
+  call({ api: 'edit', rid: p.rid, name: p.name, act: 'remove' }, r => { if (r.error) return toast('❗ ' + (r.msg || 'ลบไม่สำเร็จ')); toast(r.msg || 'ลบแล้ว'); R = null; setTab('round', true); });
+}
 function qMove(i, w) {
   const p = R.pts[i]; if (!w || !p) return;
   toast('🚚 ย้าย ' + p.name + ' → ' + w + '…');
@@ -795,7 +803,7 @@ function pickDay(v) { if (!v) return; const [y, m, d] = v.split('-').map(Number)
 let LAST = 0, LASTR = 0;
 const AUTO_MIN = 5, AUTO_MIN_R = 24 * 60, BACK_MIN = 1;   // งาน: ทุก 5 นาที + กลับมาหลังออกไปเกิน 1 นาที · ราวด์: วันละครั้ง ตี 5 (โหลดนาน)
 const last5am = () => { const b = Date.now() + 7 * 3600e3, d = new Date(b), t = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 5) - 7 * 3600e3; return t > Date.now() ? t - 864e5 : t; };
-function stamp() { const e = $('updAt'), L = TAB === 'round' ? LASTR : LAST, A = TAB === 'round' ? AUTO_MIN_R : AUTO_MIN; if (!e) return; if (!L) { e.textContent = ''; return; } const m = Math.floor((Date.now() - L) / 60000); e.textContent = m < 1 ? 'อัปเดตเมื่อกี้' : `อัปเดต ${new Date(L + 7 * 3600e3).toISOString().slice(11, 16)}`; e.classList.toggle('old', TAB === 'round' ? L < last5am() : m >= A * 2); }
+function stamp() { if ($('stale') && $('updAt')) { $('updAt').textContent = 'กำลังอัปเดต…'; return; } const e = $('updAt'), L = TAB === 'round' ? LASTR : LAST, A = TAB === 'round' ? AUTO_MIN_R : AUTO_MIN; if (!e) return; if (!L) { e.textContent = ''; return; } const m = Math.floor((Date.now() - L) / 60000); e.textContent = m < 1 ? 'อัปเดตเมื่อกี้' : `อัปเดต ${new Date(L + 7 * 3600e3).toISOString().slice(11, 16)}`; e.classList.toggle('old', TAB === 'round' ? L < last5am() : m >= A * 2); }
 function autoRefresh(force) {
   if (document.hidden || LOADING || HOLD.length) return;
   const busyUI = OPEN !== null || QEDIT !== null || ROPEN !== null || ED || PH || document.body.classList.contains('adding') || /INPUT|TEXTAREA|SELECT/.test((document.activeElement || {}).tagName || '');
@@ -845,7 +853,7 @@ function taskRow(t) {
   const isOpen = OPEN === t.no;
   const nw = isNewT(t) ? '<span class="tag new">ใหม่</span>' : isNewR(t) ? '<span class="tag res">อัปเดต</span>' : '';
   let h = `<div id="task${t.no}" class="task${t.done ? ' done' : ''}${nw ? ' isnew' : ''}${POP === t.no && t.done ? ' pop' : ''}"><button class="row" onclick="toggle(${t.no})" ${t.done ? '' : `data-sw="${t.no}"`}>
-    <span class="box">${t.done ? '✓' : ''}</span>
+    <span class="box"${t.done ? '' : ` onclick="event.stopPropagation();closeNo(${t.no}, '')" role="button" aria-label="ปิดงาน"`}>${t.done ? '✓' : ''}</span>
     <span style="flex-grow:1;min-width:0"><div class="tt">${nw}${t.urgent ? '<span class="urg">ด่วน </span>' : ''}${esc(t.rest || t.task)}</div>
     ${t.result ? `<div class="res${t.done ? '' : ' upd'}">→ ${esc(t.result)}</div>` : ''}
     ${t.done ? thankRow(t) : ''}
@@ -916,8 +924,10 @@ function saveQ(no) {
 function addTask(e) { e.preventDefault(); const v = $('newt').value.trim(); if (!v) return; $('newt').value = ''; document.body.classList.remove('adding'); run('ww ' + v); }
 // ⚡ เปิดแอพ: โชว์ข้อมูลที่เครื่องจำไว้ทันที แล้วค่อยอัปเดตทับ
 (() => {
-  const cr = LS.get('ww_c_r'); if (cr && cr.pts) { R = cr; LASTR = cr._t || 0; }
-  const cd = LS.get('ww_c_d'); if (cd && cd.tasks) { D = cd; render(); document.body.insertAdjacentHTML('beforeend', '<div id="stale" class="stale">กำลังอัปเดต…</div>'); }
+  const cr = LS.get('ww_c_r'); if (cr && cr.pts) { R = cr; LASTR = cr._t || 0; if (cr.canEdit) document.body.classList.toggle('canedit', true); }
+  // ข้อมูลที่จำไว้เป็นของเมื่อวาน → ไม่โชว์ (กันขึ้นว่า "วันนี้" ผิดวัน)
+  const tl = (() => { const d = new Date(Date.now() + 7 * 3600e3 - 6 * 3600e3); return `${d.getUTCDate()}/${d.getUTCMonth() + 1}/${(d.getUTCFullYear() + 543) % 100}`; })(), same = s => String(s || '').replace(/\b0(\d)/g, '$1') === tl;
+  const cd = LS.get('ww_c_d'); if (cd && cd.tasks && same(cd.day)) { D = cd; render(); document.body.insertAdjacentHTML('beforeend', '<i id="stale" hidden></i>'); document.body.classList.add('loading'); const ua = $('updAt'); if (ua) { ua.textContent = 'กำลังอัปเดต…'; ua.classList.add('old'); } }
 })();
 load(); outBadge(); document.body.insertAdjacentHTML('beforeend', `<div class="ver">SiriplasWW ${APP_VER} · ${APP_DATE}</div>`); setTimeout(outFlush, 3000);
 call({ api: 'round' }, r => { if (!r.error) { setR(r); LASTR = Date.now(); if (TAB === 'task' && D) render(); } });
