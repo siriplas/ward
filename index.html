@@ -152,7 +152,7 @@ body.adding .add{display:flex}.rtab .fab{display:none}.rtab.canedit .fab{display
 .add .b.p{flex-grow:0}
 .fab{position:fixed;right:18px;bottom:22px;width:54px;height:54px;border-radius:50%;border:0;background:var(--hd);color:#fff;font-size:28px;line-height:1;box-shadow:0 6px 16px rgba(0,0,0,.25);z-index:6}
 .qr{display:flex;gap:6px;flex-wrap:wrap}
-.qrb{min-height:34px;padding:0 12px;border-radius:999px;border:0;background:var(--bg2);color:var(--g);font-size:14px}
+.qrb{display:inline-flex;align-items:center;justify-content:center;line-height:1;cursor:pointer;min-height:34px;padding:0 12px;border-radius:999px;border:0;background:var(--bg2);color:var(--g);font-size:14px}
 .undo{border:0;background:var(--invt);color:var(--inv);border-radius:8px;min-height:34px;padding:0 12px;font-weight:600;margin-left:8px}
 .news{display:block;width:100%;text-align:left;border:0;background:var(--bg2);color:var(--bl);font-weight:600;padding:9px 16px;font-size:13px}
 .tag{font-size:11px;font-weight:700;border-radius:6px;padding:1px 6px;margin-right:6px;vertical-align:1px}
@@ -197,8 +197,8 @@ input[type=date]{color-scheme:light dark}
 <button class="fab" id="fab" aria-label="เพิ่มงาน" onclick="if(TAB==='round'){openAdd()}else{openAddSheet()}">+</button>
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbw9dsYKGy8pELEBeIatNSjJLFv6W7MGjxhnjj584Z4BUlXN6WEfon-JID4f4eHR9wQ/exec';   // ← วาง URL ของบอท (ลงท้าย /exec)
-const APP_VER = 'v1.24';   // 🔖 ต้องตรงกับ SERVER_VER
-const APP_DATE = '25/10/69 19:35';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
+const APP_VER = 'v1.26';   // 🔖 ต้องตรงกับ SERVER_VER
+const APP_DATE = '25/10/69 19:55';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
 const TOK = new URLSearchParams(location.search).get('t') || '';
 // 🔄 แถบสีด้านบนวิ่งระหว่างโหลด / บันทึก
 let LOADING = 0;
@@ -474,6 +474,13 @@ function asSeg() { return `<div class="seg2">${[['task', '📝 งาน'], ['no
 function drawAddSheet() {
   if (!AS) return;
   if (AS.mode === 'notice') { NT = { edit: null, arm: null, inAdd: true }; return drawNotice(); }
+  if (AS.mode === 'photo' && AS.files && AS.ext) {   // 📷 คนไข้นอกตาราง: กรอกเอง (ต้องมี HN)
+    $('pbox').innerHTML = `<div class="ehead"><div><h3>📷 คนไข้นอกตาราง</h3><div class="meta">${AS.files.length} ไฟล์ · โฟลเดอร์จะตั้งชื่อ "HN ชื่อ Dx/ อาจารย์"</div></div><button class="b" onclick="closePhoto()">✕</button></div>
+      <div class="egrid"><label class="ef"><span class="lbl">ชื่อ *</span><input class="inp" id="ex_name" value="${esc(AS.q || '')}"></label><label class="ef"><span class="lbl">HN *</span><input class="inp" id="ex_hn" inputmode="numeric"></label>
+      <label class="ef w"><span class="lbl">Diagnosis (ไม่ใส่ก็ได้)</span><input class="inp" id="ex_dx"></label><label class="ef w"><span class="lbl">อาจารย์ (ไม่ใส่ก็ได้)</span><input class="inp" id="ex_st"></label></div>
+      <div class="btns"><button class="b p" onclick="asExtGo()">ต่อไป ›</button><button class="b" onclick="AS.ext=false;drawAddSheet()">กลับ</button></div>`;
+    return;
+  }
   if (AS.mode === 'photo' && !AS.files) {   // 📷 ขั้น 1: เลือกรูปก่อน
     $('pbox').innerHTML = `<div class="ehead"><div><h3>＋ เพิ่ม</h3></div><button class="b" onclick="closePhoto()">✕</button></div>${asSeg()}
       <label class="b p" style="display:flex;align-items:center;justify-content:center;cursor:pointer;min-height:56px">🖼 เลือกรูป / วิดีโอ (หลายรูปได้)<input type="file" accept="image/*,video/*" multiple style="display:none" onchange="asFiles(this.files)"></label>
@@ -486,7 +493,7 @@ function drawAddSheet() {
   let list = '';
   if (!AS.pt) {
     if (q) { const hits = pts.filter(p => p.name.toLowerCase().includes(q) || String(p.hn || '').includes(q)).slice(0, 8);
-      list = hits.map(p => pick(p)).join('') + (AS.mode === 'photo' ? '' : `<button class="aspt" onclick="asPick('${esc(AS.q.trim()).replace(/'/g, '')}','')">✏️ ใช้ชื่อ "${esc(AS.q.trim())}" (ไม่มีในตาราง)</button>`); }
+      list = hits.map(p => pick(p)).join('') + (AS.mode === 'photo' ? `<button class="aspt" onclick="AS.ext=true;drawAddSheet()">✏️ คนไข้นอกตาราง (OPD ฯลฯ)</button>` : `<button class="aspt" onclick="asPick('${esc(AS.q.trim()).replace(/'/g, '')}','')">✏️ ใช้ชื่อ "${esc(AS.q.trim())}" (ไม่มีในตาราง)</button>`); }
     else {
       const mine = me ? pts.filter(p => (p.tags || []).includes(me) && !p.inactive && (AS.mode !== 'photo' || p.hn)) : [];
       const recent = rec.map(k => pts.find(p => p.name + '|' + p.ward === k)).filter(Boolean).filter(p => !mine.includes(p)).slice(0, 4);
@@ -494,7 +501,7 @@ function drawAddSheet() {
       const showN = AS.all ? mine.length : 4;
       list = (recent.length ? `<div class="lbl">ล่าสุด</div><div class="aswrap">${recent.map(p => pick(p)).join('')}</div>` : '') +
         (mine.length ? `<div class="lbl">คนไข้ที่ฉันดู (${mine.length})</div><div class="aswrap">${mine.slice(0, showN).map(p => pick(p, p.open ? ' · ค้าง ' + p.open : '')).join('')}${mine.length > showN ? `<button class="aspt" style="color:var(--mu)" onclick="AS.all=true;drawAddSheet()">ดูทั้งหมด ${mine.length} คน ›</button>` : ''}</div>` : '') +
-        (AS.mode === 'photo' ? '' : `<div class="aswrap"><button class="aspt" onclick="asPick('','ทั่วไป')">📋 งานทั่วไป (ไม่ใช่คนไข้)</button></div>`);
+        (AS.mode === 'photo' ? `<div class="aswrap"><button class="aspt" onclick="AS.ext=true;drawAddSheet()">✏️ คนไข้นอกตาราง (OPD ฯลฯ)</button></div>` : `<div class="aswrap"><button class="aspt" onclick="asPick('','ทั่วไป')">📋 งานทั่วไป (ไม่ใช่คนไข้)</button></div>`);
     }
   }
   const other = AS.off !== 0;
@@ -538,6 +545,14 @@ async function asFiles(fl) {
   const ds = (await Promise.all(AS.files.map(exifDate))).filter(Boolean).sort();
   AS.exif = ds[0] || ''; AS.multiDay = ds.length && ds[0] !== ds[ds.length - 1];
   AS.q = ''; drawAddSheet(); setTimeout(() => $('asq') && $('asq').focus(), 60);
+}
+function asExtGo() {
+  const name = firstName(($('ex_name').value || '').replace(/^(นาย|นางสาว|นาง|น\.ส\.|ด\.ช\.|ด\.ญ\.)\s*/, '')), hn = ($('ex_hn').value || '').replace(/\D/g, '');
+  if (!name) return toast('ใส่ชื่อคนไข้'); if (!/^\d{7,8}$/.test(hn)) return toast('HN ต้องเป็นตัวเลข 7–8 หลัก');
+  const p = { name, hn, dx: ($('ex_dx').value || '').trim(), staff: ($('ex_st').value || '').trim(), staffRaw: ($('ex_st').value || '').trim(), ward: 'นอกตาราง', proc: '' };
+  const files = AS.files, d = AS.exif, multi = AS.multiDay;
+  closePhoto(); PH = { p, day: 0, date: d && d <= isoOff(0) ? d : isoOff(0), tag: '', pod: '', orig: false, files, busy: false, log: multi ? '⚠️ รูปที่เลือกถ่ายคนละวัน — ใช้วันที่ของรูปแรก ถ้าไม่ถูกให้แก้' : '' };
+  $('psheet').style.display = 'flex'; drawPhoto();
 }
 function asPhotoGo(i) {
   const files = AS.files, d = AS.exif, multi = AS.multiDay;
