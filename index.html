@@ -189,8 +189,8 @@ input[type=date]{color-scheme:light dark}
 <button class="fab" id="fab" aria-label="เพิ่มงาน" onclick="if(TAB==='round'){openAdd()}else{document.body.classList.add('adding');$('newt').focus()}">+</button>
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbw9dsYKGy8pELEBeIatNSjJLFv6W7MGjxhnjj584Z4BUlXN6WEfon-JID4f4eHR9wQ/exec';   // ← วาง URL ของบอท (ลงท้าย /exec)
-const APP_VER = 'v1.08';   // 🔖 ต้องตรงกับ SERVER_VER
-const APP_DATE = '25/10/69 16:30';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
+const APP_VER = 'v1.10';   // 🔖 ต้องตรงกับ SERVER_VER
+const APP_DATE = '25/10/69 16:50';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
 const TOK = new URLSearchParams(location.search).get('t') || '';
 // 🔄 แถบสีด้านบนวิ่งระหว่างโหลด / บันทึก
 let LOADING = 0;
@@ -287,6 +287,25 @@ function jumpNew() {
   $('psheet').style.display = 'flex';
 }
 function nt0() { NEWS.t.concat(NEWS.r).forEach(t => SEEN_NO[t.no] = 1); closePhoto(); render(); }
+// 🔎 แตะงานใต้ชื่อในราวด์ → แผ่นเด้งขึ้น: รายละเอียดงาน + ปิดงาน / ไปหน้างาน (อยู่หน้าราวด์ต่อได้)
+function taskPop(i, k) {
+  const p = R.pts[i], x = p && p.hist[k]; if (!x) return;
+  const t = x.off === 0 && D && D.off === 0 ? D.tasks.find(z => z.no === x.no) : null;
+  const st = x.mark === '✅' ? '<span style="color:var(--g)">✓ เสร็จแล้ว</span>' : x.mark === '👁' ? '<span style="color:var(--orx)">👁 เฝ้า flap</span>' : '<span style="color:var(--or)">⏳ ค้าง</span>';
+  $('pbox').innerHTML = `<div class="ehead"><div><h3>${esc(p.name)}</h3><div class="meta">${esc(p.ward)} · ${esc(x.day)}${x.no ? " · ข้อ " + x.no : ""}</div></div><button class="b" onclick="closePhoto()">✕</button></div>
+    <div style="font-size:17px">${esc(x.task)}</div><div>${st}</div>
+    ${x.res ? `<div class="res">→ ${esc(x.res)}</div>` : ''}
+    ${t ? `<div class="meta">ลงโดย ${esc(t.by)}${t.done ? ' · ปิดโดย ' + esc(t.doneBy) + ' ' + esc(t.doneAt) : ''}</div>` : ''}
+    <div class="btns">${x.canClose ? `<button class="b p" onclick="closePhoto();closeNo(${x.no}, '', 0)">✓ เสร็จ</button>` : ''}<button class="b" onclick="closePhoto();jumpTask(${x.no}, ${x.off == null ? 0 : x.off})">ไปที่หน้างาน ›</button></div>`;
+  $('psheet').style.display = 'flex';
+}
+// ↗ แตะงานใต้ชื่อในราวด์ → ไปแท็บงาน วันนั้น แล้วกะพริบงานนั้น
+function jumpTask(no, off) {
+  const flash = () => { const el = document.getElementById('task' + no); if (!el) return; el.scrollIntoView({ behavior: 'smooth', block: 'center' }); el.classList.add('flash'); setTimeout(() => el.classList.remove('flash'), 2200); };
+  BLD = 'ทั้งหมด'; OPEN = null; setTab('task');
+  if (OFF === off && D) { render(); return setTimeout(flash, 50); }
+  OFF = off; $('count').textContent = '…'; call({ api: 'data', off: OFF }, d => { set(d); setTimeout(flash, 50); });
+}
 function goTask(no) {
   closePhoto(); SEEN_NO[no] = 1; BLD = 'ทั้งหมด'; render();
   const el = document.getElementById('task' + no); if (!el) return;
@@ -440,7 +459,7 @@ function renderRound() {
         ${p.ww ? `<div class="ww">${esc(p.ww)}</div>` : ''}</span>
         <span style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;flex-shrink:0">${p.open ? `<span class="badge">ค้าง ${p.open}</span>` : p.done ? '<span class="badge ok">✓ เสร็จ</span>' : ''}${p.flap ? '<span class="badge fl">flap</span>' : ''}${op ? '<span class="chev" style="margin-top:4px"><svg viewBox="0 0 24 24"><path d="M6 15l6-6 6 6"/></svg></span>' : ''}</span></button>
         ${isPend(p.ward) ? `<div class="qmv" style="padding:0 16px 10px" onclick="event.stopPropagation()"><select class="inp" onchange="qMove(${i}, this.value)"><option value="">🚚 ย้ายไป ward จริง…</option>${(R.wards || []).filter(w => !isPend(w)).map(w => `<option>${esc(w)}</option>`).join('')}</select>${R.canEdit ? `<button class="b r" style="margin-top:6px;min-height:34px;font-size:13px;width:100%" onclick="qGone(${i}, this)">${QGONE === i ? 'กดอีกครั้ง = ลบออกจากตาราง' : '🗑 ไม่มา (ลบออก)'}</button>` : ''}</div>` : ''}
-        ${op ? `<div class="panel" style="padding-left:16px">${p.hist.length ? `<div class="hist">${p.hist.map(x => `<div${x.fut ? ' class="fut"' : ''}><div class="meta">${x.fut ? '⏭ ' : ''}${esc(x.day)}</div><div style="display:flex;gap:8px;align-items:center"><span style="flex:1;display:flex;gap:8px;align-items:flex-start">${x.mark === '✅' ? '<span class="mk d">✓</span>' : x.mark === '👁' ? '<span class="mk f"></span>' : '<span class="mk"></span>'}<span>${x.mark === '👁' ? '<span class="fltag">flap</span> ' : ''}${esc(x.task)}${x.res ? ` <span class="${x.upd ? 'arr upd' : 'arr'}">→ ${esc(x.res)}</span>` : ''}</span></span>${x.canClose ? `<button class="b" style="min-height:34px;padding:0 10px" onclick="event.stopPropagation();closeRound(${x.no}, this)">✓ เสร็จ</button>` : ''}</div></div>`).join('')}</div>` : '<div class="meta">ไม่มีงานใน 3 วันล่าสุด และไม่มีงานล่วงหน้า</div>'}
+        ${op ? `<div class="panel" style="padding-left:16px">${p.hist.length ? `<div class="hist">${p.hist.map(x => `<div${x.fut ? ' class="fut"' : ''}><div class="meta">${x.fut ? '⏭ ' : ''}${esc(x.day)}</div><div style="display:flex;gap:8px;align-items:center"><span style="flex:1;display:flex;gap:8px;align-items:flex-start;cursor:pointer" onclick="event.stopPropagation();taskPop(${i}, ${p.hist.indexOf(x)})">${x.mark === '✅' ? '<span class="mk d">✓</span>' : x.mark === '👁' ? '<span class="mk f"></span>' : '<span class="mk"></span>'}<span>${x.mark === '👁' ? '<span class="fltag">flap</span> ' : ''}${esc(x.task)}${x.res ? ` <span class="${x.upd ? 'arr upd' : 'arr'}">→ ${esc(x.res)}</span>` : ''}</span></span>${x.canClose ? `<button class="b" style="min-height:34px;padding:0 10px" onclick="event.stopPropagation();closeRound(${x.no}, this)">✓ เสร็จ</button>` : ''}</div></div>`).join('')}</div>` : '<div class="meta">ไม่มีงานใน 3 วันล่าสุด และไม่มีงานล่วงหน้า</div>'}
           <div class="links"><button onclick="openPhoto(${i})"><svg viewBox="0 0 24 24"><path d="M4 7h3l2-3h6l2 3h3v13H4z"/><circle cx="12" cy="13" r="3.5"/></svg>ลงรูป</button><a target="_blank" rel="noopener" href="https://drive.google.com/drive/search?q=${encodeURIComponent('type:folder ' + (p.hn || p.name.split(/\s+/)[0]))}"><svg viewBox="0 0 24 24"><path d="M3 7h6l2 2h10v10H3z"/></svg>Drive</a>${R.canEdit ? `<button onclick="openEdit(${i})"><svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg>แก้ไข</button>` : ''}</div>
           <div class="btns" style="flex-wrap:nowrap"><input class="inp" id="radd${i}" placeholder="งาน เช่น CBC" style="flex:1;width:auto;min-width:0" onkeydown="if(event.key==='Enter')addR(${i})">
           <button class="b p" style="flex-grow:0" onclick="addR(${i})">เพิ่ม</button></div></div>` : ''}</div>`;
