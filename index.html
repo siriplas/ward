@@ -109,6 +109,7 @@ textarea.inp{resize:vertical;line-height:1.45;min-height:44px;overflow:hidden;fo
 .aswrap{display:flex;flex-wrap:wrap;gap:6px}.aspt{border:1px solid var(--ln);background:var(--bg2);color:var(--tx);font:inherit;border-radius:10px;padding:7px 10px;text-align:left}.aspt.on{border-color:var(--hd)}
 .aschosen{display:flex;align-items:center;gap:8px;background:var(--bg2);border-radius:10px;padding:8px 10px;font-size:16px}
 .qrb.on{background:var(--hd);color:#fff}.b.p.oth{background:#d97706}.linkb{border:0;background:none;color:var(--mu);font:inherit;font-size:13px;text-decoration:underline}
+.ttxt{cursor:pointer}.tpen{font-size:12px;color:var(--mu);white-space:nowrap;border:1px solid var(--ln);border-radius:999px;padding:1px 8px;margin-left:4px;vertical-align:middle}
 .b.adup{border:1.5px dashed var(--hd);color:var(--hd);background:none;font-weight:600}
 .adc{border-bottom:1px solid var(--ln);padding:8px 0;display:flex;flex-direction:column;gap:2px}.adt{display:flex;gap:6px;align-items:baseline;flex-wrap:wrap}.adt .ads{margin-left:auto}
 .amain{padding:4px 16px 24px;display:flex;flex-direction:column;gap:10px;max-width:600px;margin:0 auto}
@@ -197,8 +198,8 @@ input[type=date]{color-scheme:light dark}
 <button class="fab" id="fab" aria-label="เพิ่มงาน" onclick="if(TAB==='round'){openAdd()}else{openAddSheet()}">+</button>
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbw9dsYKGy8pELEBeIatNSjJLFv6W7MGjxhnjj584Z4BUlXN6WEfon-JID4f4eHR9wQ/exec';   // ← วาง URL ของบอท (ลงท้าย /exec)
-const APP_VER = 'v1.29';   // 🔖 ต้องตรงกับ SERVER_VER
-const APP_DATE = '25/10/69 20:30';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
+const APP_VER = 'v1.34';   // 🔖 ต้องตรงกับ SERVER_VER
+const APP_DATE = '25/10/69 21:10';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
 const TOK = new URLSearchParams(location.search).get('t') || '';
 // 🔄 แถบสีด้านบนวิ่งระหว่างโหลด / บันทึก
 let LOADING = 0;
@@ -323,7 +324,7 @@ function taskPop(i, k) {
     ${t ? `<div class="meta">ลงโดย ${esc(t.by)}${t.done ? ' · ปิดโดย ' + esc(t.doneBy) + ' ' + esc(t.doneAt) : ''}</div>` : ''}
     ${x.canClose ? `<div class="qr">${QUICK.map(q => `<button class="qrb" onclick="popClose(${x.no}, '${q}')">${q}</button>`).join('')}</div>
       <input class="inp" id="popres" placeholder="ผล (ไม่ใส่ก็ได้) เช่น K 3.8" onkeydown="if(event.key==='Enter')popClose(${x.no})">
-      <div class="btns"><button class="b p" onclick="popClose(${x.no})">✓ ปิดงาน</button><button class="b" onclick="popUpd(${x.no})">บันทึกผล (ยังไม่ปิด)</button></div>` : ''}
+      <div class="btns"><button class="b p" onclick="popClose(${x.no})">✓ เสร็จแล้ว</button><button class="b" onclick="popUpd(${x.no})">บันทึกไว้ก่อน (ยังค้าง)</button></div>` : ''}
     <div class="btns"><button class="b" onclick="closePhoto();jumpTask(${x.no}, ${x.off == null ? 0 : x.off})">ไปที่หน้างาน ›</button></div>`;
   $('psheet').style.display = 'flex';
 }
@@ -659,7 +660,7 @@ function openPhoto(i) {
   PH = { p, day: 0, date: isoOff(0), tag: '', pod: '', orig: false, files: [], busy: false, log: '' };
   $('psheet').style.display = 'flex'; drawPhoto();
 }
-function closePhoto() { AS = null; if (NT) NT.inAdd = false; if (PTASK) { PTASK = null; OPEN = null; ARM = null; if (TAB === "task" && D) setTimeout(render, 0); } if (PH && PH.busy) return; $('psheet').style.display = 'none'; PH = null; ED = null; }
+function closePhoto() { TEDIT = null; REDIT = null; AS = null; if (NT) NT.inAdd = false; if (PTASK) { PTASK = null; OPEN = null; ARM = null; if (TAB === "task" && D) setTimeout(render, 0); } if (PH && PH.busy) return; $('psheet').style.display = 'none'; PH = null; ED = null; }
 function drawPhoto() {
   const s = PH, tags = ['', 'preop', 'intraop', 'postop', 'POD', 'consult', 'opd'];
   $('pbox').innerHTML = `<h3>📷 ลงรูป ${esc(s.p.name)}</h3>
@@ -1069,20 +1070,18 @@ function taskPanel(t) {
     <div class="qr">${QUICK.map(q => `<button class="qrb" onclick="closeNo(${t.no}, '${q}')">${q}</button>`).join('')}</div>
     <input class="inp" id="res${t.no}" placeholder="ผล (ไม่ใส่ก็ได้) เช่น K 3.8">
     <div class="btns">
-      <button class="b p" onclick="closeT(${t.no})">ปิดงาน</button>
-      <button class="b" onclick="upd(${t.no})">บันทึกผล (ยังไม่ปิด)</button>
+      <button class="b p" onclick="closeT(${t.no})">✓ เสร็จแล้ว</button>
+      <button class="b" onclick="upd(${t.no})">บันทึกไว้ก่อน (ยังค้าง)</button>
     </div>
     <div class="btns">
-      ${t.urgent ? '' : `<button class="b" onclick="run('ww ต่อ ${t.no} !', () => T(${t.no}).urgent = true)">🔴 ทำเป็นด่วน</button>`}
-      <button class="b" onclick="editT(${t.no})">แก้ข้อความ</button>
+      ${t.urgent ? '' : `<button class="b" onclick="run('ww ต่อ ${t.no} !', () => T(${t.no}).urgent = true)">🔴 เปลี่ยนเป็นงานด่วน</button>`}
       <button class="b r" onclick="cancelT(${t.no})">${ARM === 'c' + t.no ? 'กดอีกครั้งเพื่อยกเลิก' : 'ยกเลิกงาน'}</button>
     </div></div>`;
   if (isOpen && t.done) h += `<div class="panel sp">
-    <input class="inp" id="res${t.no}" placeholder="${t.result ? 'พิมพ์ผล' : 'เพิ่มผล เช่น Hb 10'}">
+    <input class="inp" id="res${t.no}" placeholder="${t.result ? 'เพิ่มผลใหม่ (ผลเดิมยังอยู่)' : 'เพิ่มผล เช่น Hb 10'}">
     <div class="btns">
       <button class="b p" onclick="addRes(${t.no})">เพิ่มผล</button>
-      ${t.result ? `<button class="b" onclick="fixRes(${t.no})">แก้ผลล่าสุด</button>` : ''}
-      <button class="b" onclick="run('ww เปิด ${t.no}', () => Object.assign(T(${t.no}), { done: false }))">เปิดงานใหม่</button>
+      <button class="b" onclick="run('ww เปิด ${t.no}', () => Object.assign(T(${t.no}), { done: false }))">↩️ เปิดงานอีกครั้ง</button>
     </div></div>`;
   return h;
 }
@@ -1108,11 +1107,13 @@ function taskSheet(no) {
   const t = T(no); if (!t) return;
   const st = t.done ? `<span style="color:var(--g)">✓ เสร็จแล้ว</span> <span class="meta">ปิดโดย ${esc(t.doneBy)} ${esc(t.doneAt)}</span>` : `<span style="color:var(--or)">⏳ ค้าง</span>`;
   $('pbox').innerHTML = `<div class="ehead"><div><h3>${esc(t.pt)}</h3><div class="meta">${esc(t.ward)} · ${OFF === 0 ? 'วันนี้' : esc(D.day)} · ข้อ ${t.no}</div></div><button class="b" onclick="closePhoto()">✕</button></div>
-    <div style="font-size:17px">${t.urgent ? '<span class="urg">ด่วน </span>' : ''}${esc(t.rest || t.task)}</div><div>${st}</div>
-    ${t.result ? `<div class="res${t.done ? '' : ' upd'}">→ ${esc(t.result)}</div>` : ''}<div class="meta">ลงโดย ${esc(t.by)}</div>${t.done ? thankRow(t) : ''}${taskPanel(t)}`;
+    ${TEDIT === no ? `<textarea class="inp" id="tedit" rows="2" oninput="grow(this)">${esc(t.rest || t.task)}</textarea><div class="btns"><button class="b p" onclick="saveTEdit(${no})">บันทึกข้อความ</button><button class="b" onclick="TEDIT=null;taskSheet(${no})">ยกเลิก</button></div>` : `<div class="ttxt" ${t.done ? '' : `onclick="TEDIT=${no};taskSheet(${no});setTimeout(()=>{const e=$('tedit');if(e){grow(e);e.focus()}},30)"`}><span style="font-size:17px">${t.urgent ? '<span class="urg">ด่วน </span>' : ''}${esc(t.rest || t.task)}</span>${t.done ? '' : ' <span class="tpen">✏️ แก้</span>'}</div>`}<div>${st}</div>
+    ${t.result ? (REDIT === no ? `<textarea class="inp" id="redit" rows="3" oninput="grow(this)">${esc(t.result)}</textarea><div class="btns"><button class="b p" onclick="saveREdit(${no})">บันทึกผล</button><button class="b" onclick="REDIT=null;taskSheet(${no})">ยกเลิก</button></div>` : `<div class="res${t.done ? '' : ' upd'} ttxt" onclick="REDIT=${no};taskSheet(${no});setTimeout(()=>{const e=$('redit');if(e){grow(e);e.focus()}},30)">→ ${esc(t.result)} <span class="tpen">✏️ แก้ผล</span></div>`) : ''}<div class="meta">ลงโดย ${esc(t.by)}</div>${t.done ? thankRow(t) : ''}${taskPanel(t)}`;
   $('psheet').style.display = 'flex'; PTASK = no;
 }
-let PTASK = null;
+let PTASK = null, TEDIT = null, REDIT = null;
+function saveREdit(no) { const v = ($('redit').value || '').replace(/\s+/g, ' ').trim(); if (!v) return toast('พิมพ์ผลก่อน'); REDIT = null; run(`ww แก้ผล ${no} ${v}`, () => T(no).result = v); }
+function saveTEdit(no) { const v = ($('tedit').value || '').replace(/\s+/g, ' ').trim(); if (!v) return toast('พิมพ์ข้อความก่อน'); TEDIT = null; const t = T(no), pre = t && t.pt && !t._gen && !/^ทั่วไป$/.test(t.ward) && t.task !== t.rest ? t.pt + ' ' : ''; run(`ww แก้ ${no} ${pre}${v}`, () => T(no).rest = v); }   // ใส่ชื่อคนไข้ให้ (บอทใช้คำแรกเป็นชื่อ)
 function closeT(no) { closeNo(no, val(no)); }
 function upd(no) { const v = val(no); if (!v) return toast('พิมพ์ความคืบหน้าในช่องก่อน'); run(`ww update ${no} ${v}`, () => T(no).result = v); }
 function editT(no) { const v = val(no); if (!v) return toast('พิมพ์ข้อความใหม่ในช่องก่อน แล้วกดแก้ข้อความ'); run(`ww แก้ ${no} ${v}`, () => T(no).rest = v); }
