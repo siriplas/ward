@@ -198,8 +198,8 @@ input[type=date]{color-scheme:light dark}
 <button class="fab" id="fab" aria-label="เพิ่มงาน" onclick="if(TAB==='round'){openAdd()}else{openAddSheet()}">+</button>
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbw9dsYKGy8pELEBeIatNSjJLFv6W7MGjxhnjj584Z4BUlXN6WEfon-JID4f4eHR9wQ/exec';   // ← วาง URL ของบอท (ลงท้าย /exec)
-const APP_VER = 'v1.36';   // 🔖 ต้องตรงกับ SERVER_VER
-const APP_DATE = '25/10/69 21:20';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
+const APP_VER = 'v1.39';   // 🔖 ต้องตรงกับ SERVER_VER
+const APP_DATE = '25/10/69 21:50';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
 const TOK = new URLSearchParams(location.search).get('t') || '';
 // 🔄 แถบสีด้านบนวิ่งระหว่างโหลด / บันทึก
 let LOADING = 0;
@@ -1075,7 +1075,7 @@ function taskPanel(t) {
     </div>
     <div class="btns">
       ${t.urgent ? '' : `<button class="b" onclick="run('ww ต่อ ${t.no} !', () => T(${t.no}).urgent = true)">🔴 เปลี่ยนเป็นงานด่วน</button>`}
-      <button class="b r" onclick="cancelT(${t.no})">${ARM === 'c' + t.no ? 'กดอีกครั้งเพื่อยกเลิก' : 'ยกเลิกงาน'}</button>
+      ${(R && R.canEdit) || canEditText(t) ? `<button class="b r" onclick="cancelT(${t.no})">${ARM === 'c' + t.no ? 'กดอีกครั้งเพื่อยกเลิก' : 'ยกเลิกงาน'}</button>` : ''}
     </div></div>`;
   if (isOpen && t.done) h += `<div class="panel sp">
     <input class="inp" id="res${t.no}" placeholder="${t.result ? 'เพิ่มผลใหม่ (ผลเดิมยังอยู่)' : 'เพิ่มผล เช่น Hb 10'}">
@@ -1107,11 +1107,13 @@ function taskSheet(no) {
   const t = T(no); if (!t) return;
   const st = t.done ? `<span style="color:var(--g)">✓ เสร็จแล้ว</span> <span class="meta">ปิดโดย ${esc(t.doneBy)} ${esc(t.doneAt)}</span>` : `<span style="color:var(--or)">⏳ ค้าง</span>`;
   $('pbox').innerHTML = `<div class="ehead"><div><h3>${esc(t.pt)}</h3><div class="meta">${esc(t.ward)} · ${OFF === 0 ? 'วันนี้' : esc(D.day)} · ข้อ ${t.no}</div></div><button class="b" onclick="closePhoto()">✕</button></div>
-    ${TEDIT === no ? `<textarea class="inp" id="tedit" rows="2" oninput="grow(this)">${esc(t.rest || t.task)}</textarea><div class="btns"><button class="b p" onclick="saveTEdit(${no})">บันทึกข้อความ</button><button class="b" onclick="TEDIT=null;taskSheet(${no})">ยกเลิก</button></div>` : `<div class="ttxt" ${t.done ? '' : `onclick="TEDIT=${no};taskSheet(${no});setTimeout(()=>{const e=$('tedit');if(e){grow(e);e.focus()}},30)"`}><span style="font-size:17px">${t.urgent ? '<span class="urg">ด่วน </span>' : ''}${esc(t.rest || t.task)}</span>${t.done ? '' : ' <span class="tpen">✏️ แก้</span>'}</div>`}<div>${st}</div>
-    ${t.result ? (REDIT === no ? `<textarea class="inp" id="redit" rows="3" oninput="grow(this)">${esc(t.result)}</textarea><div class="btns"><button class="b p" onclick="saveREdit(${no})">บันทึกผล</button><button class="b" onclick="REDIT=null;taskSheet(${no})">ยกเลิก</button></div>` : `<div class="res${t.done ? '' : ' upd'} ttxt" onclick="REDIT=${no};taskSheet(${no});setTimeout(()=>{const e=$('redit');if(e){grow(e);e.focus()}},30)">→ ${esc(t.result)} <span class="tpen">✏️ แก้ผล</span></div>`) : ''}<div class="meta">ลงโดย ${esc(t.by)}</div>${t.done ? thankRow(t) : ''}${taskPanel(t)}`;
+    ${TEDIT === no ? `<textarea class="inp" id="tedit" rows="2" oninput="grow(this)">${esc(t.rest || t.task)}</textarea><div class="btns"><button class="b p" onclick="saveTEdit(${no})">บันทึกข้อความ</button><button class="b" onclick="TEDIT=null;taskSheet(${no})">ยกเลิก</button></div>` : `<div class="ttxt" ${t.done || !canEditText(t) ? '' : `onclick="TEDIT=${no};taskSheet(${no});setTimeout(()=>{const e=$('tedit');if(e){grow(e);e.focus()}},30)"`}><span style="font-size:17px">${t.urgent ? '<span class="urg">ด่วน </span>' : ''}${esc(t.rest || t.task)}</span>${t.done || !canEditText(t) ? '' : ' <span class="tpen">✏️ แก้</span>'}</div>`}<div>${st}</div>
+    ${t.result ? (REDIT === no ? `<textarea class="inp" id="redit" rows="3" oninput="grow(this)">${esc(t.result)}</textarea><div class="btns"><button class="b p" onclick="saveREdit(${no})">บันทึกผล</button><button class="b" onclick="REDIT=null;taskSheet(${no})">ยกเลิก</button></div>` : (canEditRes(t) ? `<div class="res${t.done ? '' : ' upd'} ttxt" onclick="REDIT=${no};taskSheet(${no});setTimeout(()=>{const e=$('redit');if(e){grow(e);e.focus()}},30)">→ ${esc(t.result)} <span class="tpen">✏️ แก้ผล</span></div>` : `<div class="res${t.done ? '' : ' upd'}">→ ${esc(t.result)}</div>`)) : ''}<div class="meta">ลงโดย ${esc(t.by)}</div>${t.done ? thankRow(t) : ''}${taskPanel(t)}`;
   $('psheet').style.display = 'flex'; PTASK = no;
 }
 let PTASK = null, TEDIT = null, REDIT = null;
+const isAdm = () => !!((R && R.admin) || (D && D.admin)), meName = () => (D && D.me) || '';
+const canEditText = t => isAdm() || (t.by && t.by === meName()), canEditRes = t => isAdm() || ((t.done ? t.doneBy : t.by) === meName());
 function saveREdit(no) { const v = ($('redit').value || '').replace(/\s+/g, ' ').trim(); if (!v) return toast('พิมพ์ผลก่อน'); REDIT = null; run(`ww แก้ผล ${no} ${v}`, () => T(no).result = v); }
 function saveTEdit(no) { const v = ($('tedit').value || '').replace(/\s+/g, ' ').trim(); if (!v) return toast('พิมพ์ข้อความก่อน'); TEDIT = null; const t = T(no), pre = t && t.pt && !t._gen && !/^ทั่วไป$/.test(t.ward) && t.task !== t.rest ? t.pt + ' ' : ''; run(`ww แก้ ${no} ${pre}${v}`, () => T(no).rest = v); }   // ใส่ชื่อคนไข้ให้ (บอทใช้คำแรกเป็นชื่อ)
 function closeT(no) { closeNo(no, val(no)); }
