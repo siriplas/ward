@@ -104,6 +104,7 @@ textarea.inp{resize:vertical;line-height:1.45;min-height:44px;overflow:hidden;fo
 .dstag{background:#7c3aed;color:#fff;border-radius:6px;padding:0 6px;font-size:11px;font-weight:700}.dschk{display:flex;align-items:center;gap:4px;font-size:13px;font-weight:600;white-space:nowrap}.adh .dschk{margin-left:auto}
 .panel.sp{padding:0;border:0;background:none;margin:0}
 @keyframes sp{to{transform:rotate(360deg)}}.spin{width:26px;height:26px;margin:0 auto 10px;border:3px solid var(--ln);border-top-color:var(--hd);border-radius:50%;animation:sp .8s linear infinite}
+.notice.nbtn{display:block;width:100%;text-align:left;border:0;background:none;font:inherit;cursor:pointer}.nadd{display:block;margin:6px 16px 0;border:1px dashed var(--ln);background:none;color:var(--mu);border-radius:999px;padding:4px 12px;font:inherit;font-size:13px}
 .b.adup{border:1.5px dashed var(--hd);color:var(--hd);background:none;font-weight:600}
 .adc{border-bottom:1px solid var(--ln);padding:8px 0;display:flex;flex-direction:column;gap:2px}.adt{display:flex;gap:6px;align-items:baseline;flex-wrap:wrap}.adt .ads{margin-left:auto}
 .amain{padding:4px 16px 24px;display:flex;flex-direction:column;gap:10px;max-width:600px;margin:0 auto}
@@ -192,8 +193,8 @@ input[type=date]{color-scheme:light dark}
 <button class="fab" id="fab" aria-label="เพิ่มงาน" onclick="if(TAB==='round'){openAdd()}else{document.body.classList.add('adding');$('newt').focus()}">+</button>
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbw9dsYKGy8pELEBeIatNSjJLFv6W7MGjxhnjj584Z4BUlXN6WEfon-JID4f4eHR9wQ/exec';   // ← วาง URL ของบอท (ลงท้าย /exec)
-const APP_VER = 'v1.16';   // 🔖 ต้องตรงกับ SERVER_VER
-const APP_DATE = '25/10/69 17:50';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
+const APP_VER = 'v1.17';   // 🔖 ต้องตรงกับ SERVER_VER
+const APP_DATE = '25/10/69 18:05';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
 const TOK = new URLSearchParams(location.search).get('t') || '';
 // 🔄 แถบสีด้านบนวิ่งระหว่างโหลด / บันทึก
 let LOADING = 0;
@@ -435,6 +436,30 @@ function verReload() { const u = new URL(location.href); u.searchParams.set('nc'
 // ✋ ขอสิทธิ์แก้ไข (ลิงก์ธรรมดา) → admin กดอนุมัติในแท็บผู้ดูแล
 function reqEditBtn() { const s = LS.get('ww_req'); return `<div class="reqe">${s && Date.now() - s < 864e5 ? '⏳ ส่งคำขอสิทธิ์แก้ไขแล้ว รอผู้ดูแลอนุมัติ' : `<button class="b" onclick="reqEdit(this)">✋ ขอสิทธิ์แก้ไข</button><div class="meta">แก้ข้อมูลคนไข้ · ลงตาราง admit · เพิ่มคนไข้</div>`}</div>`; }
 function reqEdit(btn) { btn.disabled = true; call({ api: 'reqedit' }, r => { toast(r.ok ? r.msg : '❗ ' + (r.msg || 'ส่งไม่ได้')); if (r.ok) { LS.set('ww_req', Date.now()); TAB === 'round' ? renderRound() : drawAdmit(); } else btn.disabled = false; }); }
+// 📢 ประกาศ: แตะแถบ → แผ่นเด้งขึ้น · เพิ่ม (ทุกลิงก์ · หลายวัน) · แตะประกาศของตัวเอง = แก้/ลบ
+let NT = null;
+function openNotice() { NT = { edit: null, arm: null }; drawNotice(); $('psheet').style.display = 'flex'; }
+function drawNotice() {
+  const list = D.noticeInfo || (D.notices || []).map((t, i) => ({ k: i + 1, text: t, raw: t, by: '', at: '', mine: false }));
+  $('pbox').innerHTML = `<div class="ehead"><div><h3>📢 ประกาศ</h3><div class="meta">${OFF ? esc(D.day) : 'วันนี้ · ' + esc(D.day)}</div></div><button class="b" onclick="closePhoto()">✕</button></div>
+    ${list.length ? list.map(n => NT.edit === n.k ? `<div class="adr"><textarea class="inp adi" id="ntedit" rows="2">${esc(n.raw)}</textarea><div class="adg"><button class="b p" style="flex:2" onclick="ntAct('edit', ${n.k})">บันทึก</button><button class="b r" style="flex:1" onclick="ntAct('del', ${n.k})">${NT.arm === n.k ? 'กดอีกครั้ง = ลบ' : 'ลบ'}</button><button class="b" style="flex:1" onclick="NT.edit=null;drawNotice()">ปิด</button></div></div>`
+      : `<div class="xrow"${n.mine ? ` style="cursor:pointer" onclick="NT.edit=${n.k};NT.arm=null;drawNotice()"` : ''}><div style="flex:1"><div>${esc(n.text)}</div><div class="meta">${esc(n.by)}${n.at ? ' · ' + esc(n.at) : ''}</div></div>${n.mine ? '<span class="meta">แก้ ›</span>' : ''}</div>`).join('') : '<div class="meta">ยังไม่มีประกาศ</div>'}
+    <div class="lbl" style="margin-top:6px">แจ้งใหม่</div>
+    <textarea class="inp" id="ntnew" rows="2" placeholder="เช่น อ. ราวด์ 7 โมง · R2 ไปสอบ 8–9"></textarea>
+    <label class="ef"><span class="lbl">ถึงวันที่ (ถ้าแจ้งหลายวัน · ไม่ใส่ = วันเดียว)</span><input class="inp adi" type="date" id="ntto" min="${isoOff(OFF)}" max="${isoOff(OFF + 30)}"></label>
+    <button class="b p" onclick="ntAct('add')">📢 แจ้ง</button>`;
+}
+function ntAct(act, k) {
+  if (act === 'del' && NT.arm !== k) { NT.arm = k; return drawNotice(); }
+  const list = D.noticeInfo || [], n = list.find(x => x.k === k), q = { api: 'notice', act, off: OFF };
+  if (act === 'add') {
+    q.text = ($('ntnew').value || '').trim(); if (!q.text) return toast('พิมพ์ประกาศก่อน');
+    const to = $('ntto').value, last = to ? Math.round((Date.parse(to + 'T00:00:00Z') - todayUTC()) / 864e5) : OFF;
+    q.offs = Array.from({ length: Math.max(1, last - OFF + 1) }, (_, i) => OFF + i).join(',');
+  } else { q.k = k; q.orig = n ? n.raw : ''; if (act === 'edit') { q.text = ($('ntedit').value || '').trim(); if (!q.text) return toast('พิมพ์ข้อความใหม่'); } }
+  toast('📢 กำลังบันทึก…');
+  call(q, r => { if (r.error) return toast('❗ ' + (r.msg || 'ไม่สำเร็จ')); toast(r.msg); if (r.data) set(r.data); NT.edit = null; NT.arm = null; if ($('psheet').style.display !== 'none') drawNotice(); });
+}
 function setTab(t, force) {
   TAB = t; document.body.classList.toggle('rtab', t === 'round'); document.body.classList.toggle('atab', t === 'admit' || t === 'admin'); stamp(); if (t === "round") $("ttl").textContent = "ราวด์"; if (t === 'admit') $('ttl').textContent = 'รับใหม่'; $('tabT').classList.toggle('on', t === 'task'); $('tabR').classList.toggle('on', t === 'round'); $('tabA').classList.toggle('on', t === 'admit'); $('tabX').classList.toggle('on', t === 'admin');
   if (t === 'admit') { document.body.classList.remove('adding'); $('dnav').style.display = 'none'; return openAdmit(); }
@@ -882,7 +907,7 @@ function render() {
   $('chips').innerHTML = `<label class="fsel${BLD !== 'ทั้งหมด' ? ' on' : ''}" style="width:calc(33.3% - 4px)"><span>${BLD === 'ทั้งหมด' ? 'ตึก' : esc(short(BLD))}</span><select onchange="BLD=this.value;render()">${blds.map(b => `<option value="${esc(b)}"${b === BLD ? ' selected' : ''}>${b === 'ทั้งหมด' ? 'ทุกตึก' : esc(short(b))}</option>`).join('')}</select></label>`;
   const due = R ? R.pts.filter(p => dueToday(p, OFF)) : [];   // ตามวันที่เลือกในแท็บงาน
   const dueBar = due.length ? `<button class="duebar" ${OFF ? 'disabled' : ''} onclick="RDUE=true;RST='';RG='ทุกคน';RBLD='ทั้งหมด';RACT='active';setTab('round')">${OFF ? D.day + ' ต้องไปดู' : 'วันนี้ต้องไปดู'} ${due.length} คน: ${due.slice(0, 6).map(p => esc(p.name.split(/\s+/)[0])).join(', ')}${due.length > 6 ? ' …' : ''}${OFF ? '' : ' ›'}</button>` : '';
-  $('notices').innerHTML = newsBar() + dueBar + (D.notices.length ? `<div class="notice">${D.notices.map(esc).join(' · ')}</div>` : '');
+  $('notices').innerHTML = newsBar() + dueBar + (D.notices.length ? `<button class="notice nbtn" onclick="openNotice()">📢 ${D.notices.map(esc).join(' · ')} <span class="meta">›</span></button>` : `<button class="nadd" onclick="openNotice()">＋ ประกาศ</button>`);
   const ts = all.filter(t => BLD === 'ทั้งหมด' || t.bld === BLD);
   let h = '';
   const fl = ts.filter(t => t.flap && !t.done);
@@ -896,7 +921,8 @@ function render() {
 
 function byPatient(list) {
   const groups = [];
-  list.forEach(t => { const k = t.pt + '|' + t.ward; let g = groups.find(x => x.k === k); if (!g) groups.push(g = { k, pt: t.pt, ward: t.ward, items: [] }); g.items.push(t); });
+  list.forEach(t => { if (/^ทั่วไป$/.test(t.ward) && !t._gen) { t._gen = 1; t.rest = t.task.replace(/^[-•]\s*/, ''); t.pt = 'งานทั่วไป'; }   // ทั่วไป = ไม่มีชื่อคนไข้ → ไม่เอาคำแรกเป็นชื่อ
+    const k = t.pt + '|' + t.ward; let g = groups.find(x => x.k === k); if (!g) groups.push(g = { k, pt: t.pt, ward: t.ward, items: [] }); g.items.push(t); });
   return groups.map(g => `<div class="card"><div class="pthead">${esc(g.pt)}<span>${esc(g.ward)}</span></div>${g.items.map(taskRow).join('')}</div>`).join('');
 }
 function taskRow(t) {
