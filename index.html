@@ -120,6 +120,7 @@ textarea.inp{resize:vertical;line-height:1.45;min-height:44px;overflow:hidden;fo
 body.isadmin .ver{display:block}
 .newver{position:sticky;top:0;z-index:12;display:block;width:100%;border:0;background:#2563eb;color:#fff;font:inherit;font-size:14px;font-weight:600;padding:10px 12px;text-align:center}
 .reqe{text-align:center;padding:18px 16px 8px;display:flex;flex-direction:column;gap:4px;align-items:center;color:var(--mu);font-size:13px}.reqe .b{min-height:40px;padding:0 18px}
+.wbox{margin:4px 2px 0;border:1px solid var(--ln,#e5e7eb);border-radius:12px;overflow:hidden;background:var(--bg)}.wbox>.sec{background:var(--bg2);font-weight:700;color:var(--tx)}
 .bldh{margin-top:14px;padding:10px 16px;font-size:14px;font-weight:700;color:var(--tx);background:var(--bg2);border-top:3px solid var(--hd)}
 .sec{font-size:12px;font-weight:600;color:var(--mu);padding:12px 16px 2px;letter-spacing:.3px}
 .card{background:transparent}
@@ -198,8 +199,8 @@ input[type=date]{color-scheme:light dark}
 <button class="fab" id="fab" aria-label="เพิ่มงาน" onclick="if(TAB==='round'){openAdd()}else{openAddSheet()}">+</button>
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbw9dsYKGy8pELEBeIatNSjJLFv6W7MGjxhnjj584Z4BUlXN6WEfon-JID4f4eHR9wQ/exec';   // ← วาง URL ของบอท (ลงท้าย /exec)
-const APP_VER = 'v1.40';   // 🔖 ต้องตรงกับ SERVER_VER
-const APP_DATE = '26/10/69 00:15';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
+const APP_VER = 'v1.47';   // 🔖 ต้องตรงกับ SERVER_VER
+const APP_DATE = '27/10/69 00:35';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
 const TOK = new URLSearchParams(location.search).get('t') || '';
 // 🔄 แถบสีด้านบนวิ่งระหว่างโหลด / บันทึก
 let LOADING = 0;
@@ -627,7 +628,7 @@ function renderRound() {
   $('main').innerHTML = wards.map(w => {
     const list = ps.filter(p => p.ward === w), bd = list[0].bld;
     const bh = bd !== lastB ? `<div class="bldh">${esc(bd)} · ${ps.filter(p => p.bld === bd).length} คน</div>` : ''; lastB = bd;
-    return bh + `<div><div class="sec cp" onclick="copyWard(this)" data-w="${esc(w)}" data-n="${esc(JSON.stringify(list.map(p => p.name)))}">${esc(w)} · ${list.length} คน <span class="cpi">⧉ คัดลอก</span></div><div class="card">${list.map(p => {
+    return bh + `<div class="wbox"><div class="sec cp" onclick="copyWard(this)" data-w="${esc(w)}" data-n="${esc(JSON.stringify(list.map(p => p.name)))}">${esc(w)} · ${list.length} คน <span class="cpi">⧉ คัดลอก</span></div><div class="card">${list.map(p => {
       const i = all.indexOf(p), op = ROPEN === i;
       return `<div class="task prow${p.inactive ? ' inact' : ''}"><button class="row" onclick="ROPEN=ROPEN===${i}?null:${i};renderRound()" style="align-items:flex-start">
         <span style="flex-grow:1;min-width:0"><div><b>${esc(p.name)}</b>${p.inactive ? '<span class="itag">ไม่ต้องดู</span>' : ''}${dueToday(p) ? `<span class="itag duet">${p.inactive && setIn(p) === 1 && visitIn(p) !== 0 ? 'วันนี้ (พรุ่งนี้ set)' : 'วันนี้'}</span>` : ''} <span class="hn">${p.hn ? 'HN ' + esc(p.hn) : ''}</span></div>
@@ -676,8 +677,8 @@ function drawPhoto() {
     ${s.log ? `<div class="prog">${esc(s.log)}</div>` : ''}
     <div class="btns"><button class="b p" ${s.busy || !s.files.length ? 'disabled' : ''} onclick="upPhotos()">${s.busy ? 'กำลังลง…' : 'ลง ' + s.files.length + ' ไฟล์'}</button><button class="b" onclick="closePhoto()">ปิด</button></div>`;
 }
-async function shrink(file) {
-  if (PH.orig || !/^image\//.test(file.type) || /gif/.test(file.type)) return file;
+async function shrink(file, orig) {
+  if (orig || !/^image\//.test(file.type) || /gif/.test(file.type)) return file;
   try {
     const bm = await createImageBitmap(file), M = 2500, k = Math.min(1, M / Math.max(bm.width, bm.height));
     if (k === 1 && file.size < 2.5e6) return file;
@@ -687,8 +688,38 @@ async function shrink(file) {
   } catch (e) { return file; }
 }
 const b64 = blob => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(',')[1]); r.onerror = rej; r.readAsDataURL(blob); });
+// 📤 คิวลงรูปเบื้องหลัง — กดลงแล้วปิดหน้าได้เลย ลงคนต่อไปได้ทันที (ลงทีละคนตามลำดับ)
+const UPQ = []; let UPRUN = null;
+function upPill() {
+  let el = $('uppill');
+  if (!UPRUN && !UPQ.length) { if (el) el.remove(); return; }
+  if (!el) { el = document.createElement('div'); el.id = 'uppill'; el.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);top:calc(8px + env(safe-area-inset-top));z-index:60;background:#111827;color:#fff;border-radius:999px;padding:8px 14px;font-size:14px;box-shadow:0 4px 14px rgba(0,0,0,.25);white-space:pre-line;text-align:center'; document.body.appendChild(el); }
+  el.textContent = (UPRUN ? `📤 ลงรูป ${firstName(UPRUN.name)} ${UPRUN.k}/${UPRUN.n}` : '📤 เตรียมลงรูป…') + (UPQ.length ? ` · รออีก ${UPQ.length} คน` : '') + '\n⚠️ เปิดจอค้างไว้';
+}
+window.addEventListener('beforeunload', e => { if (UPRUN || UPQ.length) { e.preventDefault(); e.returnValue = ''; } });
+async function upWorker() {
+  if (UPRUN) return;
+  while (UPQ.length) {
+    const j = UPQ.shift(); UPRUN = { name: j.p.name, k: 0, n: j.files.length };
+    let ok = 0, dup = 0, bad = 0, where = '', msgs = [];
+    for (let k = 0; k < j.files.length; k++) {
+      UPRUN.k = k + 1; upPill();
+      try {
+        const f = await shrink(j.files[k], j.orig);
+        if (f.size > 35e6) { bad++; msgs.push(`${j.files[k].name}: ไฟล์ใหญ่เกิน 35 MB`); continue; }
+        const body = { app: 'upload', t: TOK, name: j.p.name, hn: j.p.hn, dx: j.p.dx, staff: j.p.staffRaw || j.p.staff, day: j.date, tag: j.tag, i: k + 1, first: k === 0, mime: f.type || 'image/jpeg', data: await b64(f) };
+        const r = await (await fetch(API, { method: 'POST', body: JSON.stringify(body) })).json();
+        if (r.ok) { r.dup ? dup++ : ok++; where = r.folder; if (r.renamed) msgs.push('📁 อัปเดตชื่อโฟลเดอร์: + ' + r.renamed); if (r.created) msgs.push('📁 สร้างโฟลเดอร์ใหม่'); }
+        else { bad++; msgs.push(r.msg || (r.error === 'expired' ? 'ลิงก์หมดอายุ' : 'ลงไม่สำเร็จ')); if (r.error === 'expired') break; }
+      } catch (e) { bad++; msgs.push('เชื่อมต่อไม่ได้'); }
+    }
+    UPRUN = null; upPill();
+    toast(`${bad ? '⚠️' : '✅'} ${firstName(j.p.name)}: ลงแล้ว ${ok}${dup ? ' · มีแล้ว ' + dup : ''}${bad ? ' · ไม่สำเร็จ ' + bad : ''}${bad && msgs.length ? '\n' + [...new Set(msgs)].join('\n') : ''}`);
+  }
+}
 async function upPhotos() {
   const s = PH; if (!s || s.busy) return;
+  if (s.tag === 'POD' && !s.pod) return toast('ใส่เลข POD ก่อน');
   if (!s.okLine) {   // 📷 มีรูปลงผ่านไลน์ภายใน 24 ชม. → เตือนก่อน (กดลงอีกครั้ง = ยืนยัน)
     s.busy = true; s.log = '⏳ ตรวจรูปซ้ำ…'; drawPhoto();
     let r = {}; try { r = await (await fetch(API + '?' + new URLSearchParams({ t: TOK, api: 'phcheck', name: s.p.name, hn: s.p.hn || '' }))).json(); } catch (e) {}
@@ -696,23 +727,10 @@ async function upPhotos() {
     if (r.line) { s.log = `⚠️ ${firstName(s.p.name)} มีรูปลงผ่านไลน์แล้ว ${r.line.n} รูป (${r.line.at}${r.line.by ? ' โดย ' + r.line.by : ''})\nถ้าเป็นรูปชุดอื่น กด "ลง" อีกครั้ง`; return drawPhoto(); }
     s.log = '';
   }
-  const tag = s.tag === 'POD' ? (s.pod ? 'POD' + s.pod : '') : s.tag;
-  if (s.tag === 'POD' && !s.pod) return toast('ใส่เลข POD ก่อน');
-  s.busy = true; let ok = 0, dup = 0, bad = 0, where = '', msgs = []; drawPhoto();
-  for (let k = 0; k < s.files.length; k++) {
-    s.log = `⏳ ${k + 1}/${s.files.length}…`; drawPhoto();
-    try {
-      const f = await shrink(s.files[k]);
-      if (f.size > 35e6) { bad++; msgs.push(`${s.files[k].name}: ไฟล์ใหญ่เกิน 35 MB`); continue; }
-      const body = { app: 'upload', t: TOK, name: s.p.name, hn: s.p.hn, dx: s.p.dx, staff: s.p.staffRaw || s.p.staff, day: s.date, tag, i: k + 1, first: k === 0, mime: f.type || 'image/jpeg', data: await b64(f) };
-      busyOn(); let r; try { r = await (await fetch(API, { method: 'POST', body: JSON.stringify(body) })).json(); } finally { busyOff(); }
-      if (r.ok) { r.dup ? dup++ : ok++; where = r.folder; if (r.renamed) msgs.push('📁 อัปเดตชื่อโฟลเดอร์: + ' + r.renamed); if (r.created) msgs.push('📁 สร้างโฟลเดอร์ใหม่'); }
-      else { bad++; msgs.push(r.msg || (r.error === 'expired' ? 'ลิงก์หมดอายุ' : 'ลงไม่สำเร็จ')); if (r.error === 'expired') break; }
-    } catch (e) { bad++; msgs.push('เชื่อมต่อไม่ได้'); }
-  }
-  s.busy = false; s.files = [];
-  s.log = `✅ ลงแล้ว ${ok}${dup ? ' · มีแล้ว ' + dup + ' ข้าม' : ''}${bad ? ' · ไม่สำเร็จ ' + bad : ''}${where ? '\n📁 ' + where : ''}${msgs.length ? '\n' + [...new Set(msgs)].join('\n') : ''}`;
-  drawPhoto();
+  const tag = s.tag === 'POD' ? 'POD' + s.pod : s.tag;
+  UPQ.push({ p: s.p, files: s.files, date: s.date, tag, orig: s.orig });
+  closePhoto(); toast(`📤 กำลังลง ${s.files.length} ไฟล์ของ ${firstName(s.p.name)} เบื้องหลัง — ลงคนต่อไปได้เลย\n⚠️ เปิดจอค้างไว้จนแถบด้านบนหาย`);
+  upPill(); upWorker();
 }
 // ✏️ แก้ตารางราวด์ (เฉพาะลิงก์แก้ไขได้)
 let ED = null;
