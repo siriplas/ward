@@ -199,8 +199,8 @@ input[type=date]{color-scheme:light dark}
 <button class="fab" id="fab" aria-label="เพิ่มงาน" onclick="if(TAB==='round'){openAdd()}else{openAddSheet()}">+</button>
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbw9dsYKGy8pELEBeIatNSjJLFv6W7MGjxhnjj584Z4BUlXN6WEfon-JID4f4eHR9wQ/exec';   // ← วาง URL ของบอท (ลงท้าย /exec)
-const APP_VER = 'v1.57';   // 🔖 ต้องตรงกับ SERVER_VER
-const APP_DATE = '27/10/69 20:35';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
+const APP_VER = 'v1.62';   // 🔖 ต้องตรงกับ SERVER_VER
+const APP_DATE = '27/10/69 21:20';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
 const TOK = new URLSearchParams(location.search).get('t') || '';
 // 🔄 แถบสีด้านบนวิ่งระหว่างโหลด / บันทึก
 let LOADING = 0;
@@ -253,8 +253,15 @@ const THEMES = [
   { id: 'loykrathong', from: '11-23', to: '11-25', icon: '🪷', bar: 'linear-gradient(90deg,#1e3a8a,#f59e0b,#1e3a8a)', hd: '#1e40af' },
   { id: 'xmas', from: '12-20', to: '12-26', icon: '🎄', bar: 'repeating-linear-gradient(90deg,#dc2626 0 14px,#16a34a 14px 28px)', hd: '#16a34a' },
   { id: 'newyear', from: '12-27', to: '01-03', icon: '🎆', bar: 'linear-gradient(90deg,#f59e0b,#ec4899,#8b5cf6,#06b6d4)', hd: '#8b5cf6' },
-  { id: 'songkran', from: '04-12', to: '04-16', icon: '💦', bar: 'repeating-linear-gradient(90deg,#0ea5e9 0 16px,#38bdf8 16px 32px)', hd: '#0284c7' }
+  { id: 'songkran', from: '04-12', to: '04-16', icon: '💦', bar: 'repeating-linear-gradient(90deg,#0ea5e9 0 16px,#38bdf8 16px 32px)', hd: '#0284c7' },
+  { id: 'valentine', from: '02-13', to: '02-14', icon: '💘', bar: 'repeating-linear-gradient(90deg,#f43f5e 0 16px,#fda4af 16px 32px)', hd: '#e11d48' },
+  { id: 'mother', from: '08-11', to: '08-12', icon: '💙', bar: 'linear-gradient(90deg,#1d4ed8,#60a5fa,#1d4ed8)', hd: '#1d4ed8' },
+  { id: 'father', from: '12-04', to: '12-05', icon: '💛', bar: 'linear-gradient(90deg,#ca8a04,#fde047,#ca8a04)', hd: '#a16207' }
 ];
+// 🧧 ตรุษจีน (วันเปลี่ยนทุกปี) → 2 วันก่อน ถึง 2 วันหลัง
+const CNY = { 2027: '02-06', 2028: '01-26', 2029: '02-13', 2030: '02-03', 2031: '01-23' };
+(() => { const c = CNY[new Date(Date.now() + 7 * 3600e3).getUTCFullYear()]; if (!c) return; const y = new Date(Date.now() + 7 * 3600e3).getUTCFullYear(), b = Date.UTC(y, +c.slice(0, 2) - 1, +c.slice(3)), f = x => { const d = new Date(b + x * 864e5); return String(d.getUTCMonth() + 1).padStart(2, '0') + '-' + String(d.getUTCDate()).padStart(2, '0'); };
+  THEMES.unshift({ id: 'cny', from: f(-2), to: f(2), icon: '🧧', bar: 'repeating-linear-gradient(90deg,#dc2626 0 16px,#facc15 16px 32px)', hd: '#b91c1c' }); })();
 function festival() {
   const d = new Date(Date.now() + 7 * 3600e3), md = String(d.getUTCMonth() + 1).padStart(2, '0') + '-' + String(d.getUTCDate()).padStart(2, '0');
   return THEMES.find(t => t.from <= t.to ? md >= t.from && md <= t.to : md >= t.from || md <= t.to);
@@ -1049,7 +1056,10 @@ function render() {
   if (TAB === 'round') return;
   const names = { '-1': 'เมื่อวาน', '0': 'วันนี้', '1': 'พรุ่งนี้' };
   $('date').textContent = D.day;
-  $('ttl').textContent = 'งาน' + (names[OFF] || (OFF < 0 ? ` ${-OFF} วันก่อน` : ` อีก ${OFF} วัน`));
+  if ($('updAt')) $('updAt').style.display = OFF === 0 && greet() ? 'none' : '';   // ตอนทักทาย ซ่อนวันที่ + เวลาอัปเดต ให้ข้อความอยู่บรรทัดเดียว (ชื่อยาวก็ไม่ดันปุ่ม ⟳)
+  if (OFF === 0 && greet()) $('date').textContent = '';   // ตอนทักทาย ซ่อนวันที่ ให้ข้อความอยู่บรรทัดเดียว
+  $('ttl').style.whiteSpace = 'nowrap';
+  $('ttl').textContent = OFF === 0 && greet() || 'งาน' + (names[OFF] || (OFF < 0 ? ` ${-OFF} วันก่อน` : ` อีก ${OFF} วัน`));
   const rel = names[OFF] || (OFF < 0 ? `${-OFF} วันก่อน` : `อีก ${OFF} วัน`);
   $('dnav').innerHTML = `<button class="dn" onclick="go(-1)" aria-label="วันก่อน">‹</button><label class="dn mid${OFF ? '' : ' on'}" style="position:relative;display:flex;align-items:center;justify-content:center;cursor:pointer">${D.day} (${rel})<input type="date" id="dpick" min="${isoOff(-30)}" max="${isoOff(14)}" value="${isoOff(OFF)}" onchange="pickDay(this.value)" style="position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer"></label><button class="dn" onclick="go(1)" aria-label="วันถัดไป">›</button>`;
   $('newt').placeholder = OFF ? `เพิ่มงานวันที่ ${D.day}` : 'เพิ่มงาน เช่น สมชาย CBC';
@@ -1130,13 +1140,32 @@ const val = no => ($('res' + no) || {}).value ? $('res' + no).value.trim() : '';
 function toggle(no) { SEEN_NO[no] = 1; OPEN = no; ARM = null; render(); taskSheet(no); }
 function taskSheet(no) {
   const t = T(no); if (!t) return;
-  const st = t.done ? `<span style="color:var(--g)">✓ เสร็จแล้ว</span> <span class="meta">ปิดโดย ${esc(t.doneBy)} ${esc(t.doneAt)}</span>` : `<span style="color:var(--or)">⏳ ค้าง</span>`;
+  const st = t.done ? `<span style="color:var(--g)">✓ เสร็จแล้ว</span>` : `<span style="color:var(--or)">⏳ ค้าง</span>`;
   $('pbox').innerHTML = `<div class="ehead"><div><h3>${esc(t.pt)}</h3><div class="meta">${esc(t.ward)} · ${OFF === 0 ? 'วันนี้' : esc(D.day)} · ข้อ ${t.no}</div></div><button class="b" onclick="closePhoto()">✕</button></div>
-    ${TEDIT === no ? `<textarea class="inp" id="tedit" rows="2" oninput="grow(this)">${esc(t.rest || t.task)}</textarea><div class="btns"><button class="b p" onclick="saveTEdit(${no})">บันทึกข้อความ</button><button class="b" onclick="TEDIT=null;taskSheet(${no})">ยกเลิก</button></div>` : `<div class="ttxt" ${t.done || !canEditText(t) ? '' : `onclick="TEDIT=${no};taskSheet(${no});setTimeout(()=>{const e=$('tedit');if(e){grow(e);e.focus()}},30)"`}><span style="font-size:17px">${t.urgent ? '<span class="urg">ด่วน </span>' : ''}${esc(t.rest || t.task)}</span>${t.done || !canEditText(t) ? '' : ' <span class="tpen">✏️ แก้</span>'}</div>`}<div>${st}</div>
-    ${t.result ? (REDIT === no ? `<textarea class="inp" id="redit" rows="3" oninput="grow(this)">${esc(t.result)}</textarea><div class="btns"><button class="b p" onclick="saveREdit(${no})">บันทึกผล</button><button class="b" onclick="REDIT=null;taskSheet(${no})">ยกเลิก</button></div>` : (canEditRes(t) ? `<div class="res${t.done ? '' : ' upd'} ttxt" onclick="REDIT=${no};taskSheet(${no});setTimeout(()=>{const e=$('redit');if(e){grow(e);e.focus()}},30)">→ ${esc(String(t.result).replace(/^\s*(→|->)\s*/, ''))} <span class="tpen">✏️ แก้ผล</span></div>` : `<div class="res${t.done ? '' : ' upd'}">→ ${esc(String(t.result).replace(/^\s*(→|->)\s*/, ''))}</div>`)) : ''}<div class="meta">ลงโดย ${esc(t.by)}</div>${t.done ? thankRow(t) : ''}${taskPanel(t)}`;
+    ${TEDIT === no ? `<textarea class="inp" id="tedit" rows="2" oninput="grow(this)">${esc(t.rest || t.task)}</textarea><div class="btns"><button class="b p" onclick="saveTEdit(${no})">บันทึกข้อความ</button><button class="b" onclick="TEDIT=null;taskSheet(${no})">ยกเลิก</button></div>` : `<div class="ttxt" ${t.done || !canEditText(t) ? '' : `onclick="TEDIT=${no};taskSheet(${no});setTimeout(()=>{const e=$('tedit');if(e){grow(e);e.focus()}},30)"`}><span style="font-size:17px">${t.urgent ? '<span class="urg">ด่วน </span>' : ''}${esc(t.rest || t.task)}</span>${t.done || !canEditText(t) ? '' : ' <span class="tpen">✏️ แก้</span>'}</div>`}<div class="meta" style="margin-top:2px">ลงโดย ${esc(t.by)}</div><div style="margin-top:10px">${st}</div>
+    ${t.result ? (REDIT === no ? `<textarea class="inp" id="redit" rows="3" oninput="grow(this)">${esc(t.result)}</textarea><div class="btns"><button class="b p" onclick="saveREdit(${no})">บันทึกผล</button><button class="b" onclick="REDIT=null;taskSheet(${no})">ยกเลิก</button></div>` : (canEditRes(t) ? `<div class="res${t.done ? '' : ' upd'} ttxt" onclick="REDIT=${no};taskSheet(${no});setTimeout(()=>{const e=$('redit');if(e){grow(e);e.focus()}},30)">→ ${esc(String(t.result).replace(/^\s*(→|->)\s*/, ''))} <span class="tpen">✏️ แก้ผล</span></div>` : `<div class="res${t.done ? '' : ' upd'}">→ ${esc(String(t.result).replace(/^\s*(→|->)\s*/, ''))}</div>`)) : ''}${t.result && t.resBy && !(t.done && t.resBy === t.doneBy + ' ' + t.doneAt) ? `<div class="meta">อัปเดตผลโดย ${esc(t.resBy)}</div>` : ''}${t.done ? `<div class="meta">ปิดโดย ${esc(t.doneBy)} ${esc(t.doneAt)}</div>` + thankRow(t) : ''}${taskPanel(t)}`;
   $('psheet').style.display = 'flex'; PTASK = no;
 }
 let PTASK = null, TEDIT = null, REDIT = null;
+// 👋 ทักทายตามเวลา ตอนเปิดแอพ (3 วินาที แล้วกลับเป็น "งานวันนี้") · ทักไม่เกินทุก 3 ชม.
+let GREET_UNTIL = 0;
+try { const lg = +localStorage.getItem('ww_greet') || 0; if (Date.now() - lg > 3 * 3600e3) { GREET_UNTIL = Date.now() + 3000; localStorage.setItem('ww_greet', Date.now()); setTimeout(() => { if (TAB === 'task' && D) render(); }, 3100); } } catch (e) {}
+// คำทักสั้นๆ (ไม่เกิน ~10 ตัวอักษร ให้อยู่บรรทัดเดียวกับชื่อ) · อีโมจิไว้ท้าย
+let GREET_PICK = '';
+const GREETS = {
+  am: ['สวัสดี ☀️', 'อรุณ 🌤', 'สู้ๆ นะ 💪', 'กาแฟยัง ☕', 'วันใหม่ ✨', 'ตื่นแล้ว 🐓', 'เช้าแล้ว 🌅', 'ราวด์กัน 🚶', 'สดใสนะ 🌻', 'ลุยเลย 🔥'],
+  pm: ['สู้ๆ 💪', 'ข้าวยัง 🍱', 'บ่ายแล้ว ☀️', 'ไหวอยู่ 💯', 'อีกนิดนะ 🏃', 'เก่งมาก 👏', 'ดื่มน้ำ 🥤', 'ชิลๆ 😎', 'ครึ่งทาง ⏳', 'เยี่ยมเลย 🌟'],
+  eve: ['เย็นแล้ว 🌇', 'พักก่อน 🫶', 'ใกล้เลิก 🏁', 'เก่งมาก 🏅', 'ข้าวเย็น 🍜', 'พักบ้างนะ 🛋', 'ขอบคุณ 🙏', 'ฟ้าสวย 🌆', 'อีกนิด 💨', 'ดีมาก 😊'],
+  night: ['ดึกแล้ว 🌙', 'พักผ่อน 😴', 'ฝันดี 💤', 'นกฮูก 🦉', 'ดาวสวย ✨', 'ห่มผ้านะ 🧣', 'ใจเย็นๆ 🍵', 'เงียบสงบ 🌌', 'ขอบคุณ 🙏', 'นอนนะ 🛏']
+};
+function greet() {
+  if (Date.now() > GREET_UNTIL) return '';
+  const n = firstName(meName()), h = new Date(Date.now() + 7 * 3600e3).getUTCHours();
+  const G = h >= 5 && h < 11 ? GREETS.am : h < 16 ? GREETS.pm : h < 21 ? GREETS.eve : GREETS.night;
+  if (!GREET_PICK) GREET_PICK = G[Math.floor(Math.random() * G.length)];   // สุ่มครั้งเดียวต่อการเปิด
+  const g = GREET_PICK;
+  return n ? g.replace(/ (\S+)$/, ` ${n} $1`) : g;
+}
 const isAdm = () => !!((R && R.admin) || (D && D.admin)), meName = () => (D && D.me) || '';
 const canEditText = t => isAdm() || t.by === 'บอท (admit)' || (t.by && t.by === meName()), canEditRes = t => isAdm() || ((t.done ? t.doneBy : t.by) === meName());
 function saveREdit(no) { const v = ($('redit').value || '').replace(/\s+/g, ' ').trim(); if (!v) return toast('พิมพ์ผลก่อน'); REDIT = null; run(`ww แก้ผล ${no} ${v}`, () => T(no).result = v); }
