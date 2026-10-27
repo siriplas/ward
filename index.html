@@ -199,8 +199,8 @@ input[type=date]{color-scheme:light dark}
 <button class="fab" id="fab" aria-label="เพิ่มงาน" onclick="if(TAB==='round'){openAdd()}else{openAddSheet()}">+</button>
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbw9dsYKGy8pELEBeIatNSjJLFv6W7MGjxhnjj584Z4BUlXN6WEfon-JID4f4eHR9wQ/exec';   // ← วาง URL ของบอท (ลงท้าย /exec)
-const APP_VER = 'v1.62';   // 🔖 ต้องตรงกับ SERVER_VER
-const APP_DATE = '27/10/69 21:20';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
+const APP_VER = 'v1.64';   // 🔖 ต้องตรงกับ SERVER_VER
+const APP_DATE = '27/10/69 22:55';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
 const TOK = new URLSearchParams(location.search).get('t') || '';
 // 🔄 แถบสีด้านบนวิ่งระหว่างโหลด / บันทึก
 let LOADING = 0;
@@ -972,7 +972,7 @@ function edAct(a) {
   if (a === 'team') return edCall({ act: 'team', ward: ED.p.ward, team: $('ef_team').value.trim() });
   if (a === 'move') { const w = $('ef_ward').value; if (!w) return toast('เลือก ward ก่อน'); return edCall({ act: 'move', ward: w }); }
   if (ED.arm !== a) { ED.arm = a; return drawEdit(); }
-  edCall({ act: a });
+  edCall(a === 'toggle' ? { act: a, want: ED.p.inactive ? 'active' : 'grey' } : { act: a });   // บอก server ว่าต้องการสถานะไหน
 }
 // คนไข้ที่ต้องดูวันนี้ (กลุ่ม "ทุกวันพฤหัสบดี" / โน้ต "q thu")
 const TH_DAY = [['อาทิตย์', 'sun'], ['จันทร์', 'mon'], ['อังคาร', 'tue'], ['พุธ', 'wed'], ['พฤหัส', 'thu'], ['ศุกร์', 'fri'], ['เสาร์', 'sat']];
