@@ -133,7 +133,7 @@ body.isadmin .ver{display:block}
 .done .tt{color:var(--mu)}
 .meta{font-size:12px;color:var(--mu);margin-top:2px}
 .arr{color:var(--g)}.arr.upd{color:var(--or)}
-.res{font-size:13px;color:var(--g)}.res.upd{color:var(--or)}
+.res{font-size:13px;color:var(--g);overflow-wrap:anywhere}.res.upd{color:var(--or);white-space:normal;margin-left:0;font-size:13px}
 .urg{color:var(--rd);font-weight:600;font-size:13px;margin-right:4px}
 .panel{padding:4px 16px 12px 48px;display:flex;flex-direction:column;gap:8px}
 .inp{min-height:42px;padding:8px 12px;border:1px solid var(--ln);background:var(--bg2);border-radius:10px;width:100%;color:var(--tx)}
@@ -199,8 +199,8 @@ input[type=date]{color-scheme:light dark}
 <button class="fab" id="fab" aria-label="เพิ่มงาน" onclick="if(TAB==='round'){openAdd()}else{openAddSheet()}">+</button>
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbw9dsYKGy8pELEBeIatNSjJLFv6W7MGjxhnjj584Z4BUlXN6WEfon-JID4f4eHR9wQ/exec';   // ← วาง URL ของบอท (ลงท้าย /exec)
-const APP_VER = 'v1.53';   // 🔖 ต้องตรงกับ SERVER_VER
-const APP_DATE = '27/10/69 01:25';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
+const APP_VER = 'v1.57';   // 🔖 ต้องตรงกับ SERVER_VER
+const APP_DATE = '27/10/69 20:35';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
 const TOK = new URLSearchParams(location.search).get('t') || '';
 // 🔄 แถบสีด้านบนวิ่งระหว่างโหลด / บันทึก
 let LOADING = 0;
@@ -309,7 +309,7 @@ function newsBar() {
 function jumpNew() {
   const nt = NEWS.t.filter(isNewT), nr = NEWS.r.filter(isNewR);
   const hm = ms => ms ? new Date(ms + 7 * 3600e3).toISOString().slice(11, 16) : '';
-  const item = (t, kind) => `<button class="nitem" onclick="goTask(${t.no})"><span class="tag ${kind === 'n' ? 'new' : 'res'}">${kind === 'n' ? 'ใหม่' : 'อัปเดต'}</span><b>${esc(t.pt)}</b> ${esc(t.rest || t.task)}${kind === 'r' && t.result ? `<div class="res${t.done ? '' : ' upd'}">→ ${esc(t.result)}</div>` : ''}<div class="meta">${kind === 'n' ? 'ลงโดย ' + esc(t.by) + ' ' + hm(t.addTs) : (t.done ? 'ปิดโดย ' + esc(t.doneBy) + ' ' : 'อัปเดต ') + hm(t.resTs)}</div></button>`;
+  const item = (t, kind) => `<button class="nitem" onclick="goTask(${t.no})"><span class="tag ${kind === 'n' ? 'new' : 'res'}">${kind === 'n' ? 'ใหม่' : 'อัปเดต'}</span><b>${esc(t.pt)}</b> ${esc(t.rest || t.task)}${kind === 'r' && t.result ? `<div class="res${t.done ? '' : ' upd'}">→ ${esc(String(t.result).replace(/^\s*(→|->)\s*/, ''))}</div>` : ''}<div class="meta">${kind === 'n' ? 'ลงโดย ' + esc(t.by) + ' ' + hm(t.addTs) : (t.done ? 'ปิดโดย ' + esc(t.doneBy) + ' ' : 'อัปเดต ') + hm(t.resTs)}</div></button>`;
   $('pbox').innerHTML = `<h3>ตั้งแต่เปิดแอพครั้งก่อน</h3>${nt.length ? '<div class="lbl">🆕 งานใหม่ ' + nt.length + '</div>' + nt.map(t => item(t, 'n')).join('') : ''}${nr.length ? '<div class="lbl">📝 อัปเดต ' + nr.length + '</div>' + nr.map(t => item(t, 'r')).join('') : ''}<div class="btns"><button class="b p" onclick="nt0()">รับทราบทั้งหมด</button><button class="b" onclick="closePhoto()">ปิด</button></div>`;
   $('psheet').style.display = 'flex';
 }
@@ -1084,7 +1084,7 @@ function taskRow(t) {
   let h = `<div id="task${t.no}" class="task${t.done ? ' done' : ''}${nw ? ' isnew' : ''}${POP === t.no && t.done ? ' pop' : ''}"><button class="row" onclick="toggle(${t.no})" ${t.done ? '' : `data-sw="${t.no}"`}>
     <span class="box"${t.done ? '' : ` onclick="event.stopPropagation();closeNo(${t.no}, '')" role="button" aria-label="ปิดงาน"`}>${t.done ? '✓' : ''}</span>
     <span style="flex-grow:1;min-width:0"><div class="tt">${nw}${t.urgent ? '<span class="urg">ด่วน </span>' : ''}${esc(t.rest || t.task)}</div>
-    ${t.result ? `<div class="res${t.done ? '' : ' upd'}">→ ${esc(t.result)}</div>` : ''}
+    ${t.result ? `<div class="res${t.done ? '' : ' upd'}">→ ${esc(String(t.result).replace(/^\s*(→|->)\s*/, ''))}</div>` : ''}
     ${t.done ? thankRow(t) : ''}
     ${isOpen ? '' : '<!--'}<div class="meta">${t.no}. ${t.done ? 'ปิดโดย ' + esc(t.doneBy) + ' ' + esc(t.doneAt) : 'ลงโดย ' + esc(t.by)}</div>${isOpen ? '' : '-->'}</span>${isOpen ? '<span class="chev" aria-label="ปิด"><svg viewBox="0 0 24 24"><path d="M6 15l6-6 6 6"/></svg></span>' : ''}</button>`;
   return h + '</div>';
@@ -1133,7 +1133,7 @@ function taskSheet(no) {
   const st = t.done ? `<span style="color:var(--g)">✓ เสร็จแล้ว</span> <span class="meta">ปิดโดย ${esc(t.doneBy)} ${esc(t.doneAt)}</span>` : `<span style="color:var(--or)">⏳ ค้าง</span>`;
   $('pbox').innerHTML = `<div class="ehead"><div><h3>${esc(t.pt)}</h3><div class="meta">${esc(t.ward)} · ${OFF === 0 ? 'วันนี้' : esc(D.day)} · ข้อ ${t.no}</div></div><button class="b" onclick="closePhoto()">✕</button></div>
     ${TEDIT === no ? `<textarea class="inp" id="tedit" rows="2" oninput="grow(this)">${esc(t.rest || t.task)}</textarea><div class="btns"><button class="b p" onclick="saveTEdit(${no})">บันทึกข้อความ</button><button class="b" onclick="TEDIT=null;taskSheet(${no})">ยกเลิก</button></div>` : `<div class="ttxt" ${t.done || !canEditText(t) ? '' : `onclick="TEDIT=${no};taskSheet(${no});setTimeout(()=>{const e=$('tedit');if(e){grow(e);e.focus()}},30)"`}><span style="font-size:17px">${t.urgent ? '<span class="urg">ด่วน </span>' : ''}${esc(t.rest || t.task)}</span>${t.done || !canEditText(t) ? '' : ' <span class="tpen">✏️ แก้</span>'}</div>`}<div>${st}</div>
-    ${t.result ? (REDIT === no ? `<textarea class="inp" id="redit" rows="3" oninput="grow(this)">${esc(t.result)}</textarea><div class="btns"><button class="b p" onclick="saveREdit(${no})">บันทึกผล</button><button class="b" onclick="REDIT=null;taskSheet(${no})">ยกเลิก</button></div>` : (canEditRes(t) ? `<div class="res${t.done ? '' : ' upd'} ttxt" onclick="REDIT=${no};taskSheet(${no});setTimeout(()=>{const e=$('redit');if(e){grow(e);e.focus()}},30)">→ ${esc(t.result)} <span class="tpen">✏️ แก้ผล</span></div>` : `<div class="res${t.done ? '' : ' upd'}">→ ${esc(t.result)}</div>`)) : ''}<div class="meta">ลงโดย ${esc(t.by)}</div>${t.done ? thankRow(t) : ''}${taskPanel(t)}`;
+    ${t.result ? (REDIT === no ? `<textarea class="inp" id="redit" rows="3" oninput="grow(this)">${esc(t.result)}</textarea><div class="btns"><button class="b p" onclick="saveREdit(${no})">บันทึกผล</button><button class="b" onclick="REDIT=null;taskSheet(${no})">ยกเลิก</button></div>` : (canEditRes(t) ? `<div class="res${t.done ? '' : ' upd'} ttxt" onclick="REDIT=${no};taskSheet(${no});setTimeout(()=>{const e=$('redit');if(e){grow(e);e.focus()}},30)">→ ${esc(String(t.result).replace(/^\s*(→|->)\s*/, ''))} <span class="tpen">✏️ แก้ผล</span></div>` : `<div class="res${t.done ? '' : ' upd'}">→ ${esc(String(t.result).replace(/^\s*(→|->)\s*/, ''))}</div>`)) : ''}<div class="meta">ลงโดย ${esc(t.by)}</div>${t.done ? thankRow(t) : ''}${taskPanel(t)}`;
   $('psheet').style.display = 'flex'; PTASK = no;
 }
 let PTASK = null, TEDIT = null, REDIT = null;
