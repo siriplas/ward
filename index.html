@@ -199,8 +199,8 @@ input[type=date]{color-scheme:light dark}
 <button class="fab" id="fab" aria-label="เพิ่มงาน" onclick="if(TAB==='round'){openAdd()}else{openAddSheet()}">+</button>
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbw9dsYKGy8pELEBeIatNSjJLFv6W7MGjxhnjj584Z4BUlXN6WEfon-JID4f4eHR9wQ/exec';   // ← วาง URL ของบอท (ลงท้าย /exec)
-const APP_VER = 'v1.65';   // 🔖 ต้องตรงกับ SERVER_VER
-const APP_DATE = '27/10/69 23:00';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
+const APP_VER = 'v1.66';   // 🔖 ต้องตรงกับ SERVER_VER
+const APP_DATE = '27/10/69 23:05';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
 const TOK = new URLSearchParams(location.search).get('t') || '';
 // 🔄 แถบสีด้านบนวิ่งระหว่างโหลด / บันทึก
 let LOADING = 0;
@@ -1017,11 +1017,11 @@ function copyWard(el) {
   else fallbackCopy(txt, done);
 }
 function fallbackCopy(t, cb) { const a = document.createElement('textarea'); a.value = t; a.style.cssText = 'position:fixed;opacity:0'; document.body.appendChild(a); a.select(); try { document.execCommand('copy'); cb(); } catch (e) {} a.remove(); }
-// วันที่ต้องดูประจำ: "q thu" · "q อังคาร,ศุกร์" · "ทุกวันพฤหัส" · "(ดูทุกวันคู่)" / วันคี่ — อ่านจาก คนดู · หมายเหตุ · ww ประจำ · Plan · กลุ่ม
+// วันที่ต้องดูประจำ: "q thu" · "q อังคาร,ศุกร์" · "ทุกวันพฤหัส" · "(ดูทุกวันคู่)" / วันคี่ — อ่านจาก คนดู · หมายเหตุ · กลุ่ม
 const DAYW = [['อาทิตย์', 0], ['จันทร์', 1], ['อังคาร', 2], ['พุธ', 3], ['พฤหัสบดี', 4], ['พฤหัส', 4], ['ศุกร์', 5], ['เสาร์', 6], ['sun', 0], ['mon', 1], ['tue', 2], ['wed', 3], ['thu', 4], ['fri', 5], ['sat', 6], ['พฤ', 4], ['อา', 0], ['จ', 1], ['อ', 2], ['พ', 3], ['ศ', 5], ['ส', 6]];
 const DAYRE = DAYW.map(d => d[0]).join('|');
 function schedOf(p) {
-  const s = [p.team, p.remark, p.ww, p.plan, ...(p.tags || [])].join(' ');
+  const s = [p.team, p.remark, ...(p.tags || [])].join(' ');   // อ่านเฉพาะ คนดู · หมายเหตุ · กลุ่ม (ไม่อ่าน ww ประจำ / Plan เช่น "ตามรูปแผล q อ" = งาน ไม่ใช่วันราวด์)
   const days = new Set();
   const seg = new RegExp(`(?:\\bq|ทุก|every)\\s*(?:วัน)?\\s*((?:(?:วัน)?(?:${DAYRE})\\.?(?![ก-๙a-z])\\s*(?:,|/|และ|&|\\s)?\\s*)+)`, 'gi');
   let m; while ((m = seg.exec(s))) { const w = new RegExp(`(?:วัน)?(${DAYRE})\\.?(?![ก-๙a-z])`, 'gi'); let d; while ((d = w.exec(m[1]))) { const hit = DAYW.find(x => x[0] === d[1].toLowerCase()); if (hit) days.add(hit[1]); } }
