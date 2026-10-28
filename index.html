@@ -200,8 +200,8 @@ input[type=date]{color-scheme:light dark}
 <button class="fab" id="fab" aria-label="เพิ่มงาน" onclick="if(TAB==='round'){openAdd()}else{openAddSheet()}">+</button>
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbw9dsYKGy8pELEBeIatNSjJLFv6W7MGjxhnjj584Z4BUlXN6WEfon-JID4f4eHR9wQ/exec';   // ← วาง URL ของบอท (ลงท้าย /exec)
-const APP_VER = 'v1.69';   // 🔖 ต้องตรงกับ SERVER_VER
-const APP_DATE = '28/10/69 22:00';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
+const APP_VER = 'v1.70';   // 🔖 ต้องตรงกับ SERVER_VER
+const APP_DATE = '29/10/69 00:25';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
 const TOK = new URLSearchParams(location.search).get('t') || '';
 // 🔄 แถบสีด้านบนวิ่งระหว่างโหลด / บันทึก
 let LOADING = 0;
@@ -1158,7 +1158,7 @@ function flapCard(t) {
     <div style="font-size:14px">${esc(t.rest)}</div>`;
   if (ed) h += `<div class="meta" style="color:var(--orx)">ความถี่</div><div class="qs">
     ${[2, 4, 6, 8].map(n => `<button class="qb${cur === n ? ' on' : ''}" onclick="QDRAFT=${n};QT=[];keepDet();render()">q ${n}</button>`).join('')}
-    ${[['เช้า,เย็น,hs', 'ชยhs']].map(([v, l]) => `<button class="qb${QT.join(',') === v ? ' on' : ''}" onclick="QT='${v}'.split(',');QDRAFT=null;keepDet();render()">${l}</button>`).join('')}
+    ${[['เช้า,เย็น', 'เช้า/เย็น'], ['เช้า,เย็น,hs', 'ชยhs']].map(([v, l]) => `<button class="qb${QT.join(',') === v ? ' on' : ''}" onclick="QT='${v}'.split(',');QDRAFT=null;keepDet();render()">${l}</button>`).join('')}
     <button class="qb stop${cur === 'stop' ? ' on' : ''}" onclick="QDRAFT='stop';render()">หยุดเฝ้า</button></div>
     ${cur === 'stop' ? '' : `<div class="meta" style="color:var(--orx)">รายละเอียดการเฝ้า (ทำอะไรทุกรอบ)</div><textarea class="inp" id="fdet" rows="2" oninput="grow(this)" placeholder="เช่น ดู color temp doppler · ทำแผล NSS">${esc(FDET != null ? FDET : flapDetail(t))}</textarea>`}
     <div class="btns"><button class="b o" onclick="saveQ(${t.no})">ยืนยัน</button><button class="b" onclick="QEDIT=null;render()">ยกเลิก</button></div>`;
@@ -1212,10 +1212,10 @@ function fixRes(no) { const v = val(no); if (!v) return toast('พิมพ์�
 let QT = [], FDET = null;
 const TIMES = ['เช้า', 'เย็น', 'hs'];
 const QRE = /q\s*\d+\s*(?:hrs?|ชม\.?|h)?/i;
-const timesOf = t => /(^|\s)ชย\s*hs(?=\s|$)/i.test(String(t.rest || '')) ? TIMES.slice() : TIMES.filter(w => new RegExp('(^|\\s)' + w + '(?=\\s|$)', 'i').test(String(t.rest || '')));
-const freqLabel = t => t.q ? 'q ' + t.q + ' hr' : (timesOf(t).length === 3 ? 'ชยhs' : timesOf(t).join(' ') || 'เฝ้า');
+const timesOf = t => /(^|\s)ชย\s*hs(?=\s|$)/i.test(String(t.rest || '')) ? TIMES.slice() : TIMES.filter(w => new RegExp('(^|\\s|/)' + w + '(?=\\s|/|$)', 'i').test(String(t.rest || '').split(/\s+/).slice(0, 4).join(' ')));   // "เช้า/เย็น" ก็ได้ · ดูแค่ต้นข้อความ (กันคำว่า เช้า ในรายละเอียด)
+const freqLabel = t => t.q ? 'q ' + t.q + ' hr' : (timesOf(t).length === 3 ? 'ชยhs' : timesOf(t).join('/') || 'เฝ้า');
 const keepDet = () => { const f = $('fdet'); if (f) FDET = f.value; };
-function flapDetail(t) { let s = String(t.rest || '').replace(QRE, '').replace(/(^|\s)ชย\s*hs(?=\s|$)/ig, ' '); TIMES.forEach(w => s = s.replace(new RegExp('(^|\\s)' + w + '(?=\\s|$)', 'ig'), ' ')); return s.replace(/^\s*(?:เฝ้า|monitor)\s*(?:flap)?\s*/i, '').replace(/\s+/g, ' ').trim(); }
+function flapDetail(t) { let s = String(t.rest || '').replace(QRE, '').replace(/(^|\s)ชย\s*hs(?=\s|$)/ig, ' ').replace(/(^|\s)(?:เช้า|เย็น|hs)(?:\/(?:เช้า|เย็น|hs))+(?=\s|$)/ig, ' '); TIMES.forEach(w => s = s.replace(new RegExp('(^|\\s)' + w + '(?=\\s|$)', 'ig'), ' ')); return s.replace(/^\s*(?:เฝ้า|monitor)\s*(?:flap)?\s*/i, '').replace(/\s+/g, ' ').trim(); }
 function saveQ(no) {
   const t = T(no);
   if (QDRAFT === 'stop') return run(`ww เสร็จ ${no} หยุดเฝ้า`, () => T(no).done = true);
