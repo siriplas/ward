@@ -200,8 +200,8 @@ input[type=date]{color-scheme:light dark}
 <button class="fab" id="fab" aria-label="เพิ่มงาน" onclick="if(TAB==='round'){openAdd()}else{openAddSheet()}">+</button>
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbw9dsYKGy8pELEBeIatNSjJLFv6W7MGjxhnjj584Z4BUlXN6WEfon-JID4f4eHR9wQ/exec';   // ← วาง URL ของบอท (ลงท้าย /exec)
-const APP_VER = 'v1.70';   // 🔖 ต้องตรงกับ SERVER_VER
-const APP_DATE = '29/10/69 00:25';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
+const APP_VER = 'v1.71';   // 🔖 ต้องตรงกับ SERVER_VER
+const APP_DATE = '29/10/69 00:30';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
 const TOK = new URLSearchParams(location.search).get('t') || '';
 // 🔄 แถบสีด้านบนวิ่งระหว่างโหลด / บันทึก
 let LOADING = 0;
@@ -1212,7 +1212,7 @@ function fixRes(no) { const v = val(no); if (!v) return toast('พิมพ์�
 let QT = [], FDET = null;
 const TIMES = ['เช้า', 'เย็น', 'hs'];
 const QRE = /q\s*\d+\s*(?:hrs?|ชม\.?|h)?/i;
-const timesOf = t => /(^|\s)ชย\s*hs(?=\s|$)/i.test(String(t.rest || '')) ? TIMES.slice() : TIMES.filter(w => new RegExp('(^|\\s|/)' + w + '(?=\\s|/|$)', 'i').test(String(t.rest || '').split(/\s+/).slice(0, 4).join(' ')));   // "เช้า/เย็น" ก็ได้ · ดูแค่ต้นข้อความ (กันคำว่า เช้า ในรายละเอียด)
+const timesOf = t => /(^|\s)ชย\s*hs(?=\s|$)/i.test(String(t.rest || '')) ? TIMES.slice() : TIMES.filter(w => new RegExp('(^|\\s|/)' + w + '(?=\\s|/|$)', 'i').test(String(t.rest || '').split(/\s+/).slice(0, 6).join(' ')));   // "เช้า/เย็น" ก็ได้ · ดูแค่ต้นข้อความ (กันคำว่า เช้า ในรายละเอียด)
 const freqLabel = t => t.q ? 'q ' + t.q + ' hr' : (timesOf(t).length === 3 ? 'ชยhs' : timesOf(t).join('/') || 'เฝ้า');
 const keepDet = () => { const f = $('fdet'); if (f) FDET = f.value; };
 function flapDetail(t) { let s = String(t.rest || '').replace(QRE, '').replace(/(^|\s)ชย\s*hs(?=\s|$)/ig, ' ').replace(/(^|\s)(?:เช้า|เย็น|hs)(?:\/(?:เช้า|เย็น|hs))+(?=\s|$)/ig, ' '); TIMES.forEach(w => s = s.replace(new RegExp('(^|\\s)' + w + '(?=\\s|$)', 'ig'), ' ')); return s.replace(/^\s*(?:เฝ้า|monitor)\s*(?:flap)?\s*/i, '').replace(/\s+/g, ' ').trim(); }
