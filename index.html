@@ -121,6 +121,7 @@ body.isadmin .ver{display:block}
 .newver{position:sticky;top:0;z-index:12;display:block;width:100%;border:0;background:#2563eb;color:#fff;font:inherit;font-size:14px;font-weight:600;padding:10px 12px;text-align:center}
 .reqe{text-align:center;padding:18px 16px 8px;display:flex;flex-direction:column;gap:4px;align-items:center;color:var(--mu);font-size:13px}.reqe .b{min-height:40px;padding:0 18px}
 .wbox{margin:4px 2px 0;border:1px solid var(--ln,#e5e7eb);border-radius:12px;overflow:hidden;background:var(--bg)}.wbox>.sec{background:var(--bg2);font-weight:700;color:var(--tx)}
+.eve{color:#6366f1;font-weight:600}.bldh.evh{border-top-color:#6366f1;margin-top:22px}
 .bldh{margin-top:14px;padding:10px 16px;font-size:14px;font-weight:700;color:var(--tx);background:var(--bg2);border-top:3px solid var(--hd)}
 .sec{font-size:12px;font-weight:600;color:var(--mu);padding:12px 16px 2px;letter-spacing:.3px}
 .card{background:transparent}
@@ -199,8 +200,8 @@ input[type=date]{color-scheme:light dark}
 <button class="fab" id="fab" aria-label="เพิ่มงาน" onclick="if(TAB==='round'){openAdd()}else{openAddSheet()}">+</button>
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbw9dsYKGy8pELEBeIatNSjJLFv6W7MGjxhnjj584Z4BUlXN6WEfon-JID4f4eHR9wQ/exec';   // ← วาง URL ของบอท (ลงท้าย /exec)
-const APP_VER = 'v1.68';   // 🔖 ต้องตรงกับ SERVER_VER
-const APP_DATE = '28/10/69 21:45';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
+const APP_VER = 'v1.69';   // 🔖 ต้องตรงกับ SERVER_VER
+const APP_DATE = '28/10/69 22:00';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
 const TOK = new URLSearchParams(location.search).get('t') || '';
 // 🔄 แถบสีด้านบนวิ่งระหว่างโหลด / บันทึก
 let LOADING = 0;
@@ -600,9 +601,11 @@ function setTab(t, force) {
     call({ api: 'round' }, r => { if (!r.error) { LASTR = Date.now(); stamp(); } if (r.error) { $('main').innerHTML = '<div class="empty">' + (r.error === 'expired' ? '🔒 ลิงก์หมดอายุ' : '❗ อ่านตารางราวด์ไม่ได้') + '</div>'; return; } setR(r); if (TAB === 'round') renderRound(); }); }
   else if (D) render();
 }
+const EVE_RE = /ราว[นด]์?\s*เย็น/;   // "ราวน์เย็น" / "ราวด์เย็น"
 function renderRound() {
   document.body.classList.toggle('canedit', !!(R && R.canEdit));   // ราวด์: ปุ่ม ＋ = เพิ่มคนไข้ (เฉพาะลิงก์แก้ไขได้)
   const all = R.pts;
+  all.forEach(p => { if (p.eve === undefined) { p.eve = EVE_RE.test([p.team, p.remark, ...p.tags].join(' ')); if (p.eve) p.tags = p.tags.filter(t => t !== 'ว่าง').concat('ราวน์เย็น'); } });   // ราวน์เย็น = ดูรวมกัน ไม่นับว่า "ไม่มีคนดู"
   const blds = ['ทั้งหมด', ...new Set(all.map(p => p.bld))];
   if (!blds.includes(RBLD)) RBLD = 'ทั้งหมด';
   $('chips').innerHTML = '';   // ราวด์: ใช้แถบตัวกรองแบบเลือก (ด้านล่าง) แทนปุ่มเลื่อน
@@ -629,19 +632,22 @@ function renderRound() {
   const seg = `<span class="seg3">${[['active', 'กำลังดู'], ['all', 'ทั้งหมด'], ['inactive', 'ไม่ต้องดู ' + nIn]].map(([v, t]) => `<button class="${RACT === v ? 'on' : ''}" onclick="RACT='${v}';renderRound()">${t}</button>`).join('')}</span>`;
   const any = RBLD !== 'ทั้งหมด' || RG !== 'ทุกคน' || RST || RACT !== 'active' || RDUE;
   $('notices').innerHTML = `<div class="fbar">${bSel}${gSel}${sSel}</div><div class="fbar2">${seg}${quick}${any ? `<button class="gchip" onclick="RBLD='ทั้งหมด';RG='ทุกคน';RST='';RACT='active';RDUE=false;renderRound()">✕ ล้างตัวกรอง</button>` : ''}</div>`;
-  const ps = all.filter(p => (RBLD === 'ทั้งหมด' || p.bld === RBLD) && (RDUE ? dueToday(p, RDUEOFF) : actOk(p)) && (RG === 'ทุกคน' || p.tags.includes(RG)) && (!RST || p.staff === RST));
+  const ps = all.filter(p => (RBLD === 'ทั้งหมด' || p.bld === RBLD) && (RDUE ? dueToday(p, RDUEOFF) : actOk(p)) && (RG === 'ทุกคน' || p.tags.includes(RG) || (p.eve && RG !== 'ว่าง' && !/^ทุก/.test(RG))) && (!RST || p.staff === RST));   // เลือกชื่อคน → เคสราวน์เย็นขึ้นด้วย
   $('count').textContent = ps.length + ' คน';
-  const wards = [...new Set(ps.map(p => p.ward))];
+  // 🌆 เลือกชื่อคน → เคสราวน์เย็นขึ้นด้วย แยกไว้ล่างสุด "ราวน์เย็น (ทุกคน)"
+  const person = RG !== 'ทุกคน' && RG !== 'ว่าง' && RG !== 'ราวน์เย็น' && !/^ทุก/.test(RG);
+  const psMain = person ? ps.filter(p => !(p.eve && !p.tags.includes(RG))) : ps, psEve = person ? ps.filter(p => p.eve && !p.tags.includes(RG)) : [];
+  const block = arr => { const wards = [...new Set(arr.map(p => p.ward))];
   let lastB = null;
-  $('main').innerHTML = wards.map(w => {
-    const list = ps.filter(p => p.ward === w), bd = list[0].bld;
-    const bh = bd !== lastB ? `<div class="bldh">${esc(bd)} · ${ps.filter(p => p.bld === bd).length} คน</div>` : ''; lastB = bd;
+  return wards.map(w => {
+    const list = arr.filter(p => p.ward === w), bd = list[0].bld;
+    const bh = bd !== lastB ? `<div class="bldh">${esc(bd)} · ${arr.filter(p => p.bld === bd).length} คน</div>` : ''; lastB = bd;
     return bh + `<div class="wbox"><div class="sec cp" onclick="copyWard(this)" data-w="${esc(w)}" data-n="${esc(JSON.stringify(list.map(p => p.name)))}">${esc(w)} · ${list.length} คน <span class="cpi">⧉ คัดลอก</span></div><div class="card">${list.map(p => {
       const i = all.indexOf(p), op = ROPEN === i;
       return `<div class="task prow${p.inactive ? ' inact' : ''}"><button class="row" onclick="ROPEN=ROPEN===${i}?null:${i};renderRound()" style="align-items:flex-start">
         <span style="flex-grow:1;min-width:0"><div><b>${esc(p.name)}</b>${p.inactive ? '<span class="itag">ไม่ต้องดู</span>' : ''}${dueToday(p) ? `<span class="itag duet">${p.inactive && setIn(p) === 1 && visitIn(p) !== 0 ? 'วันนี้ (พรุ่งนี้ set)' : 'วันนี้'}</span>` : ''} <span class="hn">${p.hn ? 'HN ' + esc(p.hn) : ''}</span></div>
         <div style="font-size:13px">${[p.dx, p.staff].filter(Boolean).map(esc).join(' · ')}</div>${podTxt(p.proc) ? `<div class="pod">${esc(podTxt(p.proc))}</div>` : ''}
-        <div class="who">${p.tags.includes('ว่าง') ? '<span class="nobody">ยังไม่มีคนดู</span>' : esc(p.team || p.tags.join(', '))}${p.remark ? ' · ' + esc(p.remark) : ''}</div>
+        <div class="who">${p.eve ? `<span class="eve">ดูรวมตอนราวน์เย็น</span>${p.team && !EVE_RE.test(p.team) ? ' · ' + esc(p.team) : ''}` : p.tags.includes('ว่าง') ? '<span class="nobody">ยังไม่มีคนดู</span>' : esc(p.team || p.tags.join(', '))}${p.remark && !(p.eve && !p.remark.replace(EVE_RE, '').trim()) ? ' · ' + esc(p.eve ? p.remark.replace(EVE_RE, '').trim() : p.remark) : ''}</div>
         ${p.ww ? `<div class="ww">${esc(p.ww)}</div>` : ''}</span>
         <span style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;flex-shrink:0">${p.open ? `<span class="badge">ค้าง ${p.open}</span>` : p.done ? '<span class="badge ok">✓ เสร็จ</span>' : ''}${p.flap ? '<span class="badge fl">flap</span>' : ''}${op ? '<span class="chev" style="margin-top:4px"><svg viewBox="0 0 24 24"><path d="M6 15l6-6 6 6"/></svg></span>' : ''}</span></button>
         ${isPend(p.ward) ? `<div class="qmv" style="padding:0 16px 10px" onclick="event.stopPropagation()"><select class="inp" onchange="qMove(${i}, this.value)"><option value="">🚚 ย้ายไป ward จริง…</option>${(R.wards || []).filter(w => !isPend(w)).map(w => `<option>${esc(w)}</option>`).join('')}</select>${R.canEdit ? `<div class="btns" style="margin-top:6px">${[['noshow', '🚫 ไม่มา'], ['cancel', '✖ ยกเลิก admit']].map(([w, l]) => `<button class="b r" style="min-height:34px;font-size:13px" onclick="qGone(${i}, '${w}')">${QGONE === i + w ? 'กดอีกครั้ง = ' + l.slice(2) : l}</button>`).join('')}</div>` : ''}</div>` : ''}
@@ -650,7 +656,8 @@ function renderRound() {
           <div class="btns" style="flex-wrap:nowrap"><input class="inp" id="radd${i}" placeholder="งาน เช่น CBC" style="flex:1;width:auto;min-width:0" onkeydown="if(event.key==='Enter')addR(${i})">
           <button class="b p" style="flex-grow:0" onclick="addR(${i})">เพิ่ม</button></div></div>` : ''}</div>`;
     }).join('')}</div></div>`;
-  }).join('') || '<div class="empty">ไม่มีคนไข้ในตาราง</div>';
+  }).join(''); };
+  $('main').innerHTML = (block(psMain) + (psEve.length ? `<div class="bldh evh">ราวน์เย็น (ทุกคน) · ${psEve.length} คน</div>` + block(psEve).replace(/<div class="bldh">[^<]*<\/div>/g, '') : '')) || '<div class="empty">ไม่มีคนไข้ในตาราง</div>';
   if (!R.canEdit) $('main').insertAdjacentHTML('beforeend', reqEditBtn());
 }
 // เพิ่มงานจากหน้าราวด์ (ลงวันนี้) — ใส่ ward + ชื่อให้เอง กันชื่อซ้ำคนละ ward
