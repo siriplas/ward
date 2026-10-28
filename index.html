@@ -199,8 +199,8 @@ input[type=date]{color-scheme:light dark}
 <button class="fab" id="fab" aria-label="เพิ่มงาน" onclick="if(TAB==='round'){openAdd()}else{openAddSheet()}">+</button>
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbw9dsYKGy8pELEBeIatNSjJLFv6W7MGjxhnjj584Z4BUlXN6WEfon-JID4f4eHR9wQ/exec';   // ← วาง URL ของบอท (ลงท้าย /exec)
-const APP_VER = 'v1.66';   // 🔖 ต้องตรงกับ SERVER_VER
-const APP_DATE = '27/10/69 23:05';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
+const APP_VER = 'v1.67';   // 🔖 ต้องตรงกับ SERVER_VER
+const APP_DATE = '28/10/69 09:50';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
 const TOK = new URLSearchParams(location.search).get('t') || '';
 // 🔄 แถบสีด้านบนวิ่งระหว่างโหลด / บันทึก
 let LOADING = 0;
@@ -791,13 +791,13 @@ function drawAdmit() {
     (plan || []).forEach(p => (by[p.date] = by[p.date] || []).push(p));
     const list = plan == null ? '<div class="meta">กำลังโหลด…</div>' : !plan.length ? '<div class="meta">ยังไม่มีรายการที่รอเพิ่ม</div>' :
       Object.keys(by).map(d => `<div class="adday">${d === todayIsoBkk() ? 'วันนี้ · ' : d === new Date(Date.parse(todayIsoBkk()) + 864e5).toISOString().slice(0, 10) ? 'พรุ่งนี้ · ' : ''}${dow(d)} ${thd(d)} <span>${by[d].length} คน</span></div>` + by[d].map(p => AD.edit === p.row ? admEditForm(p) : `<div class="adc"${R && R.canEdit && !p.st ? ` onclick="AD.edit=${p.row};AD.arm=0;drawAdmit()" style="cursor:pointer"` : ''}><div class="adt"><b>${esc(String(p.name).replace(/^(นาย|นางสาว|นาง|น\.ส\.|ด\.ช\.|ด\.ญ\.|เด็กชาย|เด็กหญิง)\s*/, '').split(/\s+/)[0])}</b>${p.hn ? ` <span class="meta">HN ${esc(p.hn)}</span>` : ''}<span class="ads${p.st ? ' ok' : ''}">${p.st ? (/^มี/.test(p.st) ? 'มีในตารางแล้ว' : '✓ เข้าตารางแล้ว') : 'รอเข้าตาราง'}</span></div><div class="meta" style="display:flex;align-items:center"><span>${p.ds ? '<span class="dstag">DS</span> ' : ''}${p.sec === 'CONSULT' ? '<b>consult</b> · ' : ''}อ. ${esc(p.staff || '-')}</span>${p.date >= todayIsoBkk() ? `<span style="margin-left:auto;color:var(--hd);font-weight:600;cursor:pointer;padding:2px 0 2px 12px" onclick="event.stopPropagation();admTask(${p.row})">＋ เพิ่มงานล่วงหน้า</span>` : ''}</div>${p.dx ? `<div>${esc(p.dx)}</div>` : ''}${p.proc ? `<div class="ww">${esc(p.proc)}</div>` : ''}</div>`).join('')).join('');
-    $('main').innerHTML = '<div class="amain">' + head + '' + `${s.log ? `<div class="prog">${esc(s.log)}</div>` : ''}<div class="lbl" style="margin-top:6px">รอ admit (วันนี้เป็นต้นไป)</div>${list}<div style="margin-top:18px">${(!(R && R.canEdit) ? reqEditBtn() : `<label class="b adup" style="display:flex;align-items:center;justify-content:center;cursor:pointer;min-height:44px">${s.busy ? '⏳ บอทกำลังอ่านรูป… (~10–20 วิ)' : '🖼 เลือกรูปตาราง admit'}<input type="file" accept="image/*" style="display:none" ${s.busy ? 'disabled' : ''} onchange="admitPick(this.files[0])"></label>`)}</div></div>`;
+    $('main').innerHTML = '<div class="amain">' + head + '' + `${s.log ? `<div class="prog">${esc(s.log)}</div>` : ''}<div class="lbl" style="margin-top:6px">รอ admit (วันนี้เป็นต้นไป)</div>${list}<div style="margin-top:18px">${(!(R && R.canEdit) ? reqEditBtn() : `<label class="b adup" style="display:flex;align-items:center;justify-content:center;cursor:pointer;min-height:44px">${s.busy ? '⏳ บอทกำลังอ่านรูป… (~10–20 วิ)' : '🖼 เลือกรูปตาราง admit'}<input type="file" accept="image/*" style="display:none" ${s.busy ? 'disabled' : ''} onchange="admitPick(this.files[0])"></label><button class="b" style="min-height:34px;font-size:13px;margin-top:8px;width:100%" onclick="admitManual()">＋ เพิ่มรายคน</button>`)}</div></div>`;
     return;
   }
   // ตรวจ/แก้
   const n = s.rows.filter(r => r.on).length;
   const F = (i, k, ph, w) => `<input class="inp adi" style="${w ? 'flex:' + w : ''}" placeholder="${ph}" value="${esc(s.rows[i][k] || '')}" oninput="AD.rows[${i}].${k}=this.value" ${k === 'hn' ? 'inputmode="numeric"' : ''}>`;
-  $('main').innerHTML = '<div class="amain">' + head + `<button class="b" style="min-height:36px;font-size:13px" onclick="fallbackCopy(AD.raw,()=>toast('คัดลอกข้อความที่บอทอ่านแล้ว'))">📋 คัดลอกข้อความที่บอทอ่าน (ส่งให้ปรับ)</button><div class="meta">ตรวจทุกแถว แก้ช่องที่ผิดได้ · ติ๊กออก = ไม่เพิ่ม · <b>HN ผิด = รูปแผลไปผิดคน</b></div>` +
+  $('main').innerHTML = '<div class="amain">' + head + `${AD.raw ? `<button class="b" style="min-height:36px;font-size:13px" onclick="fallbackCopy(AD.raw,()=>toast('คัดลอกข้อความที่บอทอ่านแล้ว'))">📋 คัดลอกข้อความที่บอทอ่าน (ส่งให้ปรับ)</button>` : ''}<div class="meta">ตรวจทุกแถว แก้ช่องที่ผิดได้ · ติ๊กออก = ไม่เพิ่ม · <b>HN ผิด = รูปแผลไปผิดคน</b></div>` +
     s.rows.map((r, i) => `<div class="adr${r.on ? '' : ' off'}${r.on && !r.hn ? ' warn' : ''}">
       <label class="adh"><input type="checkbox" ${r.on ? 'checked' : ''} onchange="AD.rows[${i}].on=this.checked;drawAdmit()"> <b>${esc(r.sec || '?')}</b> <span class="meta">${dow(r.date)} ${thd(r.date)}</span></label>${r.on ? `<label class="dschk"><input type="checkbox" ${r.ds ? 'checked' : ''} onchange="AD.rows[${i}].ds=this.checked"> DS</label>` : ''}
       ${r.on ? `<div class="adg">${F(i, 'name', 'ชื่อ', 2)}${F(i, 'hn', 'HN', 1)}</div><div class="adg"><input class="inp adi" type="date" style="flex:1.4" value="${esc(r.date)}" onchange="AD.rows[${i}].date=this.value">${F(i, 'staff', 'อ.', 0.6)}</div>${F(i, 'dx', 'Dx')}${F(i, 'proc', 'Procedure')}` : `<div class="meta">${esc(r.name)}</div>`}
@@ -838,6 +838,12 @@ async function admitPick(file) {
     if (!r.rows.length) { AD.log = '❗ อ่านแล้วไม่เจอแถวที่มีวันที่ ลองถ่ายให้ตรงและชัดขึ้น'; return drawAdmit(); }
     AD.raw = r.raw || ''; AD.rows = r.rows.map(x => Object.assign(x, { on: !x.sec || AD_SECS.includes(x.sec) })); AD.step = 'review'; drawAdmit();
   } catch (e) { AD.busy = false; AD.log = '❗ ส่งรูปไม่ได้ ลองใหม่'; drawAdmit(); }
+}
+// ＋ เพิ่มรายคน (คนไข้นอกตาราง) → ใช้หน้าตรวจ/แก้เดียวกับรูป แถวว่าง 1 แถว วันนี้
+function admitManual() {
+  if (!AD) return;
+  AD.raw = ''; AD.rows = [{ on: true, sec: 'ADMISSION', date: todayIsoBkk(), name: '', hn: '', staff: '', dx: '', proc: '', ds: false }]; AD.step = 'review'; drawAdmit();
+  setTimeout(() => { const e = document.querySelector('.adr input.adi'); if (e) e.focus(); }, 60);
 }
 async function admitSave() {
   const s = AD; if (!s || s.busy) return;
