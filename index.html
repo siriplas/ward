@@ -199,8 +199,8 @@ input[type=date]{color-scheme:light dark}
 <button class="fab" id="fab" aria-label="เพิ่มงาน" onclick="if(TAB==='round'){openAdd()}else{openAddSheet()}">+</button>
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbw9dsYKGy8pELEBeIatNSjJLFv6W7MGjxhnjj584Z4BUlXN6WEfon-JID4f4eHR9wQ/exec';   // ← วาง URL ของบอท (ลงท้าย /exec)
-const APP_VER = 'v1.67';   // 🔖 ต้องตรงกับ SERVER_VER
-const APP_DATE = '28/10/69 09:50';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
+const APP_VER = 'v1.68';   // 🔖 ต้องตรงกับ SERVER_VER
+const APP_DATE = '28/10/69 21:45';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
 const TOK = new URLSearchParams(location.search).get('t') || '';
 // 🔄 แถบสีด้านบนวิ่งระหว่างโหลด / บันทึก
 let LOADING = 0;
@@ -790,7 +790,7 @@ function drawAdmit() {
     const plan = s.plan, by = {};
     (plan || []).forEach(p => (by[p.date] = by[p.date] || []).push(p));
     const list = plan == null ? '<div class="meta">กำลังโหลด…</div>' : !plan.length ? '<div class="meta">ยังไม่มีรายการที่รอเพิ่ม</div>' :
-      Object.keys(by).map(d => `<div class="adday">${d === todayIsoBkk() ? 'วันนี้ · ' : d === new Date(Date.parse(todayIsoBkk()) + 864e5).toISOString().slice(0, 10) ? 'พรุ่งนี้ · ' : ''}${dow(d)} ${thd(d)} <span>${by[d].length} คน</span></div>` + by[d].map(p => AD.edit === p.row ? admEditForm(p) : `<div class="adc"${R && R.canEdit && !p.st ? ` onclick="AD.edit=${p.row};AD.arm=0;drawAdmit()" style="cursor:pointer"` : ''}><div class="adt"><b>${esc(String(p.name).replace(/^(นาย|นางสาว|นาง|น\.ส\.|ด\.ช\.|ด\.ญ\.|เด็กชาย|เด็กหญิง)\s*/, '').split(/\s+/)[0])}</b>${p.hn ? ` <span class="meta">HN ${esc(p.hn)}</span>` : ''}<span class="ads${p.st ? ' ok' : ''}">${p.st ? (/^มี/.test(p.st) ? 'มีในตารางแล้ว' : '✓ เข้าตารางแล้ว') : 'รอเข้าตาราง'}</span></div><div class="meta" style="display:flex;align-items:center"><span>${p.ds ? '<span class="dstag">DS</span> ' : ''}${p.sec === 'CONSULT' ? '<b>consult</b> · ' : ''}อ. ${esc(p.staff || '-')}</span>${p.date >= todayIsoBkk() ? `<span style="margin-left:auto;color:var(--hd);font-weight:600;cursor:pointer;padding:2px 0 2px 12px" onclick="event.stopPropagation();admTask(${p.row})">＋ เพิ่มงานล่วงหน้า</span>` : ''}</div>${p.dx ? `<div>${esc(p.dx)}</div>` : ''}${p.proc ? `<div class="ww">${esc(p.proc)}</div>` : ''}</div>`).join('')).join('');
+      Object.keys(by).map(d => `<div class="adday">${d === todayIsoBkk() ? 'วันนี้ · ' : d === new Date(Date.parse(todayIsoBkk()) + 864e5).toISOString().slice(0, 10) ? 'พรุ่งนี้ · ' : ''}${dow(d)} ${thd(d)} <span>${by[d].length} คน</span></div>` + by[d].map(p => AD.edit === p.row ? admEditForm(p) : `<div class="adc"${R && R.canEdit && !p.st ? ` onclick="AD.edit=${p.row};AD.arm=0;drawAdmit()" style="cursor:pointer"` : ''}><div class="adt"><b>${esc(String(p.name).replace(/^(นาย|นางสาว|นาง|น\.ส\.|ด\.ช\.|ด\.ญ\.|เด็กชาย|เด็กหญิง)\s*/, '').split(/\s+/)[0])}</b>${p.hn ? ` <span class="meta">HN ${esc(p.hn)}</span>` : ''}${admStat(p)}</div><div class="meta" style="display:flex;align-items:center"><span>${p.ds ? '<span class="dstag">DS</span> ' : ''}${p.sec === 'CONSULT' ? '<b>consult</b> · ' : ''}อ. ${esc(p.staff || '-')}</span>${p.date >= todayIsoBkk() ? `<span style="margin-left:auto;color:var(--hd);font-weight:600;cursor:pointer;padding:2px 0 2px 12px" onclick="event.stopPropagation();admTask(${p.row})">＋ เพิ่มงานล่วงหน้า</span>` : ''}</div>${p.dx ? `<div>${esc(p.dx)}</div>` : ''}${p.proc ? `<div class="ww">${esc(p.proc)}</div>` : ''}</div>`).join('')).join('');
     $('main').innerHTML = '<div class="amain">' + head + '' + `${s.log ? `<div class="prog">${esc(s.log)}</div>` : ''}<div class="lbl" style="margin-top:6px">รอ admit (วันนี้เป็นต้นไป)</div>${list}<div style="margin-top:18px">${(!(R && R.canEdit) ? reqEditBtn() : `<label class="b adup" style="display:flex;align-items:center;justify-content:center;cursor:pointer;min-height:44px">${s.busy ? '⏳ บอทกำลังอ่านรูป… (~10–20 วิ)' : '🖼 เลือกรูปตาราง admit'}<input type="file" accept="image/*" style="display:none" ${s.busy ? 'disabled' : ''} onchange="admitPick(this.files[0])"></label><button class="b" style="min-height:34px;font-size:13px;margin-top:8px;width:100%" onclick="admitManual()">＋ เพิ่มรายคน</button>`)}</div></div>`;
     return;
   }
@@ -838,6 +838,15 @@ async function admitPick(file) {
     if (!r.rows.length) { AD.log = '❗ อ่านแล้วไม่เจอแถวที่มีวันที่ ลองถ่ายให้ตรงและชัดขึ้น'; return drawAdmit(); }
     AD.raw = r.raw || ''; AD.rows = r.rows.map(x => Object.assign(x, { on: !x.sec || AD_SECS.includes(x.sec) })); AD.step = 'review'; drawAdmit();
   } catch (e) { AD.busy = false; AD.log = '❗ ส่งรูปไม่ได้ ลองใหม่'; drawAdmit(); }
+}
+// สถานะในแท็บรับใหม่: จับคู่ตารางราวด์ (HN ก่อน ไม่มี HN ใช้ชื่อต้น) → รอเข้าตาราง / รอย้าย ward / ✓ ward จริง
+function admStat(p) {
+  if (!p.st) return '<span class="ads">รอเข้าตาราง</span>';
+  const nm = firstName(String(p.name).replace(/^(นาย|นางสาว|นาง|น\.ส\.|ด\.ช\.|ด\.ญ\.|เด็กชาย|เด็กหญิง)\s*/, ''));
+  const pt = R && R.pts ? (p.hn ? R.pts.find(x => x.hn && String(x.hn) === String(p.hn)) : R.pts.find(x => firstName(x.name) === nm)) : null;
+  if (pt && isPend(pt.ward)) return '<span class="ads">รอย้าย ward</span>';
+  if (pt) return `<span class="ads ok">✓ ${esc(pt.ward)}</span>`;
+  return `<span class="ads ok">${/^มี/.test(p.st) ? 'มีในตารางแล้ว' : '✓ เข้าตารางแล้ว'}</span>`;
 }
 // ＋ เพิ่มรายคน (คนไข้นอกตาราง) → ใช้หน้าตรวจ/แก้เดียวกับรูป แถวว่าง 1 แถว วันนี้
 function admitManual() {
