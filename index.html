@@ -122,6 +122,7 @@ body.isadmin .ver{display:block}
 .reqe{text-align:center;padding:18px 16px 8px;display:flex;flex-direction:column;gap:4px;align-items:center;color:var(--mu);font-size:13px}.reqe .b{min-height:40px;padding:0 18px}
 .wbox{margin:4px 2px 0;border:1px solid var(--ln,#e5e7eb);border-radius:12px;overflow:hidden;background:var(--bg)}.wbox>.sec{background:var(--bg2);font-weight:700;color:var(--tx)}
 .eve{color:#6366f1;font-weight:600}.bldh.evh{border-top-color:#6366f1;margin-top:22px}
+.bldh.noh{border-top-color:#dc2626;margin-top:22px;color:#dc2626}
 .bldh{margin-top:14px;padding:10px 16px;font-size:14px;font-weight:700;color:var(--tx);background:var(--bg2);border-top:3px solid var(--hd)}
 .sec{font-size:12px;font-weight:600;color:var(--mu);padding:12px 16px 2px;letter-spacing:.3px}
 .card{background:transparent}
@@ -200,18 +201,37 @@ input[type=date]{color-scheme:light dark}
 <button class="fab" id="fab" aria-label="เพิ่มงาน" onclick="if(TAB==='round'){openAdd()}else{openAddSheet()}">+</button>
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbw9dsYKGy8pELEBeIatNSjJLFv6W7MGjxhnjj584Z4BUlXN6WEfon-JID4f4eHR9wQ/exec';   // ← วาง URL ของบอท (ลงท้าย /exec)
-const APP_VER = 'v1.71';   // 🔖 ต้องตรงกับ SERVER_VER
-const APP_DATE = '29/10/69 00:30';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
+const APP_VER = 'v1.72';   // 🔖 ต้องตรงกับ SERVER_VER
+const APP_DATE = '29/10/69 20:45';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
 const TOK = new URLSearchParams(location.search).get('t') || '';
 // 🔄 แถบสีด้านบนวิ่งระหว่างโหลด / บันทึก
 let LOADING = 0;
 const busyOn = () => { LOADING++; document.body.classList.add('loading'); };
 const busyOff = () => { LOADING = Math.max(0, LOADING - 1); if (!LOADING && !document.getElementById('stale')) document.body.classList.remove('loading'); };
 const WRITE = { run: 1, edit: 1, thank: 1 };
+// ⏳ แก้ตารางราวด์ (เพิ่ม/ลบ/ย้าย/แก้/ไม่ต้องดู/คนดู): แถบค้างด้านบนจนเสร็จ · ส่งซ้อนไม่ได้ · ตารางอัปเดตจริง ~1 นาที → แถบรอจนโหลดใหม่
+let SAVING = 0, SAVEQ_T = 0;
+function savePill(t) {
+  let el = $('savepill');
+  if (!t) { if (el) el.remove(); return; }
+  if (!el) { el = document.createElement('div'); el.id = 'savepill'; el.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);top:calc(8px + env(safe-area-inset-top));z-index:61;background:#111827;color:#fff;border-radius:999px;padding:8px 16px;font-size:14px;box-shadow:0 4px 14px rgba(0,0,0,.25);white-space:nowrap;display:flex;align-items:center;gap:8px'; document.body.appendChild(el); }
+  el.innerHTML = '<span class="spin" style="width:14px;height:14px;margin:0;border-width:2px"></span>' + esc(t);
+}
+const QACT = { add: 'เพิ่มคนไข้', move: 'ย้าย ward', remove: 'ลบคนไข้', toggle: 'ไม่ต้องดู', team: 'เปลี่ยนคนดู' };
 const call = (q, ok) => {
   if (WRITE[q.api] && !navigator.onLine) return outPush(q);
+  if (q.api === 'edit') {
+    if (SAVING) return toast('⏳ กำลังบันทึกอันก่อนอยู่ รอสักครู่');
+    SAVING = 1; savePill('กำลังบันทึก…'); const ok0 = ok;
+    ok = r => { SAVING = 0;
+      if (!r.error && QACT[q.act]) {   // ตารางประมวลผลคิว ~1 นาที → รอแล้วโหลดใหม่
+        savePill('ตารางกำลังอัปเดต: ' + QACT[q.act] + ' (~1 นาที)'); clearTimeout(SAVEQ_T);
+        SAVEQ_T = setTimeout(() => { savePill(''); if (TAB === 'round') setTab('round', true); }, 65000);
+      } else savePill('');
+      ok0(r); };
+  }
   busyOn(); return fetch(API + '?' + new URLSearchParams(Object.assign({ t: TOK }, q))).then(r => r.json()).then(d => { busyOff(); ok(d); })
-    .catch(e => { busyOff(); if (WRITE[q.api] && (!navigator.onLine || e instanceof TypeError)) outPush(q); else fail(e); });
+    .catch(e => { busyOff(); if (q.api === 'edit') { SAVING = 0; savePill(''); } if (WRITE[q.api] && (!navigator.onLine || e instanceof TypeError)) outPush(q); else fail(e); });
 };
 // 📴 เน็ตหลุด → เก็บคำสั่งไว้ในเครื่อง แล้วส่งเองเมื่อเน็ตกลับ (เฉพาะวันเดียวกัน · ข้ามตี 6 = ทิ้ง กันปิดงานผิดวัน)
 const dayKey = () => new Date(Date.now() + 7 * 3600e3 - 6 * 3600e3).toISOString().slice(0, 10);
@@ -621,22 +641,22 @@ function renderRound() {
   const me = (D && D.me) || '', meKey = gs.find(g => me && g.toLowerCase() === me.toLowerCase().split(/\s+/)[0]);
   const sel = (v, opts, on, cb, lbl) => `<label class="fsel${on ? ' on' : ''}"><span>${esc(lbl)}</span><select onchange="${cb}">${opts.map(([val, t]) => `<option value="${esc(val)}"${val === v ? ' selected' : ''}>${esc(t)}</option>`).join('')}</select></label>`;
   const bSel = sel(RBLD, blds.map(b => [b, b === 'ทั้งหมด' ? 'ทุกตึก' : short(b)]), RBLD !== 'ทั้งหมด', "RBLD=this.value;renderRound()", RBLD === 'ทั้งหมด' ? 'ตึก' : short(RBLD));
-  const gSel = sel(RG, [['ทุกคน', 'ทุกคน']].concat(gs.map(g => [g, `${g === 'ว่าง' ? 'ไม่มีคนดู' : g} (${cnt[g]})`])), RG !== 'ทุกคน', "RG=this.value;renderRound()", RG === 'ทุกคน' ? 'คนดู' : RG === 'ว่าง' ? 'ไม่มีคนดู' : RG);
+  const gSel = sel(RG, [['ทุกคน', 'ทุกคน']].concat(gs.map(g => [g, `${g === 'ว่าง' ? 'ยังไม่จัดคน' : g} (${cnt[g]})`])), RG !== 'ทุกคน', "RG=this.value;renderRound()", RG === 'ทุกคน' ? 'คนดู' : RG === 'ว่าง' ? 'ยังไม่จัดคน' : RG);
   const sSel = sel(RST, [['', 'ทุกอาจารย์']].concat(Object.keys(sc).sort().map(s => [s, `${s} (${sc[s]})`])), !!RST, "RST=this.value;if(RST){RG='ทุกคน';RBLD='ทั้งหมด'}renderRound()", RST || 'อาจารย์');
   // ของฉัน: จำชื่อทีมของตัวเองในเครื่อง (ชื่อไลน์อาจไม่ตรงชื่อทีม) ; ยังไม่ตั้ง → เดาจากชื่อไลน์
   let mine = LS.get('ww_myteam'); if (mine && !cnt[mine]) mine = null; mine = mine || meKey || '';
   const myBtn = mine ? `<button class="gchip${RG === mine ? ' on' : ''}" onclick="RG=RG==='${esc(mine)}'?'ทุกคน':'${esc(mine)}';renderRound()">ของฉัน</button>` : '';
   const mySel = `<label class="gchip" style="position:relative">${mine ? 'ฉัน: ' + esc(mine) + ' ✎' : 'ฉันคือ… ▾'}<select style="position:absolute;inset:0;opacity:0" onchange="LS.set('ww_myteam',this.value);RG=this.value||'ทุกคน';renderRound()"><option value="">เลือกชื่อของคุณในทีม</option>${gs.filter(g => g !== 'ว่าง' && g !== 'inactive' && !/^ทุก/.test(g)).map(g => `<option${g === mine ? ' selected' : ''}>${esc(g)}</option>`).join('')}</select></label>`;
   const nDue = all.filter(p => dueToday(p)).length;
-  const quick = (nDue ? `<button class="gchip due${RDUE ? ' on' : ''}" onclick="RDUE=!RDUE;RDUEOFF=0;if(RDUE){RST='';RG='ทุกคน';RBLD='ทั้งหมด';RACT='active'}renderRound()">${RDUE && RDUEOFF ? offLabel(RDUEOFF).replace(/\/\d+$/, '') + ' ต้องดู' : 'วันนี้ต้องดู ' + nDue}</button>` : '') + myBtn + mySel + (cnt['ว่าง'] ? `<button class="gchip warn${RG === 'ว่าง' ? ' on' : ''}" onclick="RG=RG==='ว่าง'?'ทุกคน':'ว่าง';renderRound()">ไม่มีคนดู ${cnt['ว่าง']}</button>` : '');
+  const quick = (nDue ? `<button class="gchip due${RDUE ? ' on' : ''}" onclick="RDUE=!RDUE;RDUEOFF=0;if(RDUE){RST='';RG='ทุกคน';RBLD='ทั้งหมด';RACT='active'}renderRound()">${RDUE && RDUEOFF ? offLabel(RDUEOFF).replace(/\/\d+$/, '') + ' ต้องดู' : 'วันนี้ต้องดู ' + nDue}</button>` : '') + myBtn + mySel + (cnt['ว่าง'] ? `<button class="gchip warn${RG === 'ว่าง' ? ' on' : ''}" onclick="RG=RG==='ว่าง'?'ทุกคน':'ว่าง';renderRound()">ยังไม่จัดคน ${cnt['ว่าง']}</button>` : '');
   const seg = `<span class="seg3">${[['active', 'กำลังดู'], ['all', 'ทั้งหมด'], ['inactive', 'ไม่ต้องดู ' + nIn]].map(([v, t]) => `<button class="${RACT === v ? 'on' : ''}" onclick="RACT='${v}';renderRound()">${t}</button>`).join('')}</span>`;
   const any = RBLD !== 'ทั้งหมด' || RG !== 'ทุกคน' || RST || RACT !== 'active' || RDUE;
   $('notices').innerHTML = `<div class="fbar">${bSel}${gSel}${sSel}</div><div class="fbar2">${seg}${quick}${any ? `<button class="gchip" onclick="RBLD='ทั้งหมด';RG='ทุกคน';RST='';RACT='active';RDUE=false;renderRound()">✕ ล้างตัวกรอง</button>` : ''}</div>`;
-  const ps = all.filter(p => (RBLD === 'ทั้งหมด' || p.bld === RBLD) && (RDUE ? dueToday(p, RDUEOFF) : actOk(p)) && (RG === 'ทุกคน' || p.tags.includes(RG) || (p.eve && RG !== 'ว่าง' && !/^ทุก/.test(RG))) && (!RST || p.staff === RST));   // เลือกชื่อคน → เคสราวน์เย็นขึ้นด้วย
+  const ps = all.filter(p => (RBLD === 'ทั้งหมด' || p.bld === RBLD) && (RDUE ? dueToday(p, RDUEOFF) : actOk(p)) && (RG === 'ทุกคน' || p.tags.includes(RG) || ((p.eve || p.tags.includes('ว่าง')) && RG !== 'ว่าง' && RG !== 'ราวน์เย็น' && !/^ทุก/.test(RG))) && (!RST || p.staff === RST));   // เลือกชื่อคน → เคสราวน์เย็นขึ้นด้วย
   $('count').textContent = ps.length + ' คน';
   // 🌆 เลือกชื่อคน → เคสราวน์เย็นขึ้นด้วย แยกไว้ล่างสุด "ราวน์เย็น (ทุกคน)"
   const person = RG !== 'ทุกคน' && RG !== 'ว่าง' && RG !== 'ราวน์เย็น' && !/^ทุก/.test(RG);
-  const psMain = person ? ps.filter(p => !(p.eve && !p.tags.includes(RG))) : ps, psEve = person ? ps.filter(p => p.eve && !p.tags.includes(RG)) : [];
+  const psMain = person ? ps.filter(p => !(p.eve && !p.tags.includes(RG)) && !(p.tags.includes('ว่าง') && !p.tags.includes(RG))) : ps, psEve = person ? ps.filter(p => p.eve && !p.tags.includes(RG)) : [], psNone = person ? ps.filter(p => p.tags.includes('ว่าง') && !p.eve) : [];   // เลือกชื่อคน → เคสไม่มีคนดู ขึ้นท้าย "รอจัดสรรคน"
   const block = arr => { const wards = [...new Set(arr.map(p => p.ward))];
   let lastB = null;
   return wards.map(w => {
@@ -647,7 +667,7 @@ function renderRound() {
       return `<div class="task prow${p.inactive ? ' inact' : ''}"><button class="row" onclick="ROPEN=ROPEN===${i}?null:${i};renderRound()" style="align-items:flex-start">
         <span style="flex-grow:1;min-width:0"><div><b>${esc(p.name)}</b>${p.inactive ? '<span class="itag">ไม่ต้องดู</span>' : ''}${dueToday(p) ? `<span class="itag duet">${p.inactive && setIn(p) === 1 && visitIn(p) !== 0 ? 'วันนี้ (พรุ่งนี้ set)' : 'วันนี้'}</span>` : ''} <span class="hn">${p.hn ? 'HN ' + esc(p.hn) : ''}</span></div>
         <div style="font-size:13px">${[p.dx, p.staff].filter(Boolean).map(esc).join(' · ')}</div>${podTxt(p.proc) ? `<div class="pod">${esc(podTxt(p.proc))}</div>` : ''}
-        <div class="who">${p.eve ? `<span class="eve">ดูรวมตอนราวน์เย็น</span>${p.team && !EVE_RE.test(p.team) ? ' · ' + esc(p.team) : ''}` : p.tags.includes('ว่าง') ? '<span class="nobody">ยังไม่มีคนดู</span>' : esc(p.team || p.tags.join(', '))}${p.remark && !(p.eve && !p.remark.replace(EVE_RE, '').trim()) ? ' · ' + esc(p.eve ? p.remark.replace(EVE_RE, '').trim() : p.remark) : ''}</div>
+        <div class="who">${p.eve ? `<span class="eve">ดูรวมตอนราวน์เย็น</span>${p.team && !EVE_RE.test(p.team) ? ' · ' + esc(p.team) : ''}` : p.tags.includes('ว่าง') ? '<span class="nobody">ยังไม่ได้จัดคน</span>' : esc(p.team || p.tags.join(', '))}${p.remark && !(p.eve && !p.remark.replace(EVE_RE, '').trim()) ? ' · ' + esc(p.eve ? p.remark.replace(EVE_RE, '').trim() : p.remark) : ''}</div>
         ${p.ww ? `<div class="ww">${esc(p.ww)}</div>` : ''}</span>
         <span style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;flex-shrink:0">${p.open ? `<span class="badge">ค้าง ${p.open}</span>` : p.done ? '<span class="badge ok">✓ เสร็จ</span>' : ''}${p.flap ? '<span class="badge fl">flap</span>' : ''}${op ? '<span class="chev" style="margin-top:4px"><svg viewBox="0 0 24 24"><path d="M6 15l6-6 6 6"/></svg></span>' : ''}</span></button>
         ${isPend(p.ward) ? `<div class="qmv" style="padding:0 16px 10px" onclick="event.stopPropagation()"><select class="inp" onchange="qMove(${i}, this.value)"><option value="">🚚 ย้ายไป ward จริง…</option>${(R.wards || []).filter(w => !isPend(w)).map(w => `<option>${esc(w)}</option>`).join('')}</select>${R.canEdit ? `<div class="btns" style="margin-top:6px">${[['noshow', '🚫 ไม่มา'], ['cancel', '✖ ยกเลิก admit']].map(([w, l]) => `<button class="b r" style="min-height:34px;font-size:13px" onclick="qGone(${i}, '${w}')">${QGONE === i + w ? 'กดอีกครั้ง = ' + l.slice(2) : l}</button>`).join('')}</div>` : ''}</div>` : ''}
@@ -657,7 +677,7 @@ function renderRound() {
           <button class="b p" style="flex-grow:0" onclick="addR(${i})">เพิ่ม</button></div></div>` : ''}</div>`;
     }).join('')}</div></div>`;
   }).join(''); };
-  $('main').innerHTML = (block(psMain) + (psEve.length ? `<div class="bldh evh">ราวน์เย็น (ทุกคน) · ${psEve.length} คน</div>` + block(psEve).replace(/<div class="bldh">[^<]*<\/div>/g, '') : '')) || '<div class="empty">ไม่มีคนไข้ในตาราง</div>';
+  $('main').innerHTML = (block(psMain) + (psEve.length ? `<div class="bldh evh">ราวน์เย็น · ดูรวมกัน · ${psEve.length} คน</div>` + block(psEve).replace(/<div class="bldh">[^<]*<\/div>/g, '') : '') + (psNone.length ? `<div class="bldh noh">รอจัดสรรคน · ${psNone.length} คน</div>` + block(psNone).replace(/<div class="bldh">[^<]*<\/div>/g, '') : '')) || '<div class="empty">ไม่มีคนไข้ในตาราง</div>';
   if (!R.canEdit) $('main').insertAdjacentHTML('beforeend', reqEditBtn());
 }
 // เพิ่มงานจากหน้าราวด์ (ลงวันนี้) — ใส่ ward + ชื่อให้เอง กันชื่อซ้ำคนละ ward
@@ -767,7 +787,7 @@ function drawEdit() {
       <div class="lbl">ย้าย ward</div>
       <div class="btns" style="flex-wrap:nowrap"><select class="inp" id="ef_ward" style="flex:1">${['<option value="">เลือก ward…</option>'].concat((R.wards || []).filter(w => w !== p.ward).map(w => `<option>${esc(w)}</option>`)).join('')}</select><button class="b" onclick="edAct('move')">ย้าย</button></div>
       <div class="lbl">คนดูของ ${esc(p.ward)} (ทั้ง ward)</div>
-      <div class="btns" style="flex-wrap:nowrap"><input class="inp" id="ef_team" style="flex:1" value="${esc(p.team || '')}" placeholder="เช่น Kiang, Nat · ว่าง = ไม่มีคนดู"><button class="b" onclick="edAct('team')">เปลี่ยน</button></div>
+      <div class="btns" style="flex-wrap:nowrap"><input class="inp" id="ef_team" style="flex:1" value="${esc(p.team || '')}" placeholder="เช่น Kiang, Nat · ว่าง = ยังไม่จัดคน"><button class="b" onclick="edAct('team')">เปลี่ยน</button></div>
       <div class="btns" style="margin-top:6px"><button class="b" onclick="edAct('toggle')">${ED.arm === 'toggle' ? 'กดอีกครั้งเพื่อยืนยัน' : (p.inactive ? 'กลับมาดู' : 'ย้ายไป ไม่ต้องดู')}</button>
       <button class="b r" onclick="edAct('remove')">${ED.arm === 'remove' ? 'กดอีกครั้ง = ลบออกจากตาราง' : 'ลบ / D/C'}</button></div>
     </details>`;
@@ -962,7 +982,10 @@ function openAdd() {
 function saveAdd() {
   const v = { ward: $('af_ward').value }; ['name', 'hn', 'dx', 'staff', 'plan', 'proc', 'ww'].forEach(k => v[k] = $('af_' + k).value.trim());
   if (!v.name) return toast('ใส่ชื่อก่อน');
-  call({ api: 'edit', act: 'add', vals: JSON.stringify(v) }, r => { if (r.error) return toast(r.msg || 'ไม่สำเร็จ'); toast(r.msg); closePhoto(); findNew(v.name, 0); });
+  const dk = (v.hn || firstName(v.name)).toLowerCase(), pend = LS.get('ww_padd') || {};
+  if (pend[dk] && Date.now() - pend[dk] < 3 * 60e3) return toast('⏳ ' + v.name + ' กำลังเพิ่มเข้าตารางอยู่แล้ว (รอ ~1 นาที แล้วกด ⟳)');
+  pend[dk] = Date.now(); LS.set('ww_padd', pend);
+  call({ api: 'edit', act: 'add', vals: JSON.stringify(v) }, r => { if (r.error) { const pp = LS.get('ww_padd') || {}; delete pp[dk]; LS.set('ww_padd', pp); return toast(r.msg || 'ไม่สำเร็จ'); } toast(r.msg); closePhoto(); findNew(v.name, 0); });
 }
 // โหลดราวด์ใหม่จนเห็นคนไข้ที่เพิ่ง เพิ่ม (ลองซ้ำทุก 5 วิ ไม่เกิน ~1.5 นาที) แล้วเลื่อนไปหา + กะพริบ
 function findNew(name, n) {
