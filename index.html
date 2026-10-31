@@ -123,8 +123,9 @@ body.isadmin .ver{display:block}
 .wbox{margin:4px 2px 0;border:1px solid var(--ln,#e5e7eb);border-radius:12px;overflow:hidden;background:var(--bg)}.wbox>.sec{background:var(--bg2);font-weight:700;color:var(--tx)}
 .eve{color:#6366f1;font-weight:600}.bldh.evh{border-top-color:#6366f1;margin-top:22px}
 .bldh.noh{border-top-color:#dc2626;margin-top:22px;color:#dc2626}
+.meter{position:relative;height:34px;margin:22px 8px 0;background:#e5e7eb;border-radius:18px;overflow:hidden}.meter .zone2{position:absolute;left:35%;width:30%;top:0;bottom:0;background:#bbf7d0}.meter .zone{position:absolute;left:44%;width:12%;top:0;bottom:0;background:#22c55e;z-index:1}.meter i{position:absolute;top:-2px;bottom:-2px;width:6px;margin-left:-3px;background:#111827;border-radius:3px;z-index:2}.arena.rush{background:#fed7aa}
 .stbar{height:8px;background:#e5e7eb;border-radius:9px;overflow:hidden;margin-top:6px}.stbar i{display:block;height:100%;background:#16a34a;transition:width .2s}#op{position:relative}.gz{position:absolute;width:44px;height:44px;border-radius:50%;opacity:0;pointer-events:none}.gz.on{opacity:1;background:#facc15aa;box-shadow:0 0 18px #facc15}.gz.L{left:-4px;top:34px}.gz.R{right:-4px;top:34px}.gz.up{left:38px;top:40px}#me.up .gl{animation:upc .18s}@keyframes upc{50%{transform:translate(20px,-30px)}}
-.fcard{border:1px solid var(--ln,#e5e7eb);border-radius:12px;padding:10px 12px;margin:8px 0}.fres{margin-top:6px}.fbox{border:1px solid var(--ln,#e5e7eb);border-radius:12px;padding:6px 12px}.frow{display:flex;justify-content:space-between;padding:4px 0}
+.fcard{position:relative}.fdel{position:absolute;top:8px;right:8px;border:0;background:none;color:var(--mu);font-size:13px;cursor:pointer}.fcard{border:1px solid var(--ln,#e5e7eb);border-radius:12px;padding:10px 12px;margin:8px 0}.fres{margin-top:6px}.fbox{border:1px solid var(--ln,#e5e7eb);border-radius:12px;padding:6px 12px}.frow{display:flex;justify-content:space-between;padding:4px 0}
 .arena{position:relative;min-height:70vh;user-select:none;-webkit-user-select:none;touch-action:none;background:radial-gradient(circle at 50% 70%,#fde68a33,transparent 60%);padding:12px}.arena.warn{background:#fee2e2}.arena.shake{animation:shk .4s}
 .fhud{display:flex;justify-content:space-between;align-items:center;font-size:18px}.fhud b{font-size:34px}.ring{display:flex;justify-content:space-around;align-items:flex-end;margin-top:30px;border-bottom:6px solid #d97706;padding-bottom:4px}
 .boxer{width:120px;height:168px}.boxer.flip{transform:scaleX(-1)}#me.hit .gl{animation:jab .15s}#op.ouch svg{animation:ouch .15s}#op.open svg{filter:drop-shadow(0 0 14px #facc15)}
@@ -208,8 +209,8 @@ input[type=date]{color-scheme:light dark}
 <button class="fab" id="fab" aria-label="เพิ่มงาน" onclick="if(TAB==='round'){openAdd()}else{openAddSheet()}">+</button>
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbw9dsYKGy8pELEBeIatNSjJLFv6W7MGjxhnjj584Z4BUlXN6WEfon-JID4f4eHR9wQ/exec';   // ← วาง URL ของบอท (ลงท้าย /exec)
-const APP_VER = 'v1.78';   // 🔖 ต้องตรงกับ SERVER_VER
-const APP_DATE = '31/10/69 14:00';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
+const APP_VER = 'v1.80';   // 🔖 ต้องตรงกับ SERVER_VER
+const APP_DATE = '31/10/69 14:25';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
 const TOK = new URLSearchParams(location.search).get('t') || '';
 // 🔄 แถบสีด้านบนวิ่งระหว่างโหลด / บันทึก
 let LOADING = 0;
@@ -1313,8 +1314,9 @@ function drawFight() {
   const sum = a => a ? a.reduce((x, y) => x + y, 0) : 0;
   const card = f => { const r = f.result.split(' '), w = r[0] === 'a' ? f.a : r[0] === 'b' ? f.b : '', ko = r[1] === 'KO';
     const shake = f.shake === 'ab' ? '🤝 จับมือกันแล้ว' : f.mine && f.result && !f.shake.includes(f.mine) ? `<button class="chip2" onclick="fightShake('${f.id}')">🤝 จับมือ</button>` : '';
-    return `<div class="fcard"><div><b>${esc(f.a)}</b> <span class="meta">vs</span> <b>${esc(f.b)}</b>${f.reason ? `<div class="meta">เรื่อง: ${esc(f.reason)}</div>` : ''}</div>
-      ${f.result ? `<div class="fres">${w ? `🏆 <b>${esc(w)}</b> ชนะ${ko ? 'น็อค 💥' : ''}` : '🤝 เสมอ'} <span class="meta">${sum(f.aScore)}–${sum(f.bScore)}</span></div>${f.aScore ? `<div class="meta">${f.aScore.map((x, k) => `ยก${k + 1} ${x}${f.aBonus && f.aBonus[k] ? '★' : ''}–${f.bScore[k]}${f.bBonus && f.bBonus[k] ? '★' : ''}`).join(' · ')}${(f.aBonus || []).concat(f.bBonus || []).some(Boolean) ? ' · ★ = แผนชนะ +15' : ''}</div>` : ''}${w && f.penalty ? `<div class="meta">${esc(w === f.a ? f.b : f.a)}: ${esc(f.penalty)}</div>` : ''}${shake ? `<div style="margin-top:4px">${shake}</div>` : ''}`
+    const del = d.admin ? `<button class="fdel" onclick="fightDel('${f.id}')">${FG.arm === f.id ? 'กดอีกครั้ง = ลบ' : '🗑'}</button>` : '';
+    return `<div class="fcard">${del}<div><b>${esc(f.a)}</b> <span class="meta">vs</span> <b>${esc(f.b)}</b>${f.reason ? `<div class="meta">เรื่อง: ${esc(f.reason)}</div>` : ''}</div>
+      ${f.result ? `<div class="fres">${w ? `🏆 <b>${esc(w)}</b> ชนะ${ko ? 'น็อค 💥' : ''}` : '🤝 เสมอ'} <span class="meta">${sum(f.aScore)}–${sum(f.bScore)}</span></div>${f.aScore ? `<div class="meta">${f.aScore.map((x, k) => `ยก${k + 1} ${x}${f.aBonus && f.aBonus[k] ? '★' : ''}–${f.bScore[k]}${f.bBonus && f.bBonus[k] ? '★' : ''}`).join(' · ')}${(f.aBonus || []).concat(f.bBonus || []).some(Boolean) ? ' · ★ = เป่ายิ้งฉุบชนะ +15' : ''}</div>` : ''}${w && f.penalty ? `<div class="meta">${esc(w === f.a ? f.b : f.a)}: ${esc(f.penalty)}</div>` : ''}${shake ? `<div style="margin-top:4px">${shake}</div>` : ''}`
         : f.myTurn ? `<button class="b p" style="margin-top:8px;width:100%" onclick="fightPlay('${f.id}')">🥊 ถึงตาคุณ — ชกเลย</button>${f.penalty ? `<div class="meta">คนแพ้: ${esc(f.penalty)}</div>` : ''}`
         : `<div class="meta">⏳ รอ ${esc(f.mine === 'a' ? f.b : f.a)} ชก</div>`}</div>`; };
   $('main').innerHTML = `<div class="amain"><div class="ehead"><div><h3>🥊 สังเวียน</h3><div class="meta">ผลัดกันชก 3 ยก ยกละ 10 วิ · ไม่ต้องออนไลน์พร้อมกัน</div></div></div>
@@ -1329,64 +1331,57 @@ function fightGo() {
   if (FG.sending) return; FG.sending = true; const bt = document.querySelector('.amain .b.p'); if (bt) { bt.disabled = true; bt.textContent = '⏳ กำลังส่ง…'; }   // กันกดซ้ำ
   call({ api: 'fightnew', k, reason: $('fg_r').value.trim(), penalty: $('fg_p').value.trim() }, r => { FG.sending = false; if (r.error) { if (bt) { bt.disabled = false; bt.textContent = '🥊 ส่งคำท้า'; } return toast('❗ ' + (r.msg || 'ส่งไม่ได้')); } toast('🥊 ส่งคำท้าแล้ว'); FG.data = r; FG.view = 'list'; drawFight(); });
 }
+function fightDel(id) { if (FG.arm !== id) { FG.arm = id; return drawFight(); } FG.arm = null; call({ api: 'fightdel', id }, r => { if (r.error) return toast('❗ ' + (r.msg || 'ลบไม่ได้')); toast('🗑 ลบไฟต์แล้ว'); FG.data = r; drawFight(); }); }
 function fightShake(id) { call({ api: 'fightshake', id }, r => { if (r.error) return toast('❗ ' + (r.msg || 'ไม่สำเร็จ')); FG.data = r; drawFight(); }); }
 // ── เกม ──
 const BOXER = (c, flip) => `<svg viewBox="0 0 100 140" class="boxer${flip ? ' flip' : ''}"><circle cx="50" cy="32" r="22" fill="#f2c9a0"/><rect x="28" y="54" width="44" height="50" rx="14" fill="${c}"/><rect x="32" y="102" width="14" height="34" rx="6" fill="#334155"/><rect x="54" y="102" width="14" height="34" rx="6" fill="#334155"/><circle class="gl" cx="86" cy="60" r="13" fill="${c}"/><circle cx="18" cy="70" r="12" fill="${c}"/><circle cx="58" cy="28" r="3" fill="#111"/><rect x="20" y="10" width="60" height="9" rx="4" fill="${c}"/></svg>`;
-// 3 ท่า: แตะซ้าย = แย็บ · แตะขวา = ฮุก · ปัดขึ้น = อัปเปอร์คัต · คู่ชกเปิดซ้าย/ขวา/คาง → ท่าตรง = x3 · ⚠️ หลบ = ปัดซ้าย/ขวา
-// พลัง: ต่อยแต่ละครั้งใช้พลัง ฟื้นเองเรื่อยๆ · พลังต่ำ = ต่อยไม่เข้า (ห้ามรัวมั่ว) · ก่อนแต่ละยกเลือก บุก/รับ/หลอก (เป่ายิ้งฉุบกับคู่ชก ชนะได้ +15)
-const MOVES = [['a', '🔥 บุก', 'ชนะ หลอก'], ['d', '🛡 รับ', 'ชนะ บุก'], ['f', '🎭 หลอก', 'ชนะ รับ']];
+// เล่นง่าย: แตะจอที่ไหนก็ได้ · ปกติ = กดให้ตรงจังหวะ (ขีดวิ่งเข้ากลางเป้า) · ช่วง "กดรัว!" = แตะเร็วที่สุด
+// ก่อนแต่ละยกเลือก ค้อน/กรรไกร/กระดาษ (เทียบกับคู่ชก ชนะได้ +15) · รหัสที่ส่ง server: a = ค้อน · f = กรรไกร · d = กระดาษ (a>f · f>d · d>a)
+const MOVES = [['a', '✊ ค้อน', 'ชนะ กรรไกร'], ['f', '✌️ กรรไกร', 'ชนะ กระดาษ'], ['d', '✋ กระดาษ', 'ชนะ ค้อน']];
 function fightPlay(id) {
   const f = FG.data.fights.find(x => x.id === id); if (!f) return;
-  FG.view = 'play'; FG.g = { id, f, round: 0, scores: [], moves: [], pts: 0, open: '', atk: null, t: 0, st: 100, combo: 0, timers: [] };
+  FG.view = 'play'; FG.g = { id, f, round: 0, scores: [], moves: [], pts: 0, t: 0, timers: [], rush: false, lock: 0, pos: 0 };
   $('main').innerHTML = `<div class="arena" id="arena"><div class="fhud"><span id="fr">ยก 1/3</span><b id="fp">0</b><span id="ft">10</span></div>
-    <div class="stbar"><i id="fst" style="width:100%"></i></div><div class="meta" id="fcb" style="text-align:center;min-height:18px"></div>
-    <div class="ring"><div id="me">${BOXER('#2563eb')}</div><div id="op">${BOXER('#dc2626', 1)}<span class="gz" id="gz"></span></div></div>
-    <div class="fmsg" id="fm">แตะ<b>ซ้าย</b> = แย็บ · แตะ<b>ขวา</b> = ฮุก · <b>ปัดขึ้น</b> = อัปเปอร์คัต<br>คู่ชกเรืองเหลืองฝั่งไหน → ต่อยท่าที่ตรง = x3<br>⚠️ หลบ = <b>ปัดซ้าย/ขวา</b> · ระวังพลังหมด</div>
+    <div class="ring"><div id="me">${BOXER('#2563eb')}</div><div id="op">${BOXER('#dc2626', 1)}</div></div>
+    <div class="meter" id="mt"><div class="zone"></div><div class="zone2"></div><i id="cur"></i></div>
+    <div class="fmsg" id="fm">แตะตอนขีดอยู่<b>กลางเป้า</b> 🎯<br>ขึ้น <b>"กดรัว!"</b> = แตะให้เร็วที่สุด</div>
     <div id="fpick"></div></div>`;
   pickMove();
-  const a = $('arena'); let sx = null, sy = null;
-  a.addEventListener('pointerdown', e => { sx = e.clientX; sy = e.clientY; });
-  a.addEventListener('pointerup', e => { const g = FG && FG.g; if (!g || !g.live || e.target.closest('#fpick')) return;
-    const dx = e.clientX - sx, dy = e.clientY - sy;
-    if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) { if (g.atk) { clearTimeout(g.atk); g.atk = null; g.pts += 2; $('arena').classList.remove('warn'); fmsg('หลบได้! +2'); fupd(); } return; }
-    if (g.atk) return;   // โดนสวนอยู่ ต้องหลบก่อน
-    const r = a.getBoundingClientRect(), kind = dy < -40 && Math.abs(dy) > Math.abs(dx) ? 'up' : (e.clientX - r.left < r.width / 2 ? 'L' : 'R');
-    punch(kind); });
+  $('arena').addEventListener('pointerdown', e => { if (e.target.closest('#fpick')) return; fightTap(); });
 }
 function pickMove() {
   const g = FG.g;
-  $('fpick').innerHTML = `<div class="lbl" style="text-align:center">ยก ${g.round + 1}: เลือกแผน (คู่ชกไม่เห็น)</div><div class="btns" style="justify-content:center">${MOVES.map(([k, l, w]) => `<button class="b" style="flex:1;min-height:56px" onclick="FG.g.moves.push('${k}');fightRound()">${l}<div class="meta">${w}</div></button>`).join('')}</div>`;
+  $('fpick').innerHTML = `<div class="lbl" style="text-align:center">ยก ${g.round + 1}: เป่ายิ้งฉุบกับคู่ชก (ชนะ +15)</div><div class="btns" style="justify-content:center">${MOVES.map(([k, l, w]) => `<button class="b" style="flex:1;min-height:56px" onclick="FG.g.moves.push('${k}');fightRound()">${l}<div class="meta">${w}</div></button>`).join('')}</div>`;
 }
-const fupd = () => { const g = FG.g; $('fp').textContent = g.pts; $('fst').style.width = Math.max(0, g.st) + '%'; $('fst').style.background = g.st < 25 ? '#dc2626' : '#16a34a'; $('fcb').textContent = g.combo >= 3 ? `🔥 คอมโบ ${g.combo}` : ''; };
-function punch(kind) {
-  const g = FG.g;
-  if (g.st < 15) { fmsg('😮‍💨 เหนื่อย! พักหมัดก่อน'); g.combo = 0; return fupd(); }
-  g.st -= 8;
-  const hit = g.open && ((g.open === 'L' && kind === 'L') || (g.open === 'R' && kind === 'R') || (g.open === 'up' && kind === 'up'));
-  if (hit) { g.combo++; g.pts += 3 * (g.combo >= 5 ? 2 : 1); g.open = ''; $('op').classList.remove('open'); $('gz').className = 'gz'; fmsg(['', 'แย็บเข้า!', 'ฮุกเข้า!', 'อัปเปอร์คัต!'][kind === 'L' ? 1 : kind === 'R' ? 2 : 3] + (g.combo >= 5 ? ' x2 🔥' : '')); }
-  else { g.pts += 1; if (g.open) g.combo = 0; }
-  const me = $('me'); me.classList.remove('hit', 'up'); void me.offsetWidth; me.classList.add(kind === 'up' ? 'up' : 'hit');
-  const op = $('op'); op.classList.remove('ouch'); void op.offsetWidth; op.classList.add('ouch'); fupd();
+const fupd = () => { const g = FG.g; $('fp').textContent = g.pts; };
+const fmsg = t => { const m = $('fm'); if (m) { m.innerHTML = t; m.style.opacity = 1; clearTimeout(m._t); m._t = setTimeout(() => m.style.opacity = 0, 700); } };
+function hitAnim() { const me = $('me'), op = $('op'); me.classList.remove('hit'); void me.offsetWidth; me.classList.add('hit'); op.classList.remove('ouch'); void op.offsetWidth; op.classList.add('ouch'); }
+function fightTap() {
+  const g = FG && FG.g; if (!g || !g.live) return;
+  if (g.rush) { g.pts += 1; hitAnim(); return fupd(); }
+  if (Date.now() < g.lock) return;   // กดพลาดแล้วรอแป๊บ กันกดมั่ว
+  const d = Math.abs(g.pos - 50);
+  if (d <= 6) { g.pts += 5; fmsg('🎯 เป๊ะ! +5'); hitAnim(); }
+  else if (d <= 15) { g.pts += 2; fmsg('ดี +2'); hitAnim(); }
+  else { fmsg('พลาด'); g.lock = Date.now() + 400; }
+  fupd();
 }
-const fmsg = t => { const m = $('fm'); if (m) { m.innerHTML = t; m.style.opacity = 1; clearTimeout(m._t); m._t = setTimeout(() => m.style.opacity = 0, 800); } };
 function fightRound() {
-  const g = FG.g; $('fpick').innerHTML = ''; g.pts = 0; g.live = true; g.t = 10; g.st = 100; g.combo = 0; $('fr').textContent = `ยก ${g.round + 1}/3`; fmsg('ไฟต์! 🥊'); fupd();
+  const g = FG.g; $('fpick').innerHTML = ''; g.pts = 0; g.live = true; g.t = 10; g.rush = false; $('fr').textContent = `ยก ${g.round + 1}/3`; fmsg('ไฟต์! 🥊'); fupd();
+  const sp = 0.09 + g.round * 0.025, t0 = performance.now();   // ยกหลังขีดวิ่งเร็วขึ้น
+  const loop = now => { if (!g.live) return; g.pos = 50 + 50 * Math.sin((now - t0) * sp / 15); const c = $('cur'); if (c) c.style.left = g.pos + '%'; g.raf = requestAnimationFrame(loop); };
+  g.raf = requestAnimationFrame(loop);
   const tick = setInterval(() => { g.t--; $('ft').textContent = g.t; if (g.t <= 0) { clearInterval(tick); endRound(); } }, 1000); g.timers.push(tick);
-  const regen = setInterval(() => { g.st = Math.min(100, g.st + 5); fupd(); }, 200); g.timers.push(regen);
-  const speed = 1 - g.round * 0.15;   // ยกหลังเร็วขึ้น
-  const guard = () => { if (!g.live) return; g.open = ['L', 'R', 'up'][Math.floor(Math.random() * 3)]; $('op').classList.add('open'); $('gz').className = 'gz on ' + g.open;
-    setTimeout(() => { g.open = ''; $('op') && $('op').classList.remove('open'); $('gz') && ($('gz').className = 'gz'); }, 800 * speed + 200); g.timers.push(setTimeout(guard, (1100 + Math.random() * 1500) * speed)); };
-  const counter = () => { if (!g.live) return; fmsg('⚠️ หลบ! ปัดซ้าย/ขวา'); $('arena').classList.add('warn');
-    g.atk = setTimeout(() => { g.atk = null; g.pts = Math.max(0, g.pts - 5); g.combo = 0; fupd(); fmsg('โดนสวน -5 💢'); $('arena').classList.remove('warn'); $('arena').classList.add('shake'); setTimeout(() => $('arena') && $('arena').classList.remove('shake'), 400); }, 850 * speed + 150);
-    g.timers.push(setTimeout(counter, (2400 + Math.random() * 2400) * speed)); };
-  g.timers.push(setTimeout(guard, 800)); g.timers.push(setTimeout(counter, 2500 + Math.random() * 1500));
+  const rs = 3500 + Math.random() * 2500;   // ช่วงกดรัว 2.5 วิ ยกละครั้ง
+  g.timers.push(setTimeout(() => { if (!g.live) return; g.rush = true; $('arena').classList.add('rush'); fmsg('🔥 กดรัว!'); $('mt').style.visibility = 'hidden';
+    g.timers.push(setTimeout(() => { g.rush = false; $('arena') && $('arena').classList.remove('rush'); $('mt') && ($('mt').style.visibility = ''); }, 2500)); }, rs));
 }
 function endRound() {
-  const g = FG.g; g.live = false; g.open = ''; if (g.atk) { clearTimeout(g.atk); g.atk = null; } g.timers.forEach(t => { clearTimeout(t); clearInterval(t); }); g.timers = [];
-  $('op').classList.remove('open'); $('gz').className = 'gz'; $('arena').classList.remove('warn'); g.scores.push(g.pts); g.round++;
+  const g = FG.g; g.live = false; g.rush = false; cancelAnimationFrame(g.raf); g.timers.forEach(t => { clearTimeout(t); clearInterval(t); }); g.timers = [];
+  $('arena').classList.remove('rush'); $('mt').style.visibility = ''; g.scores.push(g.pts); g.round++;
   if (g.round < 3) { fmsg(`จบยก ${g.round}: ${g.pts} แต้ม`); setTimeout(pickMove, 600); return; }
   const tot = g.scores.reduce((a, b) => a + b, 0), ml = k => (MOVES.find(m => m[0] === k) || [, ''])[1];
-  $('main').innerHTML = `<div class="amain" style="text-align:center"><div style="font-size:54px">🥊</div><h3>ชกครบ 3 ยก</h3><div class="meta">${g.scores.map((s, k) => `ยก ${k + 1}: ${s} (${ml(g.moves[k])})`).join(' · ')}</div><div style="font-size:32px;font-weight:800">${tot} แต้ม</div><div class="meta">+ โบนัสเป่ายิ้งฉุบ ยกละ 15 ถ้าแผนชนะคู่ชก</div><div class="meta" id="fsend">กำลังส่งคะแนน…</div></div>`;
+  $('main').innerHTML = `<div class="amain" style="text-align:center"><div style="font-size:54px">🥊</div><h3>ชกครบ 3 ยก</h3><div class="meta">${g.scores.map((s, k) => `ยก ${k + 1}: ${s} (${ml(g.moves[k])})`).join(' · ')}</div><div style="font-size:32px;font-weight:800">${tot} แต้ม</div><div class="meta">+ เป่ายิ้งฉุบชนะคู่ชก ยกละ 15</div><div class="meta" id="fsend">กำลังส่งคะแนน…</div></div>`;
   call({ api: 'fightscore', id: g.id, s: g.scores.join(','), c: g.moves.join(',') }, r => { FG.view = 'list'; if (r.error) { $('fsend').textContent = '❗ ' + (r.msg || 'ส่งไม่ได้'); return; } FG.data = r; const f = r.fights.find(x => x.id === g.id);
     $('fsend').innerHTML = f && f.result ? 'ตัดสินผลแล้ว ดูในสังเวียน' : 'ส่งแล้ว รอคู่ชก ⏳'; setTimeout(() => { if (TAB === 'fight' && FG.view === 'list') drawFight(); }, 1800); });
 }
