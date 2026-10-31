@@ -209,8 +209,8 @@ input[type=date]{color-scheme:light dark}
 <button class="fab" id="fab" aria-label="เพิ่มงาน" onclick="if(TAB==='round'){openAdd()}else{openAddSheet()}">+</button>
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbw9dsYKGy8pELEBeIatNSjJLFv6W7MGjxhnjj584Z4BUlXN6WEfon-JID4f4eHR9wQ/exec';   // ← วาง URL ของบอท (ลงท้าย /exec)
-const APP_VER = 'v1.82';   // 🔖 ต้องตรงกับ SERVER_VER
-const APP_DATE = '31/10/69 17:50';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
+const APP_VER = 'v1.83';   // 🔖 ต้องตรงกับ SERVER_VER
+const APP_DATE = '31/10/69 18:45';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
 const TOK = new URLSearchParams(location.search).get('t') || '';
 // 🔄 แถบสีด้านบนวิ่งระหว่างโหลด / บันทึก
 let LOADING = 0;
@@ -1388,13 +1388,13 @@ function endRound() {
 }
 function fightSend() {
   const p = LS.get('ww_fpend'); if (!p) return; const el = $('fsend'); if (el) el.textContent = 'กำลังส่งคะแนน…';
-  fetch(API + '?' + new URLSearchParams({ t: TOK, api: 'fightscore', id: p.id, s: p.s, c: p.c })).then(x => x.text()).then(tx => {
+  fetch(API, { method: 'POST', body: JSON.stringify({ app: 'fightscore', t: TOK, id: p.id, s: p.s, c: p.c }) }).then(x => x.text()).then(tx => {
     let r; try { r = JSON.parse(tx); } catch (e) { r = { error: 'msg', msg: 'server ตอบผิดปกติ' }; }
     const el = $('fsend'); FG.view = 'list';
     if (r.error && !/ไปแล้ว/.test(r.msg || '')) { if (el) el.innerHTML = '❗ ' + esc(r.msg || 'ส่งไม่ได้') + ` <button class="b p" style="margin-top:8px" onclick="fightSend()">ส่งคะแนนอีกครั้ง</button>`; return; }
     LS.set('ww_fpend', null); if (r.ok) FG.data = r; const f = r.fights && r.fights.find(x => x.id === p.id);
     if (el) el.innerHTML = f && f.result ? 'ตัดสินผลแล้ว ดูในสังเวียน' : 'ส่งแล้ว รอคู่ชก ⏳'; setTimeout(() => { if (TAB === 'fight' && FG.view === 'list') openFight(true); }, 1800);
-  }).catch(() => { FG.view = 'list'; const el = $('fsend'); if (el) el.innerHTML = '❗ ส่งไม่ได้ (เน็ต?) <button class="b p" style="margin-top:8px" onclick="fightSend()">ส่งคะแนนอีกครั้ง</button>'; });
+  }).catch(e => { FG.view = 'list'; const el = $('fsend'); if (el) el.innerHTML = '❗ ส่งไม่ได้: ' + esc(String(e && e.message || e).slice(0, 80)) + ' <button class="b p" style="margin-top:8px" onclick="fightSend()">ส่งคะแนนอีกครั้ง</button>'; });
 }
 </script>
 </body>
