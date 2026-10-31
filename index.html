@@ -209,8 +209,8 @@ input[type=date]{color-scheme:light dark}
 <button class="fab" id="fab" aria-label="เพิ่มงาน" onclick="if(TAB==='round'){openAdd()}else{openAddSheet()}">+</button>
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbw9dsYKGy8pELEBeIatNSjJLFv6W7MGjxhnjj584Z4BUlXN6WEfon-JID4f4eHR9wQ/exec';   // ← วาง URL ของบอท (ลงท้าย /exec)
-const APP_VER = 'v1.81';   // 🔖 ต้องตรงกับ SERVER_VER
-const APP_DATE = '31/10/69 14:40';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
+const APP_VER = 'v1.82';   // 🔖 ต้องตรงกับ SERVER_VER
+const APP_DATE = '31/10/69 17:50';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
 const TOK = new URLSearchParams(location.search).get('t') || '';
 // 🔄 แถบสีด้านบนวิ่งระหว่างโหลด / บันทึก
 let LOADING = 0;
@@ -1291,7 +1291,7 @@ call({ api: 'round' }, r => { if (!r.error) { setR(r); LASTR = Date.now(); if (T
 // ═══ 🥊 สังเวียน: ท้าชก · ผลัดกันชก 3 ยก ยกละ 10 วิ · แตะ = ต่อย · แตะตอนคู่ชกเปิดการ์ด = หมัดหนัก x3 · ⚠️ หลบ = ปัด ═══
 let FG = null;
 function openFight(force) {
-  FG = FG || { view: 'list' }; if (FG.view === 'play') return;
+  FG = FG || { view: 'list' }; if (FG.view === 'play' && FG.g && FG.g.live) return; if (FG.view === 'play') FG.view = 'list';   // ชกค้าง/ส่งไม่ผ่าน → กลับหน้ารวม ไม่ค้างหน้าอื่น
   if (LS.get('ww_fpend')) setTimeout(() => { const p = LS.get('ww_fpend'); if (p) { toast('⏳ ส่งคะแนนที่ค้างอยู่…'); fightSend(); } }, 300);
   FG.view = 'list'; drawFight();
   call({ api: 'fights' }, r => { if (r.error) { FG.err = r.msg || 'โหลดไม่ได้'; return drawFight(); } FG.data = r; FG.err = ''; drawFight(); });
@@ -1394,7 +1394,7 @@ function fightSend() {
     if (r.error && !/ไปแล้ว/.test(r.msg || '')) { if (el) el.innerHTML = '❗ ' + esc(r.msg || 'ส่งไม่ได้') + ` <button class="b p" style="margin-top:8px" onclick="fightSend()">ส่งคะแนนอีกครั้ง</button>`; return; }
     LS.set('ww_fpend', null); if (r.ok) FG.data = r; const f = r.fights && r.fights.find(x => x.id === p.id);
     if (el) el.innerHTML = f && f.result ? 'ตัดสินผลแล้ว ดูในสังเวียน' : 'ส่งแล้ว รอคู่ชก ⏳'; setTimeout(() => { if (TAB === 'fight' && FG.view === 'list') openFight(true); }, 1800);
-  }).catch(() => { const el = $('fsend'); if (el) el.innerHTML = '❗ ส่งไม่ได้ (เน็ต?) <button class="b p" style="margin-top:8px" onclick="fightSend()">ส่งคะแนนอีกครั้ง</button>'; });
+  }).catch(() => { FG.view = 'list'; const el = $('fsend'); if (el) el.innerHTML = '❗ ส่งไม่ได้ (เน็ต?) <button class="b p" style="margin-top:8px" onclick="fightSend()">ส่งคะแนนอีกครั้ง</button>'; });
 }
 </script>
 </body>
