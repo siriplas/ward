@@ -210,8 +210,8 @@ input[type=date]{color-scheme:light dark}
 <button class="fab" id="fab" aria-label="เพิ่มงาน" onclick="if(TAB==='round'){openAdd()}else{openAddSheet()}">+</button>
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbw9dsYKGy8pELEBeIatNSjJLFv6W7MGjxhnjj584Z4BUlXN6WEfon-JID4f4eHR9wQ/exec';   // ← วาง URL ของบอท (ลงท้าย /exec)
-const APP_VER = 'v1.97';   // 🔖 ต้องตรงกับ SERVER_VER
-const APP_DATE = '02/11/69 21:25';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
+const APP_VER = 'v1.98';   // 🔖 ต้องตรงกับ SERVER_VER
+const APP_DATE = '02/11/69 21:30';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
 const TOK = new URLSearchParams(location.search).get('t') || '';
 // 🔄 แถบสีด้านบนวิ่งระหว่างโหลด / บันทึก
 let LOADING = 0;
@@ -1361,16 +1361,18 @@ const BOXER = (c, flip) => `<svg viewBox="0 0 100 140" class="boxer${flip ? ' fl
 const MOVES = [['a', '✊ ค้อน', 'ชนะ กรรไกร'], ['f', '✌️ กรรไกร', 'ชนะ กระดาษ'], ['d', '✋ กระดาษ', 'ชนะ ค้อน']];
 // 🎲 คำถามขำๆ แทนเป่ายิ้งฉุบ: [คำถาม, a, f, d] · a ชนะ f · f ชนะ d · d ชนะ a (รหัสเดิม ไฟต์เก่าใช้ได้) · สุ่มชุดตาม id ไฟต์+ยก → คู่ชกได้คำถามเดียวกัน
 const FQ = [
-  ['ตอนนี้รู้สึกยังไงกับมัน?', '😡 โกรธจัด ต่อยไม่ยั้ง', '😏 ยิ้มเยาะ กวนประสาท', '😤 หงุดหงิดเงียบๆ'],
-  ['แค้นอะไรมันมากที่สุด?', '⏰ มาราวด์สาย', '🩹 ลืมทำแผล', '🧪 ไม่ตามแลป'],
-  ['ยกนี้ออกหมัดแบบไหน?', '💢 บุกแหลก', '🌀 หลบล่อ', '🛡 การ์ดแน่น'],
-  ['ข้อแก้ตัวไหนที่ทนไม่ได้ที่สุด?', '🙄 "เดี๋ยวทำ"', '📵 "ไม่ได้อ่านไลน์"', '🤷 "นึกว่าคนอื่นทำแล้ว"'],
-  ['พกอะไรขึ้นเวที?', '☕ กาแฟแก้วที่ 3', '🥱 ตาปรือหลังเวรดึก', '🍜 มาม่าตีสอง'],
-  ['ตอนนี้ในใจคิดว่า…', '🤬 "อีกแล้วเหรอ!"', '🫠 "ช่างมัน…ไม่ได้!"', '😇 "ใจเย็น…ใจเย็น…"'],
-  ['อาจารย์หันมาถาม… ตอบว่า?', '😎 ตอบได้ฉะฉาน', '🫣 "เดี๋ยวไปเช็กให้ครับ"', '🙃 ยิ้มแล้วมองเพื่อน'],
-  ['ยกนี้จะโยนเคสอะไรใส่?', '🔥 Burn เต็มวอร์ด', '🦵 Flap ตีสาม', '🩸 Bleed หลังผ่าตัด'],
-  ['คว้าอะไรใกล้มือ?', '🔪 มีด #15', '🪝 Skin hook', '🦾 Retractor'],
-  ['ปิดแผลมันด้วยอะไร?', '🧵 Primary closure', '🩹 Skin graft', '🔬 Free flap']];
+  ['เห็นหน้ามันแล้วเป็นยังไง?', '😡 เลือดขึ้นหน้า', '😏 ยิ้มเยาะใส่', '😤 กัดฟันกรอด'],
+  ['แค้นมันเรื่องไหนที่สุด?', '⏰ มาราวด์สายให้รอ', '🩹 ลืมทำแผลแล้วเราโดน', '🧪 ไม่ตามแลปปล่อยค้าง'],
+  ['โกรธขนาดนี้… ซัดมันแบบไหน?', '💢 รัวไม่ยั้งให้หายแค้น', '🌀 ปั่นให้มันหัวร้อนก่อน', '🛡 รอจังหวะสวนให้จุก'],
+  ['มันแก้ตัวว่า… ฟังแล้วเดือดสุด?', '🙄 "เดี๋ยวทำ" (แต่ไม่ทำ)', '📵 "ไม่ได้อ่านไลน์"', '🤷 "นึกว่าคนอื่นทำแล้ว"'],
+  ['ขึ้นเวทีด้วยความแค้นระดับไหน?', '🌋 แค้นสะสมมาทั้งเดือน', '🔥 เพิ่งโดนมันเท เมื่อเช้า', '😤 แค้นเล็กๆ แต่ไม่ลืม'],
+  ['ในใจตะโกนว่า…', '🤬 "อีกแล้วเหรอ!!"', '🫠 "จะปล่อยไป…ไม่ได้!"', '😤 "ครั้งนี้ไม่ยอมแล้ว"'],
+  ['โดนอาจารย์ด่าเพราะมัน… จะเอาคืนยังไง?', '😤 ฟ้องอาจารย์กลับ', '🤐 เก็บไว้เอาคืนเวรหน้า', '😈 แกล้งยกเคสยากให้'],
+  ['อาจารย์ถาม มันชี้มาที่เรา… ตอบว่า?', '👉 "เคสนี้ของมันครับ!"', '🫣 "เดี๋ยวไปเช็กให้ครับ"', '😑 จ้องหน้ามันเงียบๆ'],
+  ['มันตอบอาจารย์แทนเราแบบมั่วๆ… รู้สึก?', '🤬 อยากต่อยกลางราวด์', '🙄 กลอกตาสามตลบ', '😮‍💨 ถอนหายใจยาว'],
+  ['ขอให้มันเจอแต่เคส…', '🔥 Burn 60% ตอนตีสาม', '🦵 Flap ซีดทุกเวร', '🩸 Bleed ทุกเคสที่มันผ่า'],
+  ['โมโหจนคว้าอะไรใกล้มือ?', '🔪 มีด #15', '🪝 Skin hook', '🦾 Retractor'],
+  ['ถ้ามันเป็นแผล… จะปิดด้วยอะไร?', '🧵 เย็บปิดเลย ไม่ต้องเยอะ', '🩹 แปะกราฟให้เข็ด', '🔬 Free flap 8 ชั่วโมง ให้รู้ซึ้ง']];
 const fqOf = (id, r) => { let x = 0; String(id + ':' + r).split('').forEach(c => x = (x * 31 + c.charCodeAt(0)) >>> 0); return FQ[x % FQ.length]; };
 const fqMoves = q => [['a', q[1], 'ชนะ ' + q[2]], ['f', q[2], 'ชนะ ' + q[3]], ['d', q[3], 'ชนะ ' + q[1]]];
 function fightPlay(id) {
@@ -1393,7 +1395,7 @@ function fightHelp() {
 function pickMove() {
   const g = FG.g;
   const q = fqOf(g.id, g.round);
-  $('fpick').innerHTML = `<div class="lbl" style="text-align:center">ยก ${g.round + 1}: ${esc(q[0])} <span class="meta">(ชนะคู่ชก +15)</span></div><div style="display:flex;flex-direction:column;gap:6px">${fqMoves(q).map(([k, l, w]) => `<button class="b" style="min-height:52px;text-align:left" onclick="FG.g.moves.push('${k}');fightRound()">${esc(l)}<div class="meta">${esc(w)}</div></button>`).join('')}</div>`;
+  $('fpick').innerHTML = `<div class="lbl" style="text-align:center">ยก ${g.round + 1}: ${esc(q[0])} <span class="meta">(ชนะคู่ชก +15)</span></div><div style="display:flex;flex-direction:column;gap:6px">${fqMoves(q).sort(() => Math.random() - .5).map(([k, l, w]) => `<button class="b" style="min-height:52px;text-align:left" onclick="FG.g.moves.push('${k}');fightRound()">${esc(l)}<div class="meta">${esc(w)}</div></button>`).join('')}</div>`;
 }
 const fupd = () => { const g = FG.g; $('fp').textContent = g.pts; };
 const fmsg = t => { const m = $('fm'); if (m) { m.innerHTML = t; m.style.opacity = 1; clearTimeout(m._t); m._t = setTimeout(() => m.style.opacity = 0, 700); } };
