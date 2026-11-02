@@ -210,8 +210,8 @@ input[type=date]{color-scheme:light dark}
 <button class="fab" id="fab" aria-label="เพิ่มงาน" onclick="if(TAB==='round'){openAdd()}else{openAddSheet()}">+</button>
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbw9dsYKGy8pELEBeIatNSjJLFv6W7MGjxhnjj584Z4BUlXN6WEfon-JID4f4eHR9wQ/exec';   // ← วาง URL ของบอท (ลงท้าย /exec)
-const APP_VER = 'v1.90';   // 🔖 ต้องตรงกับ SERVER_VER
-const APP_DATE = '02/11/69 18:12';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
+const APP_VER = 'v1.91';   // 🔖 ต้องตรงกับ SERVER_VER
+const APP_DATE = '02/11/69 18:30';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
 const TOK = new URLSearchParams(location.search).get('t') || '';
 // 🔄 แถบสีด้านบนวิ่งระหว่างโหลด / บันทึก
 let LOADING = 0;
@@ -1326,8 +1326,7 @@ function drawFight() {
     <button class="b p" style="width:100%" onclick="FG.view='new';drawFight()">🥊 ท้าชก</button>
     ${turn.length ? `<div class="lbl">ถึงตาคุณ</div>${turn.map(card).join('')}` : ''}
     ${wait.length ? `<div class="lbl">รอคู่ชก</div>${wait.map(card).join('')}` : ''}
-    ${d.stats && d.stats.length ? (() => { const me = d.stats.find(x => x.name === d.me); return `<div class="lbl">📊 สถิติทั้งหมด</div>${me ? `<div class="meta" style="margin:-2px 0 6px">คุณ: ชก ${me.n} · ชนะ ${me.w} · แพ้ ${me.l}${me.d ? ' · เสมอ ' + me.d : ''} (<b>${me.pct}%</b>)</div>` : ''}${box(`<table class="fst"><tr><th></th><th>ชก</th><th>ชนะ</th><th>แพ้</th><th>%</th><th>น็อค</th><th>แต้ม</th><th>เฉลี่ย</th></tr>${d.stats.map(x => `<tr${x.name === d.me ? ' class="me"' : ''}><td>${esc(x.name)}</td><td>${x.n}</td><td>${x.w}</td><td>${x.l}</td><td><b>${x.pct}%</b></td><td>${x.ko}</td><td>${x.pts || 0}</td><td>${x.avg || 0}</td></tr>`).join('')}</table>${d.stats.some(x => x.n < 3) ? '<div class="meta">ชกไม่ถึง 3 ไฟต์ อยู่ท้ายตาราง</div>' : ''}`)}`; })() : ''}
-    ${d.board.length ? `<div class="lbl">🏆 แชมป์เดือนนี้</div>${box(d.board.map((b, i) => `<div class="frow"><span>${['🥇', '🥈', '🥉'][i] || (i + 1) + '.'} ${esc(b.name)}</span><span class="meta">ชนะ ${b.w} · แพ้ ${b.l}</span></div>`).join(''))}` : ''}
+    ${d.stats && d.stats.length ? (() => { const me = d.stats.find(x => x.name === d.me); return `<div class="lbl">📊 ซีซั่นนี้ ${d.season ? '(' + d.season + ')' : ''}</div>${me ? `<div class="meta" style="margin:-2px 0 6px">คุณ: ชก ${me.n} · ชนะ ${me.w} · แพ้ ${me.l}${me.d ? ' · เสมอ ' + me.d : ''} (<b>${me.pct}%</b>)</div>` : ''}${box(`<table class="fst"><tr><th></th><th>ชก</th><th>ชนะ</th><th>แพ้</th><th>%</th><th>น็อค</th><th>แต้ม</th><th>เฉลี่ย</th></tr>${d.stats.map(x => `<tr${x.name === d.me ? ' class="me"' : ''}><td>${x === d.stats[0] && x.w ? '👑 ' : ''}${esc(x.name)}</td><td>${x.n}</td><td>${x.w}</td><td>${x.l}</td><td><b>${x.pct}%</b></td><td>${x.ko}</td><td>${x.pts || 0}</td><td>${x.avg || 0}</td></tr>`).join('')}</table>${d.stats.some(x => x.n < 3) ? '<div class="meta">ชกไม่ถึง 3 ไฟต์ อยู่ท้ายตาราง</div>' : ''}`)}`; })() : ''}
     <div class="lbl">ผลล่าสุด</div>${done.length ? done.slice(0, 15).map(card).join('') : '<div class="meta">ยังไม่มีไฟต์ ท้าใครสักคนเลย</div>'}</div>`;
 }
 function fightGo() {
