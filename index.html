@@ -210,8 +210,8 @@ input[type=date]{color-scheme:light dark}
 <button class="fab" id="fab" aria-label="เพิ่มงาน" onclick="if(TAB==='round'){openAdd()}else{openAddSheet()}">+</button>
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbw9dsYKGy8pELEBeIatNSjJLFv6W7MGjxhnjj584Z4BUlXN6WEfon-JID4f4eHR9wQ/exec';   // ← วาง URL ของบอท (ลงท้าย /exec)
-const APP_VER = 'v2.00';   // 🔖 ต้องตรงกับ SERVER_VER
-const APP_DATE = '02/11/69 21:40';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
+const APP_VER = 'v2.000';   // 🔖 ต้องตรงกับ SERVER_VER
+const APP_DATE = '02/11/69 21:42';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
 const TOK = new URLSearchParams(location.search).get('t') || '';
 // 🔄 แถบสีด้านบนวิ่งระหว่างโหลด / บันทึก
 let LOADING = 0;
@@ -1396,7 +1396,7 @@ function fightHelp() {
 function pickMove() {
   const g = FG.g;
   const q = fqOf(g.id, g.round);
-  $('fpick').innerHTML = `<div class="lbl" style="text-align:center">ยก ${g.round + 1}: ${esc(q[0])} <span class="meta">(ชนะคู่ชก +15)</span></div><div style="display:flex;flex-direction:column;gap:6px">${fqMoves(q).sort(() => Math.random() - .5).map(([k, l, w]) => `<button class="b" style="min-height:52px;text-align:left" onclick="FG.g.moves.push('${k}');fightRound()">${esc(l)}<div class="meta">${esc(w)}</div></button>`).join('')}</div>`;
+  $('fpick').innerHTML = `<div class="lbl" style="text-align:center">ยก ${g.round + 1}: ${esc(q[0])} <span class="meta">(ชนะคู่ชก +15)</span></div><div style="display:flex;flex-direction:column;gap:6px">${fqMoves(q).sort(() => Math.random() - .5).map(([k, l, w]) => `<button class="b" style="min-height:52px;text-align:left" onclick="FG.g.moves.push('${k}');fightRound()">${esc(l)}</button>`).join('')}</div>`;
 }
 const fupd = () => { const g = FG.g; $('fp').textContent = g.pts; };
 const fmsg = t => { const m = $('fm'); if (m) { m.innerHTML = t; m.style.opacity = 1; clearTimeout(m._t); m._t = setTimeout(() => m.style.opacity = 0, 700); } };
