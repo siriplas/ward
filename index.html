@@ -210,8 +210,8 @@ input[type=date]{color-scheme:light dark}
 <button class="fab" id="fab" aria-label="เพิ่มงาน" onclick="if(TAB==='round'){openAdd()}else{openAddSheet()}">+</button>
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbw9dsYKGy8pELEBeIatNSjJLFv6W7MGjxhnjj584Z4BUlXN6WEfon-JID4f4eHR9wQ/exec';   // ← วาง URL ของบอท (ลงท้าย /exec)
-const APP_VER = 'v1.91';   // 🔖 ต้องตรงกับ SERVER_VER
-const APP_DATE = '02/11/69 18:30';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
+const APP_VER = 'v1.92';   // 🔖 ต้องตรงกับ SERVER_VER
+const APP_DATE = '02/11/69 20:55';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
 const TOK = new URLSearchParams(location.search).get('t') || '';
 // 🔄 แถบสีด้านบนวิ่งระหว่างโหลด / บันทึก
 let LOADING = 0;
@@ -226,21 +226,30 @@ function savePill(t) {
   if (!el) { el = document.createElement('div'); el.id = 'savepill'; el.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);top:calc(8px + env(safe-area-inset-top));z-index:61;background:#111827;color:#fff;border-radius:999px;padding:8px 16px;font-size:14px;box-shadow:0 4px 14px rgba(0,0,0,.25);white-space:nowrap;display:flex;align-items:center;gap:8px'; document.body.appendChild(el); }
   el.innerHTML = '<span class="spin" style="width:14px;height:14px;margin:0;border-width:2px"></span>' + esc(t);
 }
+// 📨 คิวแก้ตารางราวด์: กดต่อกันได้เลย ส่งทีละอันเบื้องหลัง · ส่งครบแล้วค่อยโหลดตารางใหม่ครั้งเดียว · ปิดแอพกลางคัน → ส่งต่อตอนเปิดครั้งหน้า
+let EQ = [], EQB = 0, EQREL = 0;
+const dayKey0 = () => new Date(Date.now() + 7 * 3600e3 - 6 * 3600e3).toISOString().slice(0, 10);
+const eqSave = () => LS.set('ww_eq', EQ.map(x => x.q));
+const eqBusy = p => EQ.some(x => x.q.rid === p.rid && x.q.name === p.name);
+function eqPill() {
+  if (EQ.length) { clearTimeout(SAVEQ_T); return savePill('กำลังบันทึก ' + EQ.length + ' รายการ'); }
+  if (!EQREL) return savePill('');
+  savePill('ตารางกำลังอัปเดต (~1 นาที)'); clearTimeout(SAVEQ_T);
+  SAVEQ_T = setTimeout(() => { EQREL = 0; savePill(''); if (TAB === 'round') setTab('round', true); }, 65000);
+}
+function eqNext() {
+  if (EQB || !EQ.length) return; EQB = 1; const x = EQ[0];
+  busyOn(); fetch(API + '?' + new URLSearchParams(Object.assign({ t: TOK }, x.q))).then(r => r.json())
+    .then(r => { busyOff(); EQ.shift(); eqSave(); EQB = 0; if (!r.error && QACT[x.q.act]) EQREL = 1; try { x.ok(r); } catch (e) {} eqPill(); if (TAB === 'round' && R) renderRound(); eqNext(); })
+    .catch(e => { busyOff(); EQB = 0; const left = EQ.splice(0); eqSave(); left.forEach(y => outPush(y.q)); eqPill(); });
+}
+setTimeout(() => { const lq = LS.get('ww_eq') || []; if (lq.length) { LS.set('ww_out', (LS.get('ww_out') || []).concat(lq.map(q => ({ q, day: dayKey0(), at: Date.now() })))); LS.set('ww_eq', []); outBadge(); setTimeout(outFlush, 2000); } }, 500);
 const QACT = { add: 'เพิ่มคนไข้', move: 'ย้าย ward', remove: 'ลบคนไข้', toggle: 'ไม่ต้องดู', team: 'เปลี่ยนคนดู' };
 const call = (q, ok) => {
   if (WRITE[q.api] && !navigator.onLine) return outPush(q);
-  if (q.api === 'edit') {
-    if (SAVING) return toast('⏳ กำลังบันทึกอันก่อนอยู่ รอสักครู่');
-    SAVING = 1; savePill('กำลังบันทึก…'); const ok0 = ok;
-    ok = r => { SAVING = 0;
-      if (!r.error && QACT[q.act]) {   // ตารางประมวลผลคิว ~1 นาที → รอแล้วโหลดใหม่
-        savePill('ตารางกำลังอัปเดต: ' + QACT[q.act] + ' (~1 นาที)'); clearTimeout(SAVEQ_T);
-        SAVEQ_T = setTimeout(() => { savePill(''); if (TAB === 'round') setTab('round', true); }, 65000);
-      } else savePill('');
-      ok0(r); };
-  }
+  if (q.api === 'edit') { EQ.push({ q, ok }); eqSave(); eqPill(); return eqNext(); }
   busyOn(); return fetch(API + '?' + new URLSearchParams(Object.assign({ t: TOK }, q))).then(r => r.json()).then(d => { busyOff(); ok(d); })
-    .catch(e => { busyOff(); if (q.api === 'edit') { SAVING = 0; savePill(''); } if (WRITE[q.api] && (!navigator.onLine || e instanceof TypeError)) outPush(q); else fail(e); });
+    .catch(e => { busyOff(); if (WRITE[q.api] && (!navigator.onLine || e instanceof TypeError)) outPush(q); else fail(e); });
 };
 // 📴 เน็ตหลุด → เก็บคำสั่งไว้ในเครื่อง แล้วส่งเองเมื่อเน็ตกลับ (เฉพาะวันเดียวกัน · ข้ามตี 6 = ทิ้ง กันปิดงานผิดวัน)
 const dayKey = () => new Date(Date.now() + 7 * 3600e3 - 6 * 3600e3).toISOString().slice(0, 10);
@@ -675,7 +684,7 @@ function renderRound() {
     return bh + `<div class="wbox"><div class="sec cp" onclick="copyWard(this)" data-w="${esc(w)}" data-n="${esc(JSON.stringify(list.map(p => p.name)))}">${esc(w)} · ${list.length} คน <span class="cpi">⧉ คัดลอก</span></div><div class="card">${list.map(p => {
       const i = all.indexOf(p), op = ROPEN === i;
       return `<div class="task prow${p.inactive ? ' inact' : ''}"><button class="row" onclick="ROPEN=ROPEN===${i}?null:${i};renderRound()" style="align-items:flex-start">
-        <span style="flex-grow:1;min-width:0"><div><b>${esc(p.name)}</b>${p.inactive ? '<span class="itag">ไม่ต้องดู</span>' : ''}${dueToday(p) ? `<span class="itag duet">${p.inactive && setIn(p) === 1 && visitIn(p) !== 0 ? 'วันนี้ (พรุ่งนี้ set)' : 'วันนี้'}</span>` : ''} <span class="hn">${p.hn ? 'HN ' + esc(p.hn) : ''}</span></div>
+        <span style="flex-grow:1;min-width:0"><div><b>${esc(p.name)}</b>${eqBusy(p) ? ' <span class="meta">⏳</span>' : ''}${p.inactive ? '<span class="itag">ไม่ต้องดู</span>' : ''}${dueToday(p) ? `<span class="itag duet">${p.inactive && setIn(p) === 1 && visitIn(p) !== 0 ? 'วันนี้ (พรุ่งนี้ set)' : 'วันนี้'}</span>` : ''} <span class="hn">${p.hn ? 'HN ' + esc(p.hn) : ''}</span></div>
         <div style="font-size:13px">${[p.dx, p.staff].filter(Boolean).map(esc).join(' · ')}</div>${podTxt(p.proc) ? `<div class="pod">${esc(podTxt(p.proc))}</div>` : ''}
         <div class="who">${p.eve ? `<span class="eve">ดูรวมตอนราวน์เย็น</span>${p.team && !EVE_RE.test(p.team) ? ' · ' + esc(p.team) : ''}` : p.tags.includes('ว่าง') ? '<span class="nobody">ยังไม่ได้จัดคน</span>' : esc(p.team || p.tags.join(', '))}${p.remark && !(p.eve && !p.remark.replace(EVE_RE, '').trim()) ? ' · ' + esc(p.eve ? p.remark.replace(EVE_RE, '').trim() : p.remark) : ''}</div>
         ${p.ww ? `<div class="ww">${esc(p.ww)}</div>` : ''}</span>
@@ -909,13 +918,15 @@ let QGONE = null;
 function qGone(i, why) {
   const p = R.pts[i]; if (!p) return;
   if (QGONE !== i + why) { QGONE = i + why; return renderRound(); }
-  QGONE = null; toast('🚫 ' + p.name + '…');
-  call({ api: 'edit', rid: p.rid, name: p.name, act: 'remove', why }, r => { if (r.error) return toast('❗ ' + (r.msg || 'ลบไม่สำเร็จ')); toast(r.msg || 'ลบแล้ว'); R = null; setTab('round', true); });
+  QGONE = null; toast('🚫 ' + p.name);
+  call({ api: 'edit', rid: p.rid, name: p.name, act: 'remove', why }, r => { if (r.error) toast('❗ ลบ ' + p.name + ' ไม่สำเร็จ: ' + (r.msg || '')); });
+  p.inactive = true; renderRound();
 }
 function qMove(i, w) {
   const p = R.pts[i]; if (!w || !p) return;
-  toast('🚚 ย้าย ' + p.name + ' → ' + w + '…');
-  call({ api: 'edit', rid: p.rid, name: p.name, act: 'move', ward: w }, r => { if (r.error) return toast('❗ ' + (r.msg || 'ย้ายไม่สำเร็จ')); toast(r.msg || 'ย้ายแล้ว'); R = null; setTab('round'); });
+  toast('🚚 ย้าย ' + p.name + ' → ' + w);
+  call({ api: 'edit', rid: p.rid, name: p.name, act: 'move', ward: w }, r => { if (r.error) toast('❗ ย้าย ' + p.name + ' ไม่สำเร็จ: ' + (r.msg || '')); });
+  p.ward = w; renderRound();
 }
 // ═══ 🛠 admin: สุขภาพระบบ · error ล่าสุด · ใครใช้แอพ · ยกเลิกลิงก์ ═══
 let AX = null;
@@ -996,7 +1007,8 @@ function saveAdd() {
   const dk = (v.hn || firstName(v.name)).toLowerCase(), pend = LS.get('ww_padd') || {};
   if (pend[dk] && Date.now() - pend[dk] < 3 * 60e3) return toast('⏳ ' + v.name + ' กำลังเพิ่มเข้าตารางอยู่แล้ว (รอ ~1 นาที แล้วกด ⟳)');
   pend[dk] = Date.now(); LS.set('ww_padd', pend);
-  call({ api: 'edit', act: 'add', vals: JSON.stringify(v) }, r => { if (r.error) { const pp = LS.get('ww_padd') || {}; delete pp[dk]; LS.set('ww_padd', pp); return toast(r.msg || 'ไม่สำเร็จ'); } toast(r.msg); closePhoto(); findNew(v.name, 0); });
+  call({ api: 'edit', act: 'add', vals: JSON.stringify(v) }, r => { if (r.error) { const pp = LS.get('ww_padd') || {}; delete pp[dk]; LS.set('ww_padd', pp); return toast('❗ เพิ่ม ' + v.name + ' ไม่สำเร็จ: ' + (r.msg || '')); } findNew(v.name, 0); });
+  closePhoto(); toast('➕ ' + v.name + ' (กำลังส่ง)');
 }
 // โหลดราวด์ใหม่จนเห็นคนไข้ที่เพิ่ง เพิ่ม (ลองซ้ำทุก 5 วิ ไม่เกิน ~1.5 นาที) แล้วเลื่อนไปหา + กะพริบ
 function findNew(name, n) {
@@ -1009,7 +1021,10 @@ function findNew(name, n) {
   });
 }
 function edCall(q, after) {
-  call(Object.assign({ api: 'edit', rid: ED.p.rid, name: ED.p.name }, q), r => { if (r.error) return toast(r.msg || 'แก้ไม่สำเร็จ'); toast(r.msg); closePhoto(); ED = null; R = null; setTab('round'); });
+  const p = ED.p;
+  call(Object.assign({ api: 'edit', rid: p.rid, name: p.name }, q), r => { if (r.error) toast('❗ ' + p.name + ' ' + (r.msg || 'แก้ไม่สำเร็จ')); });
+  if (q.act === 'move') p.ward = q.ward; else if (q.act === 'team') p.team = q.team; else if (q.act === 'toggle') p.inactive = q.want === 'grey';
+  closePhoto(); ED = null; if (TAB === 'round' && R) renderRound();
 }
 // ⚡ บันทึก: ปิดฟอร์ม + แก้การ์ดทันที แล้วส่งเบื้องหลัง · พลาด → แถบเตือน + โหลดค่าจริงกลับ
 function saveEdit() {
