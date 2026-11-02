@@ -210,8 +210,8 @@ input[type=date]{color-scheme:light dark}
 <button class="fab" id="fab" aria-label="เพิ่มงาน" onclick="if(TAB==='round'){openAdd()}else{openAddSheet()}">+</button>
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbw9dsYKGy8pELEBeIatNSjJLFv6W7MGjxhnjj584Z4BUlXN6WEfon-JID4f4eHR9wQ/exec';   // ← วาง URL ของบอท (ลงท้าย /exec)
-const APP_VER = 'v2.10';   // 🔖 ต้องตรงกับ SERVER_VER
-const APP_DATE = '03/11/69 06:35';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
+const APP_VER = 'v2.11';   // 🔖 ต้องตรงกับ SERVER_VER
+const APP_DATE = '03/11/69 06:38';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
 const TOK = new URLSearchParams(location.search).get('t') || '';
 // 🔄 แถบสีด้านบนวิ่งระหว่างโหลด / บันทึก
 let LOADING = 0;
@@ -675,7 +675,7 @@ function renderRound() {
   $('count').textContent = ps.length + ' คน';
   // 🌆 เลือกชื่อคน → เคสราวน์เย็นขึ้นด้วย แยกไว้ล่างสุด "ราวน์เย็น (ทุกคน)"
   const person = RG !== 'ทุกคน' && RG !== 'ว่าง' && RG !== 'ราวน์เย็น' && !/^ทุก/.test(RG);
-  const psAll = person ? ps.filter(p => p.allT) : [], psMain = person ? ps.filter(p => !p.allT && !(p.eve && !p.tags.includes(RG)) && !(p.tags.includes('ว่าง') && !p.tags.includes(RG))) : ps, psEve = person ? ps.filter(p => p.eve && !p.tags.includes(RG)) : [], psNone = person ? ps.filter(p => p.tags.includes('ว่าง') && !p.eve) : [];   // เลือกชื่อคน → เคสไม่มีคนดู ขึ้นท้าย "รอจัดสรรคน"
+  const psAll = person ? ps.filter(p => p.allT && dueToday(p)) : [], psMain = person ? ps.filter(p => !p.allT && !(p.eve && !p.tags.includes(RG)) && !(p.tags.includes('ว่าง') && !p.tags.includes(RG))) : ps, psEve = person ? ps.filter(p => p.eve && !p.tags.includes(RG)) : [], psNone = person ? ps.filter(p => p.tags.includes('ว่าง') && !p.eve) : [];   // เลือกชื่อคน → เคสไม่มีคนดู ขึ้นท้าย "รอจัดสรรคน"
   const block = arr => { const wards = [...new Set(arr.map(p => p.ward))];
   let lastB = null;
   return wards.map(w => {
