@@ -210,8 +210,8 @@ input[type=date]{color-scheme:light dark}
 <button class="fab" id="fab" aria-label="เพิ่มงาน" onclick="if(TAB==='round'){openAdd()}else{openAddSheet()}">+</button>
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbw9dsYKGy8pELEBeIatNSjJLFv6W7MGjxhnjj584Z4BUlXN6WEfon-JID4f4eHR9wQ/exec';   // ← วาง URL ของบอท (ลงท้าย /exec)
-const APP_VER = 'v1.96';   // 🔖 ต้องตรงกับ SERVER_VER
-const APP_DATE = '02/11/69 21:20';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
+const APP_VER = 'v1.97';   // 🔖 ต้องตรงกับ SERVER_VER
+const APP_DATE = '02/11/69 21:25';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
 const TOK = new URLSearchParams(location.search).get('t') || '';
 // 🔄 แถบสีด้านบนวิ่งระหว่างโหลด / บันทึก
 let LOADING = 0;
@@ -1337,7 +1337,7 @@ function drawFight() {
     const shake = f.shake === 'ab' ? '🤝 จับมือกันแล้ว' : f.mine && f.result && !f.shake.includes(f.mine) ? `<button class="chip2" onclick="fightShake('${f.id}')">🤝 จับมือ</button>` : '';
     const del = d.admin ? `<button class="fdel" onclick="fightDel('${f.id}')">${FG.arm === f.id ? 'กดอีกครั้ง = ลบ' : '🗑'}</button>` : '';
     return `<div class="fcard">${del}<div><b>${esc(f.a)}</b> <span class="meta">vs</span> <b>${esc(f.b)}</b>${f.reason ? `<div class="meta">เรื่อง: ${esc(f.reason)}</div>` : ''}</div>
-      ${f.result ? `<div class="fres">${w ? `🏆 <b>${esc(w)}</b> ชนะ${ko ? 'น็อค 💥' : ''}` : '🤝 เสมอ'} <span class="meta">${sum(f.aScore)}–${sum(f.bScore)}</span></div>${f.aScore ? `<div class="meta">${f.aScore.map((x, k) => `ยก${k + 1} ${x}${f.aBonus && f.aBonus[k] ? '★' : ''}–${f.bScore[k]}${f.bBonus && f.bBonus[k] ? '★' : ''}`).join(' · ')}${(f.aBonus || []).concat(f.bBonus || []).some(Boolean) ? ' · ★ = เป่ายิ้งฉุบชนะ +15' : ''}</div>` : ''}${w && f.penalty ? `<div class="meta">${esc(w === f.a ? f.b : f.a)}: ${esc(f.penalty)}</div>` : ''}${shake ? `<div style="margin-top:4px">${shake}</div>` : ''}`
+      ${f.result ? `<div class="fres">${w ? `🏆 <b>${esc(w)}</b> ชนะ${ko ? 'น็อค 💥' : ''}` : '🤝 เสมอ'} <span class="meta">${sum(f.aScore)}–${sum(f.bScore)}</span></div>${f.aScore ? `<div class="meta">${f.aScore.map((x, k) => `ยก${k + 1} ${x}${f.aBonus && f.aBonus[k] ? '★' : ''}–${f.bScore[k]}${f.bBonus && f.bBonus[k] ? '★' : ''}`).join(' · ')}${(f.aBonus || []).concat(f.bBonus || []).some(Boolean) ? ' · ★ = ตอบชนะคู่ชก +15' : ''}</div>` : ''}${w && f.penalty ? `<div class="meta">${esc(w === f.a ? f.b : f.a)}: ${esc(f.penalty)}</div>` : ''}${shake ? `<div style="margin-top:4px">${shake}</div>` : ''}`
         : f.myTurn ? `<button class="b p" style="margin-top:8px;width:100%" onclick="fightPlay('${f.id}')">🥊 ถึงตาคุณ — ชกเลย</button>${f.penalty ? `<div class="meta">คนแพ้: ${esc(f.penalty)}</div>` : ''}`
         : `<div class="meta">⏳ รอ ${esc(f.mine === 'a' ? f.b : f.a)} ชก</div>`}</div>`; };
   $('main').innerHTML = `<div class="amain"><div class="ehead"><div><h3>🥊 สังเวียน</h3><div class="meta">ผลัดกันชก 3 ยก ยกละ 10 วิ · ไม่ต้องออนไลน์พร้อมกัน</div></div></div>
@@ -1359,6 +1359,20 @@ const BOXER = (c, flip) => `<svg viewBox="0 0 100 140" class="boxer${flip ? ' fl
 // เล่นง่าย: แตะจอที่ไหนก็ได้ · ปกติ = กดให้ตรงจังหวะ (ขีดวิ่งเข้ากลางเป้า) · ช่วง "กดรัว!" = แตะเร็วที่สุด
 // ก่อนแต่ละยกเลือก ค้อน/กรรไกร/กระดาษ (เทียบกับคู่ชก ชนะได้ +15) · รหัสที่ส่ง server: a = ค้อน · f = กรรไกร · d = กระดาษ (a>f · f>d · d>a)
 const MOVES = [['a', '✊ ค้อน', 'ชนะ กรรไกร'], ['f', '✌️ กรรไกร', 'ชนะ กระดาษ'], ['d', '✋ กระดาษ', 'ชนะ ค้อน']];
+// 🎲 คำถามขำๆ แทนเป่ายิ้งฉุบ: [คำถาม, a, f, d] · a ชนะ f · f ชนะ d · d ชนะ a (รหัสเดิม ไฟต์เก่าใช้ได้) · สุ่มชุดตาม id ไฟต์+ยก → คู่ชกได้คำถามเดียวกัน
+const FQ = [
+  ['ตอนนี้รู้สึกยังไงกับมัน?', '😡 โกรธจัด ต่อยไม่ยั้ง', '😏 ยิ้มเยาะ กวนประสาท', '😤 หงุดหงิดเงียบๆ'],
+  ['แค้นอะไรมันมากที่สุด?', '⏰ มาราวด์สาย', '🩹 ลืมทำแผล', '🧪 ไม่ตามแลป'],
+  ['ยกนี้ออกหมัดแบบไหน?', '💢 บุกแหลก', '🌀 หลบล่อ', '🛡 การ์ดแน่น'],
+  ['ข้อแก้ตัวไหนที่ทนไม่ได้ที่สุด?', '🙄 "เดี๋ยวทำ"', '📵 "ไม่ได้อ่านไลน์"', '🤷 "นึกว่าคนอื่นทำแล้ว"'],
+  ['พกอะไรขึ้นเวที?', '☕ กาแฟแก้วที่ 3', '🥱 ตาปรือหลังเวรดึก', '🍜 มาม่าตีสอง'],
+  ['ตอนนี้ในใจคิดว่า…', '🤬 "อีกแล้วเหรอ!"', '🫠 "ช่างมัน…ไม่ได้!"', '😇 "ใจเย็น…ใจเย็น…"'],
+  ['อาจารย์หันมาถาม… ตอบว่า?', '😎 ตอบได้ฉะฉาน', '🫣 "เดี๋ยวไปเช็กให้ครับ"', '🙃 ยิ้มแล้วมองเพื่อน'],
+  ['ยกนี้จะโยนเคสอะไรใส่?', '🔥 Burn เต็มวอร์ด', '🦵 Flap ตีสาม', '🩸 Bleed หลังผ่าตัด'],
+  ['คว้าอะไรใกล้มือ?', '🔪 มีด #15', '🪝 Skin hook', '🦾 Retractor'],
+  ['ปิดแผลมันด้วยอะไร?', '🧵 Primary closure', '🩹 Skin graft', '🔬 Free flap']];
+const fqOf = (id, r) => { let x = 0; String(id + ':' + r).split('').forEach(c => x = (x * 31 + c.charCodeAt(0)) >>> 0); return FQ[x % FQ.length]; };
+const fqMoves = q => [['a', q[1], 'ชนะ ' + q[2]], ['f', q[2], 'ชนะ ' + q[3]], ['d', q[3], 'ชนะ ' + q[1]]];
 function fightPlay(id) {
   const f = FG.data.fights.find(x => x.id === id); if (!f) return;
   FG.view = 'play'; FG.g = { id, f, round: 0, scores: [], moves: [], pts: 0, t: 0, timers: [], rush: false, lock: 0, pos: 0 };
@@ -1372,13 +1386,14 @@ function fightPlay(id) {
 }
 // 📖 วิธีเล่นก่อนชก (ติ๊ก "ไม่ต้องแสดงอีก" ได้)
 function fightHelp() {
-  $('fpick').innerHTML = `<div class="fhelp" style="text-align:left;line-height:1.7;font-size:15px;padding:12px 4px"><b>🥊 3 ยก · ยกละ 10 วิ</b><br>✊✌️✋ ก่อนยก: เลือกท่า ชนะคู่ชก <b>+15</b><br>🎯 แตะตอนขีดอยู่กลาง: เป๊ะ <b>+5</b> · ใกล้ <b>+2</b><br>🔥 ขึ้น "กดรัว!": แตะรัวๆ <b>+1</b> ต่อครั้ง<br><span class="meta">ยกหลังขีดวิ่งเร็วขึ้น · แต้มรวมมากกว่าชนะ</span>
+  $('fpick').innerHTML = `<div class="fhelp" style="text-align:left;line-height:1.7;font-size:15px;padding:12px 4px"><b>🥊 3 ยก · ยกละ 10 วิ</b><br>🎲 ก่อนยก: ตอบคำถามขำๆ ชนะคำตอบคู่ชก <b>+15</b><br>🎯 แตะตอนขีดอยู่กลาง: เป๊ะ <b>+5</b> · ใกล้ <b>+2</b><br>🔥 ขึ้น "กดรัว!": แตะรัวๆ <b>+1</b> ต่อครั้ง<br><span class="meta">ยกหลังขีดวิ่งเร็วขึ้น · แต้มรวมมากกว่าชนะ</span>
     <label class="meta" style="display:flex;align-items:center;gap:6px;margin-top:8px"><input type="checkbox" id="fhno"> ไม่ต้องแสดงอีก</label>
     <button class="b p" style="width:100%;min-height:50px;margin-top:8px" onclick="if($('fhno').checked)LS.set('ww_fhelp',1);pickMove()">พร้อม 🥊</button></div>`;
 }
 function pickMove() {
   const g = FG.g;
-  $('fpick').innerHTML = `<div class="lbl" style="text-align:center">ยก ${g.round + 1}: เป่ายิ้งฉุบกับคู่ชก (ชนะ +15)</div><div class="btns" style="justify-content:center">${MOVES.map(([k, l, w]) => `<button class="b" style="flex:1;min-height:56px" onclick="FG.g.moves.push('${k}');fightRound()">${l}<div class="meta">${w}</div></button>`).join('')}</div>`;
+  const q = fqOf(g.id, g.round);
+  $('fpick').innerHTML = `<div class="lbl" style="text-align:center">ยก ${g.round + 1}: ${esc(q[0])} <span class="meta">(ชนะคู่ชก +15)</span></div><div style="display:flex;flex-direction:column;gap:6px">${fqMoves(q).map(([k, l, w]) => `<button class="b" style="min-height:52px;text-align:left" onclick="FG.g.moves.push('${k}');fightRound()">${esc(l)}<div class="meta">${esc(w)}</div></button>`).join('')}</div>`;
 }
 const fupd = () => { const g = FG.g; $('fp').textContent = g.pts; };
 const fmsg = t => { const m = $('fm'); if (m) { m.innerHTML = t; m.style.opacity = 1; clearTimeout(m._t); m._t = setTimeout(() => m.style.opacity = 0, 700); } };
@@ -1407,8 +1422,8 @@ function endRound() {
   const g = FG.g; g.live = false; g.rush = false; cancelAnimationFrame(g.raf); g.timers.forEach(t => { clearTimeout(t); clearInterval(t); }); g.timers = [];
   $('arena').classList.remove('rush'); $('mt').style.visibility = ''; g.scores.push(g.pts); g.round++;
   if (g.round < 3) { fmsg(`จบยก ${g.round}: ${g.pts} แต้ม`); setTimeout(pickMove, 600); return; }
-  const tot = g.scores.reduce((a, b) => a + b, 0), ml = k => (MOVES.find(m => m[0] === k) || [, ''])[1];
-  $('main').innerHTML = `<div class="amain" style="text-align:center"><div style="font-size:54px">🥊</div><h3>ชกครบ 3 ยก</h3><div class="meta">${g.scores.map((s, k) => `ยก ${k + 1}: ${s} (${ml(g.moves[k])})`).join(' · ')}</div><div style="font-size:32px;font-weight:800">${tot} แต้ม</div><div class="meta">+ เป่ายิ้งฉุบชนะคู่ชก ยกละ 15</div><div class="meta" id="fsend">กำลังส่งคะแนน…</div></div>`;
+  const tot = g.scores.reduce((a, b) => a + b, 0), ml = (k, r) => (fqMoves(fqOf(g.id, r)).find(m => m[0] === k) || [, ''])[1];
+  $('main').innerHTML = `<div class="amain" style="text-align:center"><div style="font-size:54px">🥊</div><h3>ชกครบ 3 ยก</h3><div class="meta">${g.scores.map((s, k) => `ยก ${k + 1}: ${s} (${esc(ml(g.moves[k], k))})`).join(' · ')}</div><div style="font-size:32px;font-weight:800">${tot} แต้ม</div><div class="meta">+ ตอบชนะคู่ชก ยกละ +15</div><div class="meta" id="fsend">กำลังส่งคะแนน…</div></div>`;
   LS.set('ww_fpend', { id: g.id, s: g.scores.join(','), c: g.moves.join(',') });   // เก็บคะแนนไว้ในเครื่อง ส่งไม่ผ่านก็ส่งใหม่ได้ ไม่ต้องชกใหม่
   fightSend();
 }
