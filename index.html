@@ -210,8 +210,8 @@ input[type=date]{color-scheme:light dark}
 <button class="fab" id="fab" aria-label="เพิ่มงาน" onclick="if(TAB==='round'){openAdd()}else{openAddSheet()}">+</button>
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbw9dsYKGy8pELEBeIatNSjJLFv6W7MGjxhnjj584Z4BUlXN6WEfon-JID4f4eHR9wQ/exec';   // ← วาง URL ของบอท (ลงท้าย /exec)
-const APP_VER = 'v2.12';   // 🔖 ต้องตรงกับ SERVER_VER
-const APP_DATE = '03/11/69 08:15';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
+const APP_VER = 'v2.13';   // 🔖 ต้องตรงกับ SERVER_VER
+const APP_DATE = '03/11/69 16:42';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
 const TOK = new URLSearchParams(location.search).get('t') || '';
 // 🔄 แถบสีด้านบนวิ่งระหว่างโหลด / บันทึก
 let LOADING = 0;
@@ -943,7 +943,7 @@ function drawAdminX() {
   if (!d.ok) return $('main').innerHTML = `<div class="amain"><div class="empty">${esc(d.msg || 'โหลดไม่ได้')}</div></div>`;
   const okJob = j => j.on && j.last && (j.last.ok !== false);
   const jobs = d.jobs.map(j => `<div class="xrow"><span class="xdot ${!j.on ? 'bad' : j.last && j.last.ok === false ? 'bad' : j.last ? 'ok' : 'wait'}"></span><div style="flex:1"><b>${esc(j.name)}</b>
-    <div class="meta">${!j.on ? '❗ ยังไม่ได้ตั้งเวลา — รัน install ใน Apps Script' : j.last ? (j.last.day ? 'ล่าสุด ' + esc(j.last.day) : (j.last.ok === false ? '❗ พัง ' : '✓ ') + agoTxt(j.last.t) + (j.last.r ? ' · ' + esc(j.last.r) : '')) : 'ยังไม่เคยรัน'}${j.dup ? ' · ⚠️ ตั้งซ้ำ' : ''}</div></div><input class="inp adi" type="time" style="width:auto;min-height:36px;padding:4px 8px" value="${j.when}" onchange="adminTime('${j.key}', this.value)"></div>`).join('');
+    <div class="meta">${!j.on ? '❗ ยังไม่ได้ตั้งเวลา — รัน install ใน Apps Script' : j.last ? (j.last.day ? 'ล่าสุด ' + esc(j.last.day) : (j.last.ok === false ? '❗ พัง ' : '✓ ') + agoTxt(j.last.t) + (j.last.r ? ' · ' + esc(j.last.r) : '')) : 'ยังไม่เคยรัน'}${j.dup ? ' · ⚠️ ตั้งซ้ำ' : ''}</div></div><input class="inp adi" type="time" style="width:auto;min-height:36px;padding:4px 8px" value="${j.when}" onchange="adminTime('${j.key}', this.value)"></div>${j.key === 'admit' ? `<div class="xrow" style="border:0;padding-top:0"><button class="b" style="min-height:34px;font-size:13px;margin-left:auto" onclick="admitNow(this)">▶ เข้าตารางทันที</button></div>` : ''}`).join('');
   const realErr = d.errors.filter(e => e.w !== 'admin'), adminLog = d.errors.filter(e => e.w === 'admin');
   const alog = adminLog.length ? adminLog.slice(0, 5).map(e => `<div class="xrow"><div style="flex:1"><span class="meta">${hmTxt(e.t)}</span> ${esc(e.m)}</div></div>`).join('') : '<div class="meta">—</div>';
   const errs = realErr.length ? realErr.slice(0, 8).map(e => `<div class="xrow"><div style="flex:1"><div class="meta">${hmTxt(e.t)} · ${esc(e.w)}</div><div style="font-size:13px">${esc(e.m)}</div></div></div>`).join('') : '<div class="meta">ไม่มี error 👍</div>';
@@ -987,6 +987,7 @@ function rawSave(k) {
   call({ api: 'adminsave', sh: X.sh, row: r.row, orig: JSON.stringify(r.vals), vals: JSON.stringify(vals) }, res => { toast(res.ok ? res.msg : '❗ ' + (res.msg || 'ไม่สำเร็จ')); if (res.ok) { X.open = null; rawLoad(); D && load(); } });
 }
 let ATM = null;
+function admitNow(bt) { if (bt.disabled) return; bt.disabled = true; bt.textContent = '⏳ กำลังเพิ่ม…'; call({ api: 'admitnow' }, r => { toast(r.ok ? r.msg : '❗ ' + (r.msg || 'ไม่สำเร็จ')); AD = null; openAdminX(true); }); }
 function adminTime(job, hm) { if (!hm) return; clearTimeout(ATM); ATM = setTimeout(() => adminTime0(job, hm), 1500); }   // รอหมุนเลือกเวลาเสร็จก่อน ค่อยส่งครั้งเดียว
 function adminTime0(job, hm) { call({ api: 'admintime', job, hm }, r => { toast(r.ok ? r.msg : '❗ ' + (r.msg || 'ไม่สำเร็จ')); openAdminX(true); }); }
 function adminName(uid, cur) { const n = window.prompt('ชื่อใหม่ (ชื่อที่ทีมเรียก)', /ไม่รู้ชื่อ/.test(cur) ? '' : cur); if (n == null || !n.trim()) return; call({ api: 'adminname', uid, name: n.trim() }, r => { toast(r.ok ? r.msg : '❗ ' + (r.msg || 'ไม่สำเร็จ')); openAdminX(true); }); }
