@@ -210,8 +210,8 @@ input[type=date]{color-scheme:light dark}
 <button class="fab" id="fab" aria-label="เพิ่มงาน" onclick="if(TAB==='round'){openAdd()}else{openAddSheet()}">+</button>
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbw9dsYKGy8pELEBeIatNSjJLFv6W7MGjxhnjj584Z4BUlXN6WEfon-JID4f4eHR9wQ/exec';   // ← วาง URL ของบอท (ลงท้าย /exec)
-const APP_VER = 'v2.14';   // 🔖 ต้องตรงกับ SERVER_VER
-const APP_DATE = '03/11/69 17:25';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
+const APP_VER = 'v2.15';   // 🔖 ต้องตรงกับ SERVER_VER
+const APP_DATE = '03/11/69 20:52';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
 const TOK = new URLSearchParams(location.search).get('t') || '';
 // 🔄 แถบสีด้านบนวิ่งระหว่างโหลด / บันทึก
 let LOADING = 0;
@@ -282,7 +282,7 @@ async function outFlush() {
 window.addEventListener('online', () => setTimeout(outFlush, 1500));
 setInterval(outFlush, 30000);
 
-let OFF = 0, TAB = 'task', R = null, RBLD = 'ทั้งหมด', RG = 'ทุกคน', RST = '', RACT = 'active', RDUE = false, RDUEOFF = 0, ROPEN = null, D = null, BLD = 'ทั้งหมด', OPEN = null, QEDIT = null, QDRAFT = null, ARM = null;
+let OFF = 0, TAB = 'task', R = null, RBLD = 'ทั้งหมด', RG = 'ทุกคน', RST = '', RACT = 'active', RDUE = false, RNEW = false, RDUEOFF = 0, ROPEN = null, D = null, BLD = 'ทั้งหมด', OPEN = null, QEDIT = null, QDRAFT = null, ARM = null;
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 // 🎨 สีหัวแอพตามสีประจำวัน (วันใหม่เริ่ม 06:00 เหมือนบอท)
@@ -666,12 +666,13 @@ function renderRound() {
   let mine = LS.get('ww_myteam'); if (mine && !cnt[mine]) mine = null; mine = mine || meKey || '';
   const myBtn = mine ? `<button class="gchip${RG === mine ? ' on' : ''}" onclick="RG=RG==='${esc(mine)}'?'ทุกคน':'${esc(mine)}';renderRound()">ของฉัน</button>` : '';
   const mySel = `<label class="gchip" style="position:relative">${mine ? 'ฉัน: ' + esc(mine) + ' ✎' : 'ฉันคือ… ▾'}<select style="position:absolute;inset:0;opacity:0" onchange="LS.set('ww_myteam',this.value);RG=this.value||'ทุกคน';renderRound()"><option value="">เลือกชื่อของคุณในทีม</option>${gs.filter(g => g !== 'ว่าง' && g !== 'inactive' && !/^ทุก/.test(g)).map(g => `<option${g === mine ? ' selected' : ''}>${esc(g)}</option>`).join('')}</select></label>`;
-  const nDue = all.filter(p => dueToday(p)).length;
-  const quick = (nDue ? `<button class="gchip due${RDUE ? ' on' : ''}" onclick="RDUE=!RDUE;RDUEOFF=0;if(RDUE){RST='';RG='ทุกคน';RBLD='ทั้งหมด';RACT='active'}renderRound()">${RDUE && RDUEOFF ? offLabel(RDUEOFF).replace(/\/\d+$/, '') + ' ต้องดู' : 'วันนี้ต้องดู ' + nDue}</button>` : '') + myBtn + mySel + (cnt['ว่าง'] ? `<button class="gchip warn${RG === 'ว่าง' ? ' on' : ''}" onclick="RG=RG==='ว่าง'?'ทุกคน':'ว่าง';renderRound()">ยังไม่จัดคน ${cnt['ว่าง']}</button>` : '');
+  const nDue = all.filter(p => dueToday(p)).length, nNew = all.filter(p => p.isNew).length;
+  if (!nNew) RNEW = false;
+  const quick = (nNew ? `<button class="gchip${RNEW ? ' on' : ''}" onclick="RNEW=!RNEW;if(RNEW){RG='ทุกคน';RACT='all'}renderRound()">รับใหม่ ${nNew}</button>` : '') + (nDue ? `<button class="gchip due${RDUE ? ' on' : ''}" onclick="RDUE=!RDUE;RDUEOFF=0;if(RDUE){RST='';RG='ทุกคน';RBLD='ทั้งหมด';RACT='active'}renderRound()">${RDUE && RDUEOFF ? offLabel(RDUEOFF).replace(/\/\d+$/, '') + ' ต้องดู' : 'วันนี้ต้องดู ' + nDue}</button>` : '') + myBtn + mySel + (cnt['ว่าง'] ? `<button class="gchip warn${RG === 'ว่าง' ? ' on' : ''}" onclick="RG=RG==='ว่าง'?'ทุกคน':'ว่าง';renderRound()">ยังไม่จัดคน ${cnt['ว่าง']}</button>` : '');
   const seg = `<span class="seg3">${[['active', 'กำลังดู'], ['all', 'ทั้งหมด'], ['inactive', 'ไม่ต้องดู ' + nIn]].map(([v, t]) => `<button class="${RACT === v ? 'on' : ''}" onclick="RACT='${v}';renderRound()">${t}</button>`).join('')}</span>`;
-  const any = RBLD !== 'ทั้งหมด' || RG !== 'ทุกคน' || RST || RACT !== 'active' || RDUE;
-  $('notices').innerHTML = `<div class="fbar">${bSel}${gSel}${sSel}</div><div class="fbar2">${seg}${quick}${any ? `<button class="gchip" onclick="RBLD='ทั้งหมด';RG='ทุกคน';RST='';RACT='active';RDUE=false;renderRound()">✕ ล้างตัวกรอง</button>` : ''}</div>`;
-  const ps = all.filter(p => (RBLD === 'ทั้งหมด' || p.bld === RBLD) && (RDUE ? dueToday(p, RDUEOFF) : actOk(p)) && (RG === 'ทุกคน' || p.tags.includes(RG) || ((p.eve || p.tags.includes('ว่าง')) && RG !== 'ว่าง' && RG !== 'ราวน์เย็น' && !/^ทุก/.test(RG))) && (!RST || p.staff === RST));   // เลือกชื่อคน → เคสราวน์เย็นขึ้นด้วย
+  const any = RBLD !== 'ทั้งหมด' || RG !== 'ทุกคน' || RST || RACT !== 'active' || RDUE || RNEW;
+  $('notices').innerHTML = `<div class="fbar">${bSel}${gSel}${sSel}</div><div class="fbar2">${seg}${quick}${any ? `<button class="gchip" onclick="RBLD='ทั้งหมด';RG='ทุกคน';RST='';RACT='active';RDUE=false;RNEW=false;renderRound()">✕ ล้างตัวกรอง</button>` : ''}</div>`;
+  const ps = all.filter(p => (!RNEW || p.isNew) && (RBLD === 'ทั้งหมด' || p.bld === RBLD) && (RDUE ? dueToday(p, RDUEOFF) : actOk(p)) && (RG === 'ทุกคน' || p.tags.includes(RG) || ((p.eve || p.tags.includes('ว่าง')) && RG !== 'ว่าง' && RG !== 'ราวน์เย็น' && !/^ทุก/.test(RG))) && (!RST || p.staff === RST));   // เลือกชื่อคน → เคสราวน์เย็นขึ้นด้วย
   $('count').textContent = ps.length + ' คน';
   // 🌆 เลือกชื่อคน → เคสราวน์เย็นขึ้นด้วย แยกไว้ล่างสุด "ราวน์เย็น (ทุกคน)"
   const person = RG !== 'ทุกคน' && RG !== 'ว่าง' && RG !== 'ราวน์เย็น' && !/^ทุก/.test(RG);
