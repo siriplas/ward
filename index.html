@@ -210,8 +210,8 @@ input[type=date]{color-scheme:light dark}
 <button class="fab" id="fab" aria-label="เพิ่มงาน" onclick="if(TAB==='round'){openAdd()}else{openAddSheet()}">+</button>
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbw9dsYKGy8pELEBeIatNSjJLFv6W7MGjxhnjj584Z4BUlXN6WEfon-JID4f4eHR9wQ/exec';   // ← วาง URL ของบอท (ลงท้าย /exec)
-const APP_VER = 'v2.31';   // 🔖 ต้องตรงกับ SERVER_VER
-const APP_DATE = '07/11/69 17:00';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
+const APP_VER = 'v2.32';   // 🔖 ต้องตรงกับ SERVER_VER
+const APP_DATE = '07/11/69 17:05';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
 const TOK = new URLSearchParams(location.search).get('t') || '';
 // 🔄 แถบสีด้านบนวิ่งระหว่างโหลด / บันทึก
 let LOADING = 0;
@@ -669,7 +669,7 @@ function renderRound() {
   const mySel = `<label class="gchip" style="position:relative">${mine ? 'ฉัน: ' + esc(mine) + ' ✎' : 'ฉันคือ… ▾'}<select style="position:absolute;inset:0;opacity:0" onchange="LS.set('ww_myteam',this.value);RG=this.value||'ทุกคน';renderRound()"><option value="">เลือกชื่อของคุณในทีม</option>${gs.filter(g => g !== 'ว่าง' && g !== 'inactive' && !/^ทุก/.test(g)).map(g => `<option${g === mine ? ' selected' : ''}>${esc(g)}</option>`).join('')}</select></label>`;
   const nDue = all.filter(p => dueToday(p)).length, nNew = all.filter(p => p.isNew).length;
   if (!nNew) RNEW = false;
-  const quick = (nNew ? `<button class="gchip${RNEW ? ' on' : ''}" onclick="RNEW=!RNEW;if(RNEW){RG='ทุกคน';RACT='all'}renderRound()">NEW ${nNew}</button>` : '') + (nNew && R.admin ? `<button class="gchip" onclick="newClear(this)">🧹 ปิด NEW ทั้งหมด</button>` : '') + (nDue ? `<button class="gchip due${RDUE ? ' on' : ''}" onclick="RDUE=!RDUE;RDUEOFF=0;if(RDUE){RST='';RG='ทุกคน';RBLD='ทั้งหมด';RACT='active'}renderRound()">${RDUE && RDUEOFF ? offLabel(RDUEOFF).replace(/\/\d+$/, '') + ' ต้องดู' : 'วันนี้ต้องดู ' + nDue}</button>` : '') + myBtn + mySel + (cnt['ว่าง'] ? `<button class="gchip warn${RG === 'ว่าง' ? ' on' : ''}" onclick="RG=RG==='ว่าง'?'ทุกคน':'ว่าง';renderRound()">ยังไม่จัดคน ${cnt['ว่าง']}</button>` : '');
+  const quick = (nNew ? `<button class="gchip${RNEW ? ' on' : ''}" onclick="RNEW=!RNEW;if(RNEW){RG='ทุกคน';RACT='all'}renderRound()">NEW ${nNew}</button>` : '') + (nDue ? `<button class="gchip due${RDUE ? ' on' : ''}" onclick="RDUE=!RDUE;RDUEOFF=0;if(RDUE){RST='';RG='ทุกคน';RBLD='ทั้งหมด';RACT='active'}renderRound()">${RDUE && RDUEOFF ? offLabel(RDUEOFF).replace(/\/\d+$/, '') + ' ต้องดู' : 'วันนี้ต้องดู ' + nDue}</button>` : '') + myBtn + mySel + (cnt['ว่าง'] ? `<button class="gchip warn${RG === 'ว่าง' ? ' on' : ''}" onclick="RG=RG==='ว่าง'?'ทุกคน':'ว่าง';renderRound()">ยังไม่จัดคน ${cnt['ว่าง']}</button>` : '');
   const seg = `<span class="seg3">${[['active', 'กำลังดู'], ['all', 'ทั้งหมด'], ['inactive', 'ไม่ต้องดู ' + nIn]].map(([v, t]) => `<button class="${RACT === v ? 'on' : ''}" onclick="RACT='${v}';renderRound()">${t}</button>`).join('')}</span>`;
   const any = RBLD !== 'ทั้งหมด' || RG !== 'ทุกคน' || RST || RACT !== 'active' || RDUE || RNEW;
   $('notices').innerHTML = `<div class="fbar">${bSel}${gSel}${sSel}</div><div class="fbar2">${seg}${quick}${any ? `<button class="gchip" onclick="RBLD='ทั้งหมด';RG='ทุกคน';RST='';RACT='active';RDUE=false;RNEW=false;renderRound()">✕ ล้างตัวกรอง</button>` : ''}</div>`;
@@ -955,6 +955,7 @@ function drawAdminX() {
     ${(d.users.filter(u => u.req).length ? `<div class="lbl">✋ ขอสิทธิ์แก้ไข</div>` + d.users.filter(u => u.req).map(u => `<div class="xrow"><div style="flex:1"><b>${esc(u.name)}</b><div class="meta">ขอเมื่อ ${agoTxt(u.req)}</div></div><button class="b p" style="min-height:34px;font-size:13px" onclick="adminRole('${u.uid}','edit')">อนุมัติ</button><button class="b" style="min-height:34px;font-size:13px" onclick="adminRole('${u.uid}','')">ไม่อนุมัติ</button></div>`).join('') : '')}
     <div class="lbl">✏️ แก้ข้อมูลทุกช่อง</div>${rawUI()}
     <div class="lbl">🩺 งานตั้งเวลา</div>${jobs}
+    <div class="lbl">🆕 ป้าย NEW วันนี้</div><div class="xrow"><div style="flex:1" class="meta">${R && R.pts ? 'ติดอยู่ ' + R.pts.filter(p => p.isNew).length + ' คน' : 'ปิดป้าย NEW ของทุกคนในวันนี้'}</div><button class="b" style="min-height:34px;font-size:13px" onclick="newClear(this)">🧹 ปิดทั้งหมด</button></div>
     <div class="lbl">🐞 error ล่าสุด</div>${errs}
     <div class="lbl">🔁 เพิ่มแล้วยกเลิกเร็ว (อาจพิมพ์ผิด · 14 วัน)</div>${(d.oops || []).length ? d.oops.map(o => `<div class="xrow"><div style="flex:1"><div class="meta">${hmTxt(o.t)} · ${esc(o.by)} · ยกเลิกหลัง ${o.mins} นาที</div><div style="font-size:13px">❌ ${esc(o.ward)} ${esc(o.task)}</div>${o.fix ? `<div style="font-size:13px;color:var(--g)">✅ ลงใหม่: ${esc(o.fix)}</div>` : ''}</div></div>`).join('') : '<div class="meta">ไม่มี 👍</div>'}
     <div class="lbl">📝 สิ่งที่ admin เปลี่ยนล่าสุด</div>${alog}
@@ -989,7 +990,7 @@ function rawSave(k) {
   call({ api: 'adminsave', sh: X.sh, row: r.row, orig: JSON.stringify(r.vals), vals: JSON.stringify(vals) }, res => { toast(res.ok ? res.msg : '❗ ' + (res.msg || 'ไม่สำเร็จ')); if (res.ok) { X.open = null; rawLoad(); D && load(); } });
 }
 let ATM = null;
-function newClear(bt) { if (bt.disabled) return; if (ARM !== 'nclr') { ARM = 'nclr'; bt.textContent = 'กดอีกครั้งเพื่อยืนยัน'; return; } ARM = null; bt.disabled = true; call({ api: 'newclear' }, r => { toast(r.ok ? r.msg : '❗ ' + (r.msg || 'ไม่สำเร็จ')); if (r.ok) { R.pts.forEach(p => p.isNew = false); RNEW = false; setR(R); renderRound(); } }); }
+function newClear(bt) { if (bt.disabled) return; if (ARM !== 'nclr') { ARM = 'nclr'; bt.textContent = 'กดอีกครั้งเพื่อยืนยัน'; return; } ARM = null; bt.disabled = true; call({ api: 'newclear' }, r => { toast(r.ok ? r.msg : '❗ ' + (r.msg || 'ไม่สำเร็จ')); if (r.ok) { RNEW = false; if (R && R.pts) { R.pts.forEach(p => p.isNew = false); setR(R); } if (TAB === 'round' && R) renderRound(); } }); }
 function newMark(i) { const p = R.pts[i]; if (!p) return; p.isNew = !p.isNew; renderRound(); call({ api: 'newmark', rid: p.rid || '', name: p.name, want: p.isNew ? 'on' : 'off' }, r => { if (!r.ok) { p.isNew = !p.isNew; renderRound(); return toast('❗ ' + (r.msg || 'ไม่สำเร็จ')); } toast(r.msg); p.isNew = r.on; setR(R); renderRound(); }); }
 function admitNow(bt) { if (bt.disabled) return; bt.disabled = true; bt.textContent = '⏳ กำลังเพิ่ม…'; call({ api: 'admitnow' }, r => { toast(r.ok ? r.msg : '❗ ' + (r.msg || 'ไม่สำเร็จ')); AD = null; openAdminX(true); }); }
 function adminTime(job, hm) { if (!hm) return; clearTimeout(ATM); ATM = setTimeout(() => adminTime0(job, hm), 1500); }   // รอหมุนเลือกเวลาเสร็จก่อน ค่อยส่งครั้งเดียว
