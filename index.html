@@ -210,8 +210,8 @@ input[type=date]{color-scheme:light dark}
 <button class="fab" id="fab" aria-label="เพิ่มงาน" onclick="if(TAB==='round'){openAdd()}else{openAddSheet()}">+</button>
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbw9dsYKGy8pELEBeIatNSjJLFv6W7MGjxhnjj584Z4BUlXN6WEfon-JID4f4eHR9wQ/exec';   // ← วาง URL ของบอท (ลงท้าย /exec)
-const APP_VER = 'v2.39';   // 🔖 ต้องตรงกับ SERVER_VER
-const APP_DATE = '07/11/69 17:45';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
+const APP_VER = 'v2.40';   // 🔖 ต้องตรงกับ SERVER_VER
+const APP_DATE = '07/11/69 18:00';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
 const TOK = new URLSearchParams(location.search).get('t') || '';
 // 🔄 แถบสีด้านบนวิ่งระหว่างโหลด / บันทึก
 let LOADING = 0;
@@ -878,13 +878,55 @@ async function admEditSave(row, cancel) {
   busyOn(); let r; try { r = await (await fetch(API, { method: 'POST', body: JSON.stringify({ app: 'admitedit', t: TOK, row, origName: p.name, origDate: p.date, cancel: !!cancel, vals }) })).json(); } catch (e) { r = { msg: 'ส่งไม่ได้ ลองใหม่' }; } finally { busyOff(); }
   toast(r.ok ? r.msg : '❗ ' + (r.msg || 'ไม่สำเร็จ')); if (r.ok) { AD.edit = null; AD.arm = 0; openAdmit(true); }
 }
+// 📐 หาเส้นตารางจากรูป แล้วทำรูปใหม่ "ช่องละบรรทัด" มีป้าย R<แถว>C<คอลัมน์> นำหน้า → OCR ของ Google อ่านทีละบรรทัด → รู้ว่าข้อความอยู่ช่องไหนแน่นอน
+function gridOf(cv) {
+  const W = cv.width, H = cv.height, d = cv.getContext('2d').getImageData(0, 0, W, H).data, L = (x, y) => { const i = (y * W + x) * 4; return 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]; };
+  const lines = (n, m, at, thr) => { const a = []; for (let i = 0; i < n; i++) { let k = 0; for (let j = 0; j < m; j += 2) if (at(i, j) < 110) k++; if (k > m / 2 * thr) a.push(i); } const g = []; a.forEach(v => { if (g.length && v - g[g.length - 1][1] <= 2) g[g.length - 1][1] = v; else g.push([v, v]); }); return g; };
+  const V = lines(W, H, (x, y) => L(x, y), 0.6), Hs = lines(H, W, (y, x) => L(x, y), 0.6);
+  return { V, H: Hs };
+}
+function gridCells(g) {   // แถว = ช่องระหว่างเส้นแนวนอน · แถบดำหนา (>5px) = หัวหมวด
+  const rows = []; for (let i = 0; i < g.H.length - 1; i++) { const a = g.H[i], b = g.H[i + 1]; if (a[1] - a[0] > 5 && i === 0) {} rows.push({ y0: a[1] + 1, y1: b[0] - 1, dark: false }); }
+  g.H.forEach(h => { if (h[1] - h[0] > 5) rows.push({ y0: h[0], y1: h[1], dark: true }); });
+  rows.sort((a, b) => a.y0 - b.y0);
+  const cols = []; for (let i = 0; i < g.V.length - 1; i++) cols.push({ x0: g.V[i][1] + 1, x1: g.V[i + 1][0] - 1 });
+  return { rows: rows.filter(r => r.y1 - r.y0 > 8), cols };
+}
+function markerPages(cv, gc, perPage) {   // คืน [canvas] · บรรทัด: "R3C2" + ช่องรูป (ขยาย 2 เท่า)
+  const S = 1.6, items = [];
+  gc.rows.forEach((r, ri) => { if (r.dark) items.push({ ri, ci: 0, x0: gc.cols[0].x0, x1: gc.cols[gc.cols.length - 1].x1, y0: r.y0, y1: r.y1, dark: 1 }); else gc.cols.forEach((c, ci) => items.push({ ri, ci, x0: c.x0, x1: c.x1, y0: r.y0, y1: r.y1 })); });
+  const pages = []; for (let p = 0; p < items.length; p += perPage) pages.push(items.slice(p, p + perPage));
+  return pages.map(list => {
+    const lh = Math.max(...list.map(it => (it.y1 - it.y0) * S)) + 24, mw = Math.max(...list.map(it => (it.x1 - it.x0) * S));
+    const o = document.createElement('canvas'); o.width = 200 + mw + 40; o.height = lh * list.length + 20; const x = o.getContext('2d');
+    x.fillStyle = '#fff'; x.fillRect(0, 0, o.width, o.height); x.imageSmoothingQuality = 'high';
+    list.forEach((it, k) => { const y = 10 + k * lh; x.fillStyle = '#000'; x.font = 'bold 30px Arial'; x.textBaseline = 'middle'; x.fillText('88' + String(it.ri).padStart(2, '0') + String(it.ci).padStart(2, '0'), 10, y + lh / 2);
+      x.filter = it.dark ? 'invert(1) grayscale(1) contrast(1.5)' : 'grayscale(1) contrast(1.6) brightness(1.08)'; x.drawImage(cv, it.x0, it.y0, it.x1 - it.x0, it.y1 - it.y0, 200, y + 12, (it.x1 - it.x0) * S, (it.y1 - it.y0) * S); x.filter = 'none'; });
+    return o;
+  });
+}
+function markerParse(texts) {   // ข้อความ OCR ทุกหน้า → {ri: {ci: text}}
+  const out = {}; let cur = null;
+  texts.join('\n').split('\n').forEach(l => { const m = l.match(/R\s*(\d{1,3})\s*C\s*(\d{1,2})\b\s*(.*)$/i);
+    if (m) { cur = [+m[1], +m[2]]; (out[cur[0]] = out[cur[0]] || {})[cur[1]] = m[3].trim(); } else if (cur && l.trim()) out[cur[0]][cur[1]] = (out[cur[0]][cur[1]] + ' ' + l.trim()).trim(); });
+  return out;
+}
 async function admitPick(file) {
   if (!file || !AD) return; AD.busy = true; AD.log = ''; drawAdmit();
   try {
     const bm = await createImageBitmap(file), k = Math.min(1, 2400 / Math.max(bm.width, bm.height)), c = document.createElement('canvas');
     c.width = Math.round(bm.width * k); c.height = Math.round(bm.height * k); c.getContext('2d').drawImage(bm, 0, 0, c.width, c.height);
-    const blob = await new Promise(res => c.toBlob(res, 'image/jpeg', 0.92));
-    busyOn(); let r; try { r = await (await fetch(API, { method: 'POST', body: JSON.stringify({ app: 'admitocr', t: TOK, mime: 'image/jpeg', data: await b64(blob) }) })).json(); } finally { busyOff(); }
+    let r = null;
+    try {   // 📐 ตารางมีเส้น → ส่งแบบช่องละบรรทัด (รู้ตำแหน่ง) · ไม่เจอเส้น/อ่านไม่ได้ → แบบเดิมทั้งรูป
+      const gc = gridCells(gridOf(c));
+      if (gc.cols.length >= 8 && gc.rows.length >= 3) {
+        const pages = await Promise.all(markerPages(c, gc, 60).map(p => new Promise(res => p.toBlob(res, 'image/jpeg', 0.9)).then(b64)));
+        busyOn(); try { r = await (await fetch(API, { method: 'POST', body: JSON.stringify({ app: 'admitocr', t: TOK, pages }) })).json(); } finally { busyOff(); }
+        if (!r || !r.ok || !(r.rows || []).length) r = null;
+      }
+    } catch (e) { r = null; }
+    if (!r) { const blob = await new Promise(res => c.toBlob(res, 'image/jpeg', 0.92));
+      busyOn(); try { r = await (await fetch(API, { method: 'POST', body: JSON.stringify({ app: 'admitocr', t: TOK, mime: 'image/jpeg', data: await b64(blob) }) })).json(); } finally { busyOff(); } }
     AD.busy = false;
     if (!r.ok) { AD.log = '❗ ' + (r.msg || r.error || 'อ่านไม่ได้'); return drawAdmit(); }
     if (!r.rows.length) { AD.log = '❗ อ่านแล้วไม่เจอแถวที่มีวันที่ ลองถ่ายให้ตรงและชัดขึ้น'; return drawAdmit(); }
@@ -967,7 +1009,9 @@ async function roomPick(file, bt, k) {
   } catch (e) { toast('❗ ส่งรูปไม่ได้ ลองใหม่'); }
   bt && (bt.style.opacity = '');
 }
-const imgAdminUI = () => IMGK.map(([k, n]) => `<div class="xrow" style="gap:6px"><div style="flex:1"><b>${n}</b><div class="meta">${IMGS[k] && IMGS[k].data ? 'ลง ' + esc(IMGS[k].at || '') : 'ยังไม่มีรูป'}</div></div><label class="b p" style="min-height:34px;font-size:13px;position:relative;flex:none;width:auto">📷 ลงรูป<input type="file" accept="image/*" style="position:absolute;inset:0;opacity:0" onchange="roomPick(this.files[0], this.parentNode, '${k}');this.value=''"></label>${IMGS[k] && IMGS[k].data ? `<button class="b" style="min-height:34px;font-size:13px;flex:none" onclick="openRoomImg('${k}')">ดู</button>` : ''}</div>`).join('');
+const imgAdminUI = () => IMGK.map(([k, n]) => `<div class="xrow" style="gap:6px"><div style="flex:1"><b>${n}</b><div class="meta">${IMGS[k] && IMGS[k].data ? 'ลง ' + esc(IMGS[k].at || '') : 'ยังไม่มีรูป'}</div></div><label class="b p" style="min-height:34px;font-size:13px;position:relative;flex:none;width:auto">📷 ลงรูป<input type="file" accept="image/*" style="position:absolute;inset:0;opacity:0" onchange="roomPick(this.files[0], this.parentNode, '${k}');this.value=''"></label>${IMGS[k] && IMGS[k].data ? `<button class="b" style="min-height:34px;font-size:13px;flex:none" onclick="openRoomImg('${k}')">ดู</button><button class="b" style="min-height:34px;font-size:13px;flex:none" onclick="imgDel('${k}', this)">🗑</button>` : ''}</div>`).join('') + '<div class="meta">เอาออกอัตโนมัติ: ห้อง + Admit ทุกเช้าวันเสาร์ · เวร ทุกเช้าวันที่ 1 (รูปยังเก็บใน Drive)</div>';
+function imgDel(k, bt) { if (ARM !== 'img' + k) { ARM = 'img' + k; bt.textContent = 'ยืนยัน?'; return; } ARM = null; bt.disabled = true;
+  call({ api: 'imgclear', kind: k }, r => { toast(r.ok ? r.msg : '❗ ' + (r.msg || 'ไม่สำเร็จ')); if (r.ok) { delete IMGS[k]; LS.set(k === 'room' ? 'ww_c_roomi' : 'ww_c_img_' + k, null); drawAdminX(); } }); }
 let CMDN = 30;
 function cmdUI(c) {
   if (!c.length) return '<div class="meta">—</div>';
