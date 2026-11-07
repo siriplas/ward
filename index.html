@@ -210,8 +210,8 @@ input[type=date]{color-scheme:light dark}
 <button class="fab" id="fab" aria-label="เพิ่มงาน" onclick="if(TAB==='round'){openAdd()}else{openAddSheet()}">+</button>
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbw9dsYKGy8pELEBeIatNSjJLFv6W7MGjxhnjj584Z4BUlXN6WEfon-JID4f4eHR9wQ/exec';   // ← วาง URL ของบอท (ลงท้าย /exec)
-const APP_VER = 'v2.41';   // 🔖 ต้องตรงกับ SERVER_VER
-const APP_DATE = '07/11/69 18:05';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
+const APP_VER = 'v2.42';   // 🔖 ต้องตรงกับ SERVER_VER
+const APP_DATE = '07/11/69 18:10';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
 const TOK = new URLSearchParams(location.search).get('t') || '';
 // 🔄 แถบสีด้านบนวิ่งระหว่างโหลด / บันทึก
 let LOADING = 0;
@@ -894,13 +894,16 @@ function gridCells(g) {   // แถว = ช่องระหว่างเส
 }
 function markerPages(cv, gc, perPage) {   // คืน [canvas] · บรรทัด: "R3C2" + ช่องรูป (ขยาย 2 เท่า)
   const S = 1.6, items = [];
-  gc.rows.forEach((r, ri) => { if (r.dark) items.push({ ri, ci: 0, x0: gc.cols[0].x0, x1: gc.cols[gc.cols.length - 1].x1, y0: r.y0, y1: r.y1, dark: 1 }); else gc.cols.forEach((c, ci) => items.push({ ri, ci, x0: c.x0, x1: c.x1, y0: r.y0, y1: r.y1 })); });
+  // ช่องว่าง (ไม่มีตัวหนังสือ) ไม่ต้องส่ง → OCR ได้ข้อความ 1 ก้อนต่อป้าย 1 อันเสมอ · แถบดำ (หัวหมวด) ส่งแยก ไม่มีป้าย
+  const X = cv.getContext('2d').getImageData(0, 0, cv.width, cv.height).data, Lm = (x, y) => { const i = (y * cv.width + x) * 4; return 0.299 * X[i] + 0.587 * X[i + 1] + 0.114 * X[i + 2]; };
+  const inked = (x0, x1, y0, y1) => { const bg = Lm(x0 + 3, y0 + 3); let n = 0; for (let y = y0 + 2; y < y1 - 1; y += 1) for (let x = x0 + 2; x < x1 - 1; x += 2) if (Math.abs(Lm(x, y) - bg) > 70 && ++n > 12) return true; return false; };
+  gc.rows.forEach((r, ri) => { if (r.dark) items.push({ ri, ci: 0, x0: gc.cols[0].x0, x1: gc.cols[gc.cols.length - 1].x1, y0: r.y0, y1: r.y1, dark: 1 }); else gc.cols.forEach((c, ci) => { if (inked(c.x0, c.x1, r.y0, r.y1)) items.push({ ri, ci, x0: c.x0, x1: c.x1, y0: r.y0, y1: r.y1 }); }); });
   const pages = []; for (let p = 0; p < items.length; p += perPage) pages.push(items.slice(p, p + perPage));
   return pages.map(list => {
     const lh = Math.max(...list.map(it => (it.y1 - it.y0) * S)) + 24, mw = Math.max(...list.map(it => (it.x1 - it.x0) * S));
     const o = document.createElement('canvas'); o.width = 200 + mw + 40; o.height = lh * list.length + 20; const x = o.getContext('2d');
     x.fillStyle = '#fff'; x.fillRect(0, 0, o.width, o.height); x.imageSmoothingQuality = 'high';
-    list.forEach((it, k) => { const y = 10 + k * lh; x.fillStyle = '#000'; x.font = 'bold 30px Arial'; x.textBaseline = 'middle'; x.fillText('88' + String(it.ri).padStart(2, '0') + String(it.ci).padStart(2, '0'), 10, y + lh / 2);
+    list.forEach((it, k) => { const y = 10 + k * lh; x.fillStyle = '#000'; x.font = 'bold 30px Arial'; x.textBaseline = 'middle'; if (!it.dark) x.fillText('88' + String(it.ri).padStart(2, '0') + String(it.ci).padStart(2, '0'), 10, y + lh / 2);
       x.filter = it.dark ? 'invert(1) grayscale(1) contrast(1.5)' : 'grayscale(1) contrast(1.6) brightness(1.08)'; x.drawImage(cv, it.x0, it.y0, it.x1 - it.x0, it.y1 - it.y0, 200, y + 12, (it.x1 - it.x0) * S, (it.y1 - it.y0) * S); x.filter = 'none'; });
     return o;
   });
@@ -921,7 +924,7 @@ async function admitPick(file) {
       const gc = gridCells(gridOf(c));
       if (gc.cols.length >= 8 && gc.rows.length >= 3) {
         const pages = await Promise.all(markerPages(c, gc, 60).map(p => new Promise(res => p.toBlob(res, 'image/jpeg', 0.9)).then(b64)));
-        busyOn(); try { r = await (await fetch(API, { method: 'POST', body: JSON.stringify({ app: 'admitocr', t: TOK, pages }) })).json(); } finally { busyOff(); }
+        busyOn(); try { r = await (await fetch(API, { method: 'POST', body: JSON.stringify({ app: 'admitocr', t: TOK, pages, dark: gc.rows.map((r, i) => r.dark ? i : -1).filter(i => i >= 0) }) })).json(); } finally { busyOff(); }
         if (!r || !r.ok || !(r.rows || []).length) r = null;
       }
     } catch (e) { r = null; }
