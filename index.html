@@ -210,15 +210,15 @@ input[type=date]{color-scheme:light dark}
 <button class="fab" id="fab" aria-label="เพิ่มงาน" onclick="if(TAB==='round'){openAdd()}else{openAddSheet()}">+</button>
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbw9dsYKGy8pELEBeIatNSjJLFv6W7MGjxhnjj584Z4BUlXN6WEfon-JID4f4eHR9wQ/exec';   // ← วาง URL ของบอท (ลงท้าย /exec)
-const APP_VER = 'v2.29';   // 🔖 ต้องตรงกับ SERVER_VER
-const APP_DATE = '07/11/69 16:30';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
+const APP_VER = 'v2.30';   // 🔖 ต้องตรงกับ SERVER_VER
+const APP_DATE = '07/11/69 16:50';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
 const TOK = new URLSearchParams(location.search).get('t') || '';
 // 🔄 แถบสีด้านบนวิ่งระหว่างโหลด / บันทึก
 let LOADING = 0;
 const busyOn = () => { LOADING++; document.body.classList.add('loading'); };
 const busyOff = () => { LOADING = Math.max(0, LOADING - 1); if (!LOADING && !document.getElementById('stale')) document.body.classList.remove('loading'); };
 const WRITE = { run: 1, edit: 1, thank: 1 };
-// ⏳ แก้ตารางราวด์ (เพิ่ม/ลบ/ย้าย/แก้/ไม่ต้องดู/คนดู): แถบค้างด้านบนจนเสร็จ · ส่งซ้อนไม่ได้ · ตารางอัปเดตจริง ~1 นาที → แถบรอจนโหลดใหม่
+// ⏳ แก้ตารางราวด์ (เพิ่ม/ลบ/ย้าย/แก้/ไม่ต้องดู/คนดู): แถบค้างด้านบนจนเสร็จ · ส่งซ้อนไม่ได้ · server สั่งตารางทันที (fast) → โหลดใหม่ ~2 วิ · ไม่สำเร็จ → รอ ~1 นาที
 let SAVING = 0, SAVEQ_T = 0;
 function savePill(t) {
   let el = $('savepill');
@@ -234,13 +234,14 @@ const eqBusy = p => EQ.some(x => x.q.rid === p.rid && x.q.name === p.name);
 function eqPill() {
   if (EQ.length) { clearTimeout(SAVEQ_T); return savePill('กำลังบันทึก ' + EQ.length + ' รายการ'); }
   if (!EQREL) return savePill('');
-  savePill('ตารางกำลังอัปเดต (~1 นาที)'); clearTimeout(SAVEQ_T);
-  SAVEQ_T = setTimeout(() => { EQREL = 0; savePill(''); if (TAB === 'round') setTab('round', true); }, 65000);
+  const fast = EQREL === 2;
+  savePill(fast ? 'ตารางกำลังอัปเดต' : 'ตารางกำลังอัปเดต (~1 นาที)'); clearTimeout(SAVEQ_T);
+  SAVEQ_T = setTimeout(() => { EQREL = 0; savePill(''); if (TAB === 'round') setTab('round', true); }, fast ? 1500 : 65000);
 }
 function eqNext() {
   if (EQB || !EQ.length) return; EQB = 1; const x = EQ[0];
   busyOn(); fetch(API + '?' + new URLSearchParams(Object.assign({ t: TOK }, x.q))).then(r => r.json())
-    .then(r => { busyOff(); EQ.shift(); eqSave(); EQB = 0; if (!r.error && QACT[x.q.act]) EQREL = 1; try { x.ok(r); } catch (e) {} eqPill(); if (TAB === 'round' && R) renderRound(); eqNext(); })
+    .then(r => { busyOff(); EQ.shift(); eqSave(); EQB = 0; if (!r.error && QACT[x.q.act]) EQREL = (r.fast && EQREL !== 1) ? 2 : 1; try { x.ok(r); } catch (e) {} eqPill(); if (TAB === 'round' && R) renderRound(); eqNext(); })
     .catch(e => { busyOff(); EQB = 0; const left = EQ.splice(0); eqSave(); left.forEach(y => outPush(y.q)); eqPill(); });
 }
 setTimeout(() => { const lq = LS.get('ww_eq') || []; if (lq.length) { LS.set('ww_out', (LS.get('ww_out') || []).concat(lq.map(q => ({ q, day: dayKey0(), at: Date.now() })))); LS.set('ww_eq', []); outBadge(); setTimeout(outFlush, 2000); } }, 500);
@@ -1013,7 +1014,7 @@ function saveAdd() {
   const v = { ward: $('af_ward').value }; ['name', 'hn', 'dx', 'staff', 'proc', 'ww'].forEach(k => v[k] = $('af_' + k).value.trim()); v.plan = '';
   if (!v.name) return toast('ใส่ชื่อก่อน');
   const dk = (v.hn || firstName(v.name)).toLowerCase(), pend = LS.get('ww_padd') || {};
-  if (pend[dk] && Date.now() - pend[dk] < 3 * 60e3) return toast('⏳ ' + v.name + ' กำลังเพิ่มเข้าตารางอยู่แล้ว (รอ ~1 นาที แล้วกด ⟳)');
+  if (pend[dk] && Date.now() - pend[dk] < 3 * 60e3) return toast('⏳ ' + v.name + ' กำลังเพิ่มเข้าตารางอยู่แล้ว (กด ⟳ เพื่อดู)');
   pend[dk] = Date.now(); LS.set('ww_padd', pend);
   call({ api: 'edit', act: 'add', vals: JSON.stringify(v) }, r => { if (r.error) { const pp = LS.get('ww_padd') || {}; delete pp[dk]; LS.set('ww_padd', pp); return toast('❗ เพิ่ม ' + v.name + ' ไม่สำเร็จ: ' + (r.msg || '')); } findNew(v.name, 0); });
   closePhoto(); toast('➕ ' + v.name + ' (กำลังส่ง)');
