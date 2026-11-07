@@ -210,8 +210,8 @@ input[type=date]{color-scheme:light dark}
 <button class="fab" id="fab" aria-label="เพิ่มงาน" onclick="if(TAB==='round'){openAdd()}else{openAddSheet()}">+</button>
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbw9dsYKGy8pELEBeIatNSjJLFv6W7MGjxhnjj584Z4BUlXN6WEfon-JID4f4eHR9wQ/exec';   // ← วาง URL ของบอท (ลงท้าย /exec)
-const APP_VER = 'v2.36';   // 🔖 ต้องตรงกับ SERVER_VER
-const APP_DATE = '07/11/69 17:40';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
+const APP_VER = 'v2.37';   // 🔖 ต้องตรงกับ SERVER_VER
+const APP_DATE = '07/11/69 17:35';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
 const TOK = new URLSearchParams(location.search).get('t') || '';
 // 🔄 แถบสีด้านบนวิ่งระหว่างโหลด / บันทึก
 let LOADING = 0;
@@ -948,7 +948,7 @@ function loadRooms(force) {
     if (!r || !r.ok) return; if (r.none) ROOMI = null; else if (!r.same) ROOMI = { id: r.id, at: r.at, data: r.data }; else ROOMI.at = r.at;
     LS.set('ww_c_roomi', ROOMI); if (TAB === 'task' && D) render(); if (TAB === 'admin') drawAdminX(); }).catch(() => {});
 }
-const roomBar = () => ROOMI && ROOMI.data ? `<button class="duebar" style="background:var(--chip,#eef2ff);color:inherit" onclick="openRoomImg()">🏥 ตารางห้อง <span class="meta">(ลง ${esc(ROOMI.at || '')}) ›</span></button>` : '';
+const roomBar = () => ROOMI && ROOMI.data ? `<button class="b" style="width:100%;margin-top:16px;justify-content:center" onclick="openRoomImg()">🏥 ตารางห้อง <span class="meta">&nbsp;(ลง ${esc(ROOMI.at || '')}) ›</span></button>` : '';
 function openRoomImg() {
   $('pbox').innerHTML = `<div class="ehead"><div><h3>🏥 ตารางห้อง</h3><div class="meta">ลง ${esc(ROOMI.at || '')} · แตะรูปเพื่อซูม</div></div><button class="b" onclick="closePhoto()">✕</button></div>
     <div style="overflow:auto;margin:0 -16px;max-height:75vh"><img src="data:image/jpeg;base64,${ROOMI.data}" style="width:100%;display:block" onclick="this.style.width=this.style.width==='100%'?'220%':'100%'"></div>`;
@@ -1199,7 +1199,7 @@ function render() {
   const due = R ? R.pts.filter(p => dueToday(p, OFF)) : [];   // ตามวันที่เลือกในแท็บงาน
   const dueBar = due.length ? `<button class="duebar" onclick="RDUE=true;RDUEOFF=OFF;RST='';RG='ทุกคน';RBLD='ทั้งหมด';RACT='active';setTab('round')">${OFF ? D.day + ' ต้องไปดู' : 'วันนี้ต้องไปดู'} ${due.length} คน: ${due.slice(0, 6).map(p => esc(p.name.split(/\s+/)[0])).join(', ')}${due.length > 6 ? ' …' : ''} ›</button>` : '';
   loadRooms();
-  $('notices').innerHTML = newsBar() + roomBar() + dueBar + (D.notices.length ? `<button class="notice nbtn" onclick="openNotice()">📢 ${D.notices.map(esc).join(' · ')} <span class="meta">›</span></button>` : '');   // ไม่มีประกาศ = ไม่แสดงอะไร (แจ้งผ่านปุ่ม ＋ → ประกาศ)
+  $('notices').innerHTML = newsBar() + dueBar + (D.notices.length ? `<button class="notice nbtn" onclick="openNotice()">📢 ${D.notices.map(esc).join(' · ')} <span class="meta">›</span></button>` : '');   // ไม่มีประกาศ = ไม่แสดงอะไร (แจ้งผ่านปุ่ม ＋ → ประกาศ)
   const ts = all.filter(t => BLD === 'ทั้งหมด' || t.bld === BLD);
   let h = '';
   const fl = ts.filter(t => t.flap && !t.done);
@@ -1208,7 +1208,7 @@ function render() {
   if (open.length) h += '<div><div class="sec">งานค้าง (' + open.length + ')</div><div style="display:flex;flex-direction:column;gap:8px">' + byPatient(open) + '</div></div>';
   const done = ts.filter(t => t.done);
   if (done.length) h += '<div><div class="sec">เสร็จแล้ว (' + done.length + ')</div><div style="display:flex;flex-direction:column;gap:8px">' + byPatient(done) + '</div></div>';
-  $('main').innerHTML = h || '<div class="empty">ไม่มีงาน 🎉</div>';
+  $('main').innerHTML = (h || '<div class="empty">ไม่มีงาน 🎉</div>') + roomBar();
 }
 
 function byPatient(list) {
