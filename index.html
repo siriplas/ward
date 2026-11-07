@@ -210,8 +210,8 @@ input[type=date]{color-scheme:light dark}
 <button class="fab" id="fab" aria-label="เพิ่มงาน" onclick="if(TAB==='round'){openAdd()}else{openAddSheet()}">+</button>
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbw9dsYKGy8pELEBeIatNSjJLFv6W7MGjxhnjj584Z4BUlXN6WEfon-JID4f4eHR9wQ/exec';   // ← วาง URL ของบอท (ลงท้าย /exec)
-const APP_VER = 'v2.44';   // 🔖 ต้องตรงกับ SERVER_VER
-const APP_DATE = '07/11/69 22:35';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
+const APP_VER = 'v2.45';   // 🔖 ต้องตรงกับ SERVER_VER
+const APP_DATE = '07/11/69 22:40';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
 const TOK = new URLSearchParams(location.search).get('t') || '';
 // 🔄 แถบสีด้านบนวิ่งระหว่างโหลด / บันทึก
 let LOADING = 0;
@@ -995,28 +995,33 @@ function loadRooms(force) {
     LS.set(k === 'room' ? 'ww_c_roomi' : 'ww_c_img_' + k, IMGS[k] || null); if (TAB === 'task' && D) render(); if (TAB === 'admin') drawAdminX(); }).catch(() => {}));
 }
 const roomBar = () => { const b = IMGK.filter(([k]) => IMGS[k] && IMGS[k].data); return b.length ? '<div style="display:flex;flex-direction:column;gap:8px;margin-top:16px">' + b.map(([k, n]) => `<button class="b" style="width:100%;justify-content:center" onclick="openRoomImg('${k}')">${n} <span class="meta">&nbsp;(ลง ${esc(IMGS[k].at || '')}) ›</span></button>`).join('') + '</div>' : ''; };
+let IMGV_RS = null;
+function imgvClose() { const v = document.getElementById('imgv'); if (v) v.remove(); if (IMGV_RS) { removeEventListener('resize', IMGV_RS); removeEventListener('orientationchange', IMGV_RS); IMGV_RS = null; } }
 function openRoomImg(k) {   // 🔍 เต็มจอ · สองนิ้ว = ซูม (1–5×) · ลาก = เลื่อน · แตะสองครั้ง = พอดีจอ ↔ 2.5×
   const x = IMGS[k || 'room'], n = (IMGK.find(i => i[0] === (k || 'room')) || [])[1]; if (!x) return;
   let v = document.getElementById('imgv'); if (!v) { v = document.createElement('div'); v.id = 'imgv'; document.body.appendChild(v); }
   v.style.cssText = 'position:fixed;inset:0;z-index:9999;background:#000;display:flex;flex-direction:column;touch-action:none';
-  v.innerHTML = `<div style="display:flex;align-items:center;gap:8px;padding:calc(env(safe-area-inset-top) + 8px) 12px 8px;color:#fff"><b style="flex:1">${n} <span style="opacity:.6;font-weight:400;font-size:13px">ลง ${esc(x.at || '')}</span></b><button class="b" onclick="document.getElementById('imgv').remove()">✕</button></div>
-    <div id="imgw" style="flex:1;overflow:hidden;position:relative"><img id="imgz" src="data:image/jpeg;base64,${x.data}" style="position:absolute;left:0;top:0;transform-origin:0 0;user-select:none;-webkit-user-drag:none" draggable="false"></div>
+  v.innerHTML = `<div style="display:flex;align-items:center;gap:8px;padding:calc(env(safe-area-inset-top) + 8px) 12px 8px;color:#fff"><b style="flex:1">${n} <span style="opacity:.6;font-weight:400;font-size:13px">ลง ${esc(x.at || '')}</span></b><button class="b" onclick="imgvClose()">✕</button></div>
+    <div id="imgw" style="flex:1;overflow:hidden;position:relative"><img id="imgz" src="data:image/jpeg;base64,${x.data}" style="position:absolute;left:0;top:0;transform-origin:0 0;user-select:none;-webkit-user-drag:none;max-width:none;max-height:none" draggable="false"></div>
     <div id="imgh" style="color:#aaa;font-size:12px;text-align:center;padding:6px 0 calc(env(safe-area-inset-bottom) + 6px)">สองนิ้วซูม · แตะสองครั้งขยาย</div>`;
   const w = v.querySelector('#imgw'), im = v.querySelector('#imgz'), P = new Map(); let s = 1, fit = 1, tx = 0, ty = 0, g = null, lastTap = 0;
   const clamp = () => { const W = w.clientWidth, H = w.clientHeight, iw = im.naturalWidth * s, ih = im.naturalHeight * s;
     tx = iw <= W ? (W - iw) / 2 : Math.min(0, Math.max(W - iw, tx)); ty = ih <= H ? (H - ih) / 2 : Math.min(0, Math.max(H - ih, ty)); im.style.transform = `translate(${tx}px,${ty}px) scale(${s})`; };
   const zoomAt = (ns, cx, cy) => { ns = Math.max(fit, Math.min(fit * 5, ns)); tx = cx - (cx - tx) * ns / s; ty = cy - (cy - ty) * ns / s; s = ns; clamp(); };
-  const init = () => { fit = Math.min(w.clientWidth / im.naturalWidth, w.clientHeight / im.naturalHeight); s = fit; clamp();
-    if (im.naturalWidth > im.naturalHeight * 1.4 && innerHeight > innerWidth) v.querySelector('#imgh').textContent = '📱 หมุนจอแนวนอนเพื่ออ่านง่ายขึ้น · สองนิ้วซูม · แตะสองครั้งขยาย'; };
-  im.complete ? init() : (im.onload = init); addEventListener('resize', () => document.getElementById('imgv') && init(), { once: true });
+  const init = () => { im.style.width = im.naturalWidth + 'px'; im.style.height = im.naturalHeight + 'px'; fit = Math.min(w.clientWidth / im.naturalWidth, w.clientHeight / im.naturalHeight); s = fit; clamp();
+    if (true) v.querySelector('#imgh').textContent = (im.naturalWidth > im.naturalHeight * 1.4 && innerHeight > innerWidth ? '📱 หมุนจอแนวนอนอ่านง่ายขึ้น · ' : '') + 'สองนิ้วซูม · แตะสองครั้งขยาย · ลากลงเพื่อปิด'; };
+  im.complete ? init() : (im.onload = init);
+  IMGV_RS = () => setTimeout(init, 250); addEventListener('resize', IMGV_RS); addEventListener('orientationchange', IMGV_RS);   // หมุนจอ → คำนวณพอดีจอใหม่
   const rel = e => { const r = w.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
-  w.onpointerdown = e => { w.setPointerCapture(e.pointerId); P.set(e.pointerId, rel(e)); g = null;
+  let sw = null;   // ลากลงตอนพอดีจอ = ปิด
+  w.onpointerdown = e => { w.setPointerCapture(e.pointerId); P.set(e.pointerId, rel(e)); g = null; sw = P.size === 1 && s <= fit * 1.02 ? { y: rel(e)[1], dy: 0 } : null;
     if (P.size === 1) { const now = Date.now(); if (now - lastTap < 300) { const [cx, cy] = rel(e); zoomAt(s > fit * 1.1 ? fit : fit * 2.5, cx, cy); lastTap = 0; } else lastTap = now; } };
   w.onpointermove = e => { if (!P.has(e.pointerId)) return; const prev = P.get(e.pointerId), cur = rel(e); P.set(e.pointerId, cur);
     if (P.size === 2) { const [a, b] = [...P.values()], d = Math.hypot(a[0] - b[0], a[1] - b[1]), c = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
       if (g) { tx += c[0] - g.c[0]; ty += c[1] - g.c[1]; zoomAt(s * d / g.d, c[0], c[1]); } g = { d, c }; }
+    else if (P.size === 1 && sw) { sw.dy = Math.max(0, cur[1] - sw.y); im.style.transform = `translate(${tx}px,${ty + sw.dy}px) scale(${s})`; v.style.background = `rgba(0,0,0,${Math.max(.3, 1 - sw.dy / 400)})`; }
     else if (P.size === 1 && s > fit) { tx += cur[0] - prev[0]; ty += cur[1] - prev[1]; clamp(); } };
-  w.onpointerup = w.onpointercancel = e => { P.delete(e.pointerId); g = null; };
+  w.onpointerup = w.onpointercancel = e => { P.delete(e.pointerId); g = null; if (sw && P.size === 0) { if (sw.dy > 120) return imgvClose(); v.style.background = '#000'; clamp(); } if (P.size) sw = null; };
 }
 async function roomPick(file, bt, k) {
   if (!file) return; bt && (bt.style.opacity = .5);
