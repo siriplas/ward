@@ -210,8 +210,8 @@ input[type=date]{color-scheme:light dark}
 <button class="fab" id="fab" aria-label="เพิ่มงาน" onclick="if(TAB==='round'){openAdd()}else{openAddSheet()}">+</button>
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbw9dsYKGy8pELEBeIatNSjJLFv6W7MGjxhnjj584Z4BUlXN6WEfon-JID4f4eHR9wQ/exec';   // ← วาง URL ของบอท (ลงท้าย /exec)
-const APP_VER = 'v2.32';   // 🔖 ต้องตรงกับ SERVER_VER
-const APP_DATE = '07/11/69 17:05';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
+const APP_VER = 'v2.33';   // 🔖 ต้องตรงกับ SERVER_VER
+const APP_DATE = '07/11/69 17:10';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
 const TOK = new URLSearchParams(location.search).get('t') || '';
 // 🔄 แถบสีด้านบนวิ่งระหว่างโหลด / บันทึก
 let LOADING = 0;
@@ -939,6 +939,12 @@ let AX = null;
 const agoTxt = ms => { if (!ms) return 'ไม่เคย'; const m = Math.round((Date.now() - ms) / 60000); return m < 1 ? 'เมื่อกี้' : m < 60 ? m + ' นาทีก่อน' : m < 1440 ? Math.round(m / 60) + ' ชม.ก่อน' : Math.round(m / 1440) + ' วันก่อน'; };
 const hmTxt = ms => new Date(ms + 7 * 3600e3).toISOString().replace(/^\d{4}-(\d\d)-(\d\d)T(\d\d:\d\d).*/, '$2/$1 $3');
 function openAdminX(force) { AX = AX || {}; if (!AX.data) { const c = LS.get('ww_c_adx'); if (c && c.ok) AX.data = c; } drawAdminX(); if (!force && AX.data && Date.now() - AXT < 120e3) return; call({ api: 'admin' }, r => { AX.data = r; if (r.ok) { AXT = Date.now(); LS.set('ww_c_adx', r); } drawAdminX(); }); }
+let CMDN = 30;
+function cmdUI(c) {
+  if (!c.length) return '<div class="meta">—</div>';
+  return c.slice(0, CMDN).map(x => `<div class="xrow"><div style="flex:1"><div class="meta">${esc(x.t)} · ${esc(x.who || '?')} · ${esc(x.at)} · ${x.err ? '❗ ' + esc(x.err) : x.ok === '✓' ? '✓ ตอบ' : '— เงียบ'}</div><div style="font-size:13px;word-break:break-word">${esc(x.m)}</div></div></div>`).join('')
+    + (c.length > CMDN ? `<button class="b" style="min-height:34px;font-size:13px;margin-top:6px" onclick="CMDN+=30;drawAdminX()">ดูเพิ่ม (${c.length - CMDN})</button>` : '');
+}
 function drawAdminX() {
   if (TAB !== 'admin') return; const d = AX && AX.data;
   if (!d) return $('main').innerHTML = '<div class="amain"><div class="meta">กำลังโหลด…</div></div>';
@@ -957,6 +963,7 @@ function drawAdminX() {
     <div class="lbl">🩺 งานตั้งเวลา</div>${jobs}
     <div class="lbl">🆕 ป้าย NEW วันนี้</div><div class="xrow"><div style="flex:1" class="meta">${R && R.pts ? 'ติดอยู่ ' + R.pts.filter(p => p.isNew).length + ' คน' : 'ปิดป้าย NEW ของทุกคนในวันนี้'}</div><button class="b" style="min-height:34px;font-size:13px" onclick="newClear(this)">🧹 ปิดทั้งหมด</button></div>
     <div class="lbl">🐞 error ล่าสุด</div>${errs}
+    <div class="lbl">💬 คำสั่งล่าสุด (3 วัน)</div>${cmdUI(d.cmds || [])}
     <div class="lbl">🔁 เพิ่มแล้วยกเลิกเร็ว (อาจพิมพ์ผิด · 14 วัน)</div>${(d.oops || []).length ? d.oops.map(o => `<div class="xrow"><div style="flex:1"><div class="meta">${hmTxt(o.t)} · ${esc(o.by)} · ยกเลิกหลัง ${o.mins} นาที</div><div style="font-size:13px">❌ ${esc(o.ward)} ${esc(o.task)}</div>${o.fix ? `<div style="font-size:13px;color:var(--g)">✅ ลงใหม่: ${esc(o.fix)}</div>` : ''}</div></div>`).join('') : '<div class="meta">ไม่มี 👍</div>'}
     <div class="lbl">📝 สิ่งที่ admin เปลี่ยนล่าสุด</div>${alog}
     <div class="lbl">👥 ผู้ใช้ (${d.users.length})</div>${users}
