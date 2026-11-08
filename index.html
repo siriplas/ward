@@ -18,7 +18,8 @@
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--tx);font-family:'IBM Plex Sans Thai','Noto Sans Thai',system-ui,-apple-system,sans-serif;font-size:15px;-webkit-text-size-adjust:100%}
 button,input{font-family:inherit;font-size:15px;color:inherit}
-input,textarea,select,.inp,textarea.inp{font-size:16px!important}   /* iPhone ซูมเองถ้าช่องพิมพ์เล็กกว่า 16px */
+input,textarea,select,.inp,textarea.inp{font-size:16px!important}
+button,.b,.gchip,a,label,[onclick]{touch-action:manipulation}   /* แตะติดกันเร็วๆ ไม่ซูมจอ */   /* iPhone ซูมเองถ้าช่องพิมพ์เล็กกว่า 16px */
 header{background:var(--bg);border-top:4px solid var(--hd);background-clip:padding-box;padding:12px 16px 0;position:sticky;top:0;z-index:5;border-bottom:1px solid var(--ln)}
 .top{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
 .top>div{display:flex;align-items:baseline;gap:8px;flex-direction:row-reverse}
@@ -210,8 +211,8 @@ input[type=date]{color-scheme:light dark}
 <button class="fab" id="fab" aria-label="เพิ่มงาน" onclick="if(TAB==='round'){openAdd()}else{openAddSheet()}">+</button>
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbw9dsYKGy8pELEBeIatNSjJLFv6W7MGjxhnjj584Z4BUlXN6WEfon-JID4f4eHR9wQ/exec';   // ← วาง URL ของบอท (ลงท้าย /exec)
-const APP_VER = 'v2.54';   // 🔖 ต้องตรงกับ SERVER_VER
-const APP_DATE = '08/11/69 13:55';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
+const APP_VER = 'v2.55';   // 🔖 ต้องตรงกับ SERVER_VER
+const APP_DATE = '08/11/69 19:40';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
 const TOK = new URLSearchParams(location.search).get('t') || '';
 // 🔄 แถบสีด้านบนวิ่งระหว่างโหลด / บันทึก
 let LOADING = 0;
@@ -630,7 +631,10 @@ function asAdd(more) {
   call({ api: 'run', cmd, off: OFF }, r => { PENDING--; if (r.error) return toast('❗ ' + (r.msg || 'เพิ่มไม่ได้')); toast((r.msg || '➕ เพิ่มแล้ว').split('\n')[0]); if (r.data) set(r.data); if (n !== OFF) delete DAYC[n]; });
   if (more) { if ($('astask')) { $('astask').value = ''; $('astask').focus(); } if ($('asfree')) $('asfree').value = ''; } else closePhoto();
 }
+// 🥊 ล็อกซูมระหว่างอยู่ในเกม (เปลี่ยน viewport → iPhone รีเซ็ตซูมที่ค้างด้วย) · ออกจากเกม = ซูมได้ปกติ
+function zoomLock(on) { const m = document.querySelector('meta[name=viewport]'); if (m) m.content = 'width=device-width, initial-scale=1' + (on ? ', maximum-scale=1, user-scalable=no' : ''); }
 function setTab(t, force) {
+  zoomLock(t === 'fight');
   TAB = t; document.body.classList.toggle('rtab', t === 'round'); document.body.classList.toggle('atab', t === 'admit' || t === 'admin' || t === 'fight'); stamp(); if (t === "round") $("ttl").textContent = "ราวด์"; if (t === 'admit') $('ttl').textContent = 'รับใหม่'; $('tabT').classList.toggle('on', t === 'task'); $('tabR').classList.toggle('on', t === 'round'); $('tabA').classList.toggle('on', t === 'admit'); $('tabX').classList.toggle('on', t === 'admin'); $('tabF').classList.toggle('on', t === 'fight');
   if (t === 'admit') { document.body.classList.remove('adding'); $('dnav').style.display = 'none'; return openAdmit(); }
   if (t === 'fight') { document.body.classList.remove('adding'); $('dnav').style.display = 'none'; $('ttl').textContent = 'สังเวียน'; return openFight(); }
@@ -1528,6 +1532,7 @@ function fightPlay(id) {
     <div class="meter" id="mt"><div class="zone"></div><div class="zone2"></div><i id="cur"></i></div>
     <div class="fmsg" id="fm">แตะตอนขีดอยู่<b>กลางเป้า</b> 🎯<br>ขึ้น <b>"กดรัว!"</b> = แตะให้เร็วที่สุด</div>
     <div id="fpick"></div></div>`;
+  zoomLock(true); const ar = $('arena'); ['gesturestart', 'gesturechange', 'dblclick'].forEach(ev => ar.addEventListener(ev, e => e.preventDefault(), { passive: false }));
   if (LS.get('ww_fhelp')) pickMove(); else fightHelp();
   $('arena').addEventListener('pointerdown', e => { if (e.target.closest('#fpick')) return; fightTap(); });
 }
