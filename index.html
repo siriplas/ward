@@ -211,8 +211,8 @@ input[type=date]{color-scheme:light dark}
 <button class="fab" id="fab" aria-label="เพิ่มงาน" onclick="if(TAB==='round'){openAdd()}else{openAddSheet()}">+</button>
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbw9dsYKGy8pELEBeIatNSjJLFv6W7MGjxhnjj584Z4BUlXN6WEfon-JID4f4eHR9wQ/exec';   // ← วาง URL ของบอท (ลงท้าย /exec)
-const APP_VER = 'v2.62';   // 🔖 ต้องตรงกับ SERVER_VER
-const APP_DATE = '10/11/69 01:40';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
+const APP_VER = 'v2.63';   // 🔖 ต้องตรงกับ SERVER_VER
+const APP_DATE = '10/11/69 01:45';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
 const TOK = new URLSearchParams(location.search).get('t') || '';
 // 🔄 แถบสีด้านบนวิ่งระหว่างโหลด / บันทึก
 let LOADING = 0;
@@ -581,7 +581,7 @@ function drawAddSheet() {
   $('pbox').innerHTML = `<div class="ehead"><div><h3>＋ เพิ่ม</h3></div><button class="b" onclick="closePhoto()">✕</button></div>${asSeg()}${AS.mode === 'photo' ? `<div class="meta">📷 ${AS.files.length} ไฟล์${AS.exif ? ' · ถ่ายวันที่ ' + esc(AS.exif) : ''} — เลือกคนไข้ (ต้องมี HN ในตาราง)</div>` : ''}
     ${AS.free ? `<div class="lbl">พิมพ์แบบไลน์ (ไม่ต้องมี ww)</div><input class="inp" id="asfree" placeholder="เช่น ฉก 7 ต สมชาย CBC" onkeydown="if(event.key==='Enter')asAdd()">`
     : AS.pt ? `<div class="aschosen"><b>${AS.pt.ward === 'ทั่วไป' && !AS.pt.name ? '📋 งานทั่วไป' : esc(firstName(AS.pt.name))}</b> <span class="meta">${AS.pt.adm ? 'รอ admit ' + thd(AS.pt.adm) : AS.pt.name ? esc(AS.pt.ward || 'ไม่มีในตาราง') : ''}</span><button class="b" style="margin-left:auto;min-height:32px" onclick="AS.pt=null;AS.q='';drawAddSheet();setTimeout(()=>$('asq')&&$('asq').focus(),50)">เปลี่ยน</button></div>`
-    : `<input class="inp" id="asq" placeholder="ค้นชื่อคนไข้ / HN" value="${esc(AS.q)}" oninput="AS.q=this.value;drawAddSheetKeep()">${list}`}
+    : `<input class="inp" id="asq" placeholder="ค้นชื่อคนไข้ / HN" value="${esc(AS.q)}" oninput="AS.q=this.value;drawAddSheetKeep()"><div style="height:55vh;overflow-y:auto;-webkit-overflow-scrolling:touch">${list}</div>`}
     ${AS.pt || AS.free ? `${AS.free ? '' : `<textarea class="inp" id="astask" rows="2" placeholder="งาน เช่น CBC, ตาม CXR" oninput="grow(this)"></textarea>`}
       <div class="lbl">ลงงานของ</div><div class="qr">${[0, 1, 2].map(n => `<button class="qrb${AS.off === n ? ' on' : ''}" onclick="AS.off=${n};drawAddSheetKeep()">${lab(n)}</button>`).join('')}<label class="qrb${[0, 1, 2].includes(AS.off) ? '' : ' on'}" style="position:relative">${[0, 1, 2].includes(AS.off) ? 'เลือกวัน' : offLabel(AS.off)}<input type="date" min="${isoOff(-7)}" max="${isoOff(30)}" value="${isoOff(AS.off)}" onchange="AS.off=Math.round((Date.parse(this.value+'T00:00:00Z')-todayUTC())/864e5);drawAddSheetKeep()" style="position:absolute;inset:0;opacity:0"></label></div>
       <label class="dschk" style="margin:4px 0"><input type="checkbox" ${AS.urg ? 'checked' : ''} onchange="AS.urg=this.checked"> 🔴 ด่วน</label>
