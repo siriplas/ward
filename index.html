@@ -1298,7 +1298,7 @@ function taskRow(t) {
   const nw = isNewT(t) ? '<span class="tag new">ใหม่</span>' : isNewR(t) ? '<span class="tag res">อัปเดต</span>' : '';
   let h = `<div id="task${t.no}" class="task${t.done ? ' done' : ''}${nw ? ' isnew' : ''}${POP === t.no && t.done ? ' pop' : ''}"><button class="row" onclick="toggle(${t.no})" ${t.done ? '' : `data-sw="${t.no}"`}>
     <span class="box"${t.done ? '' : ` onclick="event.stopPropagation();closeNo(${t.no}, '')" role="button" aria-label="ปิดงาน"`}>${t.done ? '✓' : ''}</span>
-    <span style="flex-grow:1;min-width:0"><div class="tt">${nw}${t.urgent ? '<span class="urg">ด่วน </span>' : ''}${esc(t.rest || t.task)}${t.from ? ` <span class="meta">· ${/consult/i.test(t.from) ? '📞consult' : '🆕รับใหม่'}</span>` : ''}</div>
+    <span style="flex-grow:1;min-width:0"><div class="tt">${nw}${t.urgent ? '<span class="urg">ด่วน </span>' : ''}${esc(t.rest || t.task)}</div>
     ${t.result ? `<div class="res${t.done ? '' : ' upd'}">→ ${esc(String(t.result).replace(/^\s*(→|->)\s*/, ''))}</div>` : ''}
     ${t.done ? thankRow(t) : ''}
     ${isOpen ? '' : '<!--'}<div class="meta">${t.no}. ${t.done ? 'ปิดโดย ' + esc(t.doneBy) + ' ' + esc(t.doneAt) : 'ลงโดย ' + esc(t.by)}</div>${isOpen ? '' : '-->'}</span>${isOpen ? '<span class="chev" aria-label="ปิด"><svg viewBox="0 0 24 24"><path d="M6 15l6-6 6 6"/></svg></span>' : ''}</button>`;
