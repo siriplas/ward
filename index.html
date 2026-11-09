@@ -211,8 +211,8 @@ input[type=date]{color-scheme:light dark}
 <button class="fab" id="fab" aria-label="เพิ่มงาน" onclick="if(TAB==='round'){openAdd()}else{openAddSheet()}">+</button>
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbw9dsYKGy8pELEBeIatNSjJLFv6W7MGjxhnjj584Z4BUlXN6WEfon-JID4f4eHR9wQ/exec';   // ← วาง URL ของบอท (ลงท้าย /exec)
-const APP_VER = 'v2.60';   // 🔖 ต้องตรงกับ SERVER_VER
-const APP_DATE = '10/11/69 01:30';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
+const APP_VER = 'v2.61';   // 🔖 ต้องตรงกับ SERVER_VER
+const APP_DATE = '10/11/69 01:45';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
 const TOK = new URLSearchParams(location.search).get('t') || '';
 // 🔄 แถบสีด้านบนวิ่งระหว่างโหลด / บันทึก
 let LOADING = 0;
@@ -538,6 +538,26 @@ function drawAddSheet() {
       <div class="meta" style="text-align:center">เลือกรูปก่อน แล้วค่อยเลือกคนไข้ · วันที่อ่านจากรูปให้เอง (แก้ได้)</div>`;
     return;
   }
+  // 1️⃣ เลือกประเภทก่อน (ลำดับเดียวกับ "ww รับใหม่ …" ในไลน์) · 🛏 ward = เลือกคนไข้จากตาราง · 🆕/📞 = กรอกชื่อ/HN/ward เอง
+  if (AS.mode === 'task' && !AS.free && !AS.pt && !AS.kind) {
+    const last = LS.get('ww_askind') || '', K = [['ward', '🛏', 'งานคนไข้ใน ward'], ['new', '🆕', 'รับใหม่'], ['consult', '📞', 'consult'], ['general', '📋', 'ทั่วไป']];
+    $('pbox').innerHTML = `<div class="ehead"><div><h3>＋ เพิ่ม</h3></div><button class="b" onclick="closePhoto()">✕</button></div>${asSeg()}
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px">${K.map(([k, i, l]) => `<button class="b${k === last ? ' p' : ''}" style="min-height:76px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:15px" onclick="asKind('${k}')"><span style="font-size:24px">${i}</span>${l}</button>`).join('')}</div>
+      <div style="text-align:center;margin-top:10px"><button class="linkb" onclick="AS.free=true;drawAddSheet()">พิมพ์แบบไลน์แทน</button></div>`;
+    return;
+  }
+  if (AS.mode === 'task' && !AS.free && (AS.kind === 'new' || AS.kind === 'consult')) {
+    const nw = AS.kind === 'new', today = isoOff(0), plan = nw ? ((AD && AD.plan) || LS.get('ww_c_adm') || []).filter(a => !a.st && a.date >= today).slice(0, 8) : [];
+    $('pbox').innerHTML = `<div class="ehead"><div><h3>${nw ? '🆕 รับใหม่' : '📞 consult'}</h3><div class="meta">${nw ? 'เหมือนพิมพ์ ww รับใหม่ …' : 'เหมือนพิมพ์ ww consult …'}</div></div><button class="b" onclick="closePhoto()">✕</button></div>
+      ${plan.length ? `<div class="lbl">จากตาราง admit</div><div class="aswrap">${plan.map((a, i) => `<button class="aspt" onclick="asPlanFill(${i})"><b>${esc(firstName(a.name))}</b> <span class="meta">${thd(a.date)}</span></button>`).join('')}</div>` : ''}
+      <div class="egrid"><label class="ef"><span class="lbl">ชื่อ *</span><input class="inp" id="ak_name" value="${esc(AS.kn || '')}"></label><label class="ef"><span class="lbl">HN</span><input class="inp" id="ak_hn" inputmode="numeric" value="${esc(AS.kh || '')}"></label>
+      <label class="ef w"><span class="lbl">ward (ไม่ใส่ก็ได้)</span><input class="inp" id="ak_ward" placeholder="เช่น ฉก 7ต" value="${esc(AS.kw || '')}"></label></div>
+      <textarea class="inp" id="astask" rows="2" placeholder="${nw ? 'งาน เช่น CBC, ดูแผล' : 'เรื่อง เช่น ดู pressure sore'}" oninput="grow(this)"></textarea>
+      <label class="dschk" style="margin:4px 0"><input type="checkbox" ${AS.urg ? 'checked' : ''} onchange="AS.urg=this.checked"> 🔴 ด่วน</label>
+      <div class="btns"><button class="b p" onclick="asAdd()">เพิ่ม</button><button class="b" onclick="AS.kind=null;drawAddSheet()">‹ ประเภท</button></div>`;
+    AS.planList = plan; setTimeout(() => $('ak_name') && !$('ak_name').value && $('ak_name').focus(), 50);
+    return;
+  }
   const pts = (R && R.pts) || [], q = AS.q.trim().toLowerCase(), me = LS.get('ww_myteam') || '', rec = LS.get(AS.mode === 'photo' ? 'ww_recent_ph' : 'ww_recent') || [];
   const lab = n => n === 0 ? 'วันนี้' : n === 1 ? 'พรุ่งนี้' : n === 2 ? 'มะรืน' : offLabel(n);
   const pick = (p, extra) => `<button class="aspt${AS.pt && AS.pt.name === p.name && AS.pt.ward === p.ward ? ' on' : ''}" onclick="asPick('${esc(p.name).replace(/'/g, '')}','${esc(p.ward).replace(/'/g, '')}')"><b>${esc(firstName(p.name))}</b> <span class="meta">${esc(p.ward)}${extra || ''}</span></button>`;
@@ -569,6 +589,8 @@ function drawAddSheet() {
     <div style="text-align:center;margin-top:4px"><button class="linkb" onclick="AS.free=!AS.free;drawAddSheet()">${AS.free ? 'กลับไปเลือกคนไข้' : 'พิมพ์แบบไลน์แทน'}</button></div>`;
 }
 function drawAddSheetKeep() { const t = $('astask') ? $('astask').value : null, f = document.activeElement && document.activeElement.id; drawAddSheet(); if (t != null && $('astask')) $('astask').value = t; if (f && $(f)) { $(f).focus(); const e = $(f); if (e.setSelectionRange && e.value) try { e.setSelectionRange(e.value.length, e.value.length); } catch (x) {} } }
+function asKind(k) { LS.set('ww_askind', k); if (k === 'general') { AS.kind = k; return asPick('', 'ทั่วไป'); } AS.kind = k; drawAddSheet(); if (k === 'ward') setTimeout(() => $('asq') && $('asq').focus(), 50); }
+function asPlanFill(i) { const a = (AS.planList || [])[i]; if (!a) return; AS.kn = firstName(a.name); AS.kh = a.hn || ''; AS.kw = a.ward || ''; const tk = $('astask') ? $('astask').value : ''; drawAddSheet(); if ($('astask')) { $('astask').value = tk; $('astask').focus(); } }
 function asPick(name, ward) {
   if (AS.mode === 'photo') { const i = R.pts.findIndex(p => p.name === name && p.ward === ward); if (i < 0) return toast('ไม่พบคนไข้ในตาราง'); return asPhotoGo(i); }
   AS.pt = { name, ward }; drawAddSheet(); setTimeout(() => $('astask') && $('astask').focus(), 50); }
@@ -621,6 +643,9 @@ function asPhotoGo(i) {
 function asAdd(more) {
   let body;
   if (AS.free) { body = ($('asfree').value || '').trim(); if (!body) return toast('พิมพ์งานก่อน'); }
+  else if (AS.kind === 'new' || AS.kind === 'consult') { const nm = ($('ak_name').value || '').trim(), task = ($('astask').value || '').trim();
+    if (!nm) return toast('ใส่ชื่อคนไข้ก่อน'); if (!task) return toast('พิมพ์งานก่อน');
+    body = [AS.kind === 'new' ? 'รับใหม่' : 'consult', nm, ($('ak_hn').value || '').trim(), ($('ak_ward').value || '').trim(), task].filter(Boolean).join(' '); AS.kn = AS.kh = AS.kw = ''; }
   else { const task = ($('astask').value || '').trim(); if (!task) return toast('พิมพ์งานก่อน');
     const p = AS.pt, nm = firstName(p.name);
     body = !p.name ? task : (!p.ward || /รอ\s*admit/i.test(p.ward) ? `${nm} ${task}` : `${p.ward} ${nm} ${task}`);
