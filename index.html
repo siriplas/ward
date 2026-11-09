@@ -211,8 +211,8 @@ input[type=date]{color-scheme:light dark}
 <button class="fab" id="fab" aria-label="เพิ่มงาน" onclick="if(TAB==='round'){openAdd()}else{openAddSheet()}">+</button>
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbw9dsYKGy8pELEBeIatNSjJLFv6W7MGjxhnjj584Z4BUlXN6WEfon-JID4f4eHR9wQ/exec';   // ← วาง URL ของบอท (ลงท้าย /exec)
-const APP_VER = 'v2.61';   // 🔖 ต้องตรงกับ SERVER_VER
-const APP_DATE = '10/11/69 01:45';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
+const APP_VER = 'v2.62';   // 🔖 ต้องตรงกับ SERVER_VER
+const APP_DATE = '10/11/69 01:40';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
 const TOK = new URLSearchParams(location.search).get('t') || '';
 // 🔄 แถบสีด้านบนวิ่งระหว่างโหลด / บันทึก
 let LOADING = 0;
@@ -1318,6 +1318,9 @@ function byPatient(list) {
     const k = t.pt + '|' + t.ward; let g = groups.find(x => x.k === k); if (!g) groups.push(g = { k, pt: t.pt, ward: t.ward, items: [] }); g.items.push(t); });
   return groups.map(g => `<div class="card"><div class="pthead">${esc(g.pt)}<span>${esc(g.ward)}</span></div>${g.items.map(taskRow).join('')}</div>`).join('');
 }
+function delDone(no, bt) {   // admin: ลบงานที่ปิดแล้ว (กด 2 ครั้ง)
+  if (ARM !== 'del' + no) { ARM = 'del' + no; bt.textContent = 'กดอีกครั้ง = ลบถาวร'; return; } ARM = null; bt.disabled = true;
+  run('ww ' + (OFF ? offLabel(OFF) + ' ' : '') + 'ลบ ' + no, () => { D.tasks = D.tasks.filter(x => x.no !== no); }); }
 function taskRow(t) {
   const isOpen = OPEN === t.no;
   const nw = isNewT(t) ? '<span class="tag new">ใหม่</span>' : isNewR(t) ? '<span class="tag res">อัปเดต</span>' : '';
@@ -1346,7 +1349,7 @@ function taskPanel(t) {
     <input class="inp" id="res${t.no}" placeholder="${t.result ? 'เพิ่มผลใหม่ (ผลเดิมยังอยู่)' : 'เพิ่มผล เช่น Hb 10'}">
     <div class="btns">
       <button class="b p" onclick="addRes(${t.no})">เพิ่มผล</button>
-      <button class="b" onclick="run('ww เปิด ${t.no}', () => Object.assign(T(${t.no}), { done: false }))">↩️ เปิดงานอีกครั้ง</button>
+      <button class="b" onclick="run('ww เปิด ${t.no}', () => Object.assign(T(${t.no}), { done: false }))">↩️ เปิดงานอีกครั้ง</button>${R && R.admin ? `<button class="b" onclick="delDone(${t.no}, this)">🗑 ลบงานนี้</button>` : ''}
     </div></div>`;
   return h;
 }
