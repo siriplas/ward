@@ -212,8 +212,8 @@ input[type=date]{color-scheme:light dark}
 <button class="fab" id="fab" aria-label="เพิ่มงาน" onclick="if(TAB==='round'){openAdd()}else{openAddSheet()}">+</button>
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbw9dsYKGy8pELEBeIatNSjJLFv6W7MGjxhnjj584Z4BUlXN6WEfon-JID4f4eHR9wQ/exec';   // ← วาง URL ของบอท (ลงท้าย /exec)
-const APP_VER = 'v2.79';   // 🔖 ต้องตรงกับ SERVER_VER
-const APP_DATE = '11/11/69 00:15';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
+const APP_VER = 'v2.80';   // 🔖 ต้องตรงกับ SERVER_VER
+const APP_DATE = '11/11/69 00:20';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
 const TOK = new URLSearchParams(location.search).get('t') || '';
 // 🔄 แถบสีด้านบนวิ่งระหว่างโหลด / บันทึก
 let LOADING = 0;
@@ -497,7 +497,7 @@ let NT = null;
 function openNotice() { NT = { edit: null, arm: null }; drawNotice(); $('psheet').style.display = 'flex'; }
 function drawNotice() {
   const list = D.noticeInfo || (D.notices || []).map((t, i) => ({ k: i + 1, text: t, raw: t, by: '', at: '', mine: false }));
-  $('pbox').innerHTML = (NT.inAdd ? `<div class="ehead"><div><h3>＋ เพิ่ม</h3></div><button class="b" onclick="closePhoto()">✕</button></div>${asSeg()}` : '') + `<div class="ehead"${NT.inAdd ? ' style="display:none"' : ''}><div><h3>📢 ประกาศ</h3><div class="meta">${OFF ? esc(D.day) : 'วันนี้ · ' + esc(D.day)}</div></div><button class="b" onclick="closePhoto()">✕</button></div>
+  $('pbox').innerHTML = (NT.inAdd ? `<div class="ehead"><div><h3>＋ เพิ่ม</h3>${lateNote()}</div><button class="b" onclick="closePhoto()">✕</button></div>${asSeg()}` : '') + `<div class="ehead"${NT.inAdd ? ' style="display:none"' : ''}><div><h3>📢 ประกาศ</h3><div class="meta">${OFF ? esc(D.day) : 'วันนี้ · ' + esc(D.day)}</div></div><button class="b" onclick="closePhoto()">✕</button></div>
     ${list.length ? list.map(n => NT.edit === n.k ? `<div class="adr"><textarea class="inp adi" id="ntedit" rows="2">${esc(n.raw)}</textarea><div class="adg"><button class="b p" style="flex:2" onclick="ntAct('edit', ${n.k})">บันทึก</button><button class="b r" style="flex:1" onclick="ntAct('del', ${n.k})">${NT.arm === n.k ? 'กดอีกครั้ง = ลบ' : 'ลบ'}</button><button class="b" style="flex:1" onclick="NT.edit=null;drawNotice()">ปิด</button></div></div>`
       : `<div class="xrow"${n.mine ? ` style="cursor:pointer" onclick="NT.edit=${n.k};NT.arm=null;drawNotice()"` : ''}><div style="flex:1"><div>${esc(n.text)}</div><div class="meta">${esc(n.by)}${n.at ? ' · ' + esc(n.at) : ''}</div></div>${n.mine ? '<span class="meta">แก้ ›</span>' : ''}</div>`).join('') : '<div class="meta">ยังไม่มีประกาศ</div>'}
     <div class="lbl" style="margin-top:6px">แจ้งใหม่</div>
@@ -523,6 +523,8 @@ let AS = null;
 const firstName = s => String(s || '').trim().split(/\s+/)[0];
 function openAddSheet() { if (!(AD && AD.plan) && !LS.get('ww_c_adm')) call({ api: 'admits' }, r => { if (r && r.rows) { LS.set('ww_c_adm', r.rows); if (AS && !AS.pt) drawAddSheetKeep(); } }); AS = { mode: 'task', pt: null, q: '', off: OFF, urg: false, free: false }; drawAddSheet(); $('psheet').style.display = 'flex'; setTimeout(() => { const e = $('asq'); if (e) e.focus(); }, 60); }
 function asSeg() { return `<div class="seg2">${[['task', '📝 งาน'], ['notice', '📢 ประกาศ']].concat(R && R.canEdit ? [['photo', '📷 รูป']] : []).map(([m, l]) => `<button class="${AS.mode === m ? 'on' : ''}" onclick="AS.mode='${m}';drawAddSheet()">${l}</button>`).join('')}</div>`; }
+function lateNote() {   // 00:00–06:00 งานยังลงวันก่อน (เหมือนบอท) → บอกให้รู้ · ย้ายได้จากหน้างาน
+  const h = new Date(Date.now() + 7 * 3600e3).getUTCHours(); return OFF === 0 && h < 6 ? `<div class="meta">🌙 ยังไม่ 6 โมง งานจะลงวันที่ ${offLabel(0)}</div>` : ''; }
 function drawAddSheet() {
   if (!AS) return;
   if (AS.mode === 'notice') { NT = { edit: null, arm: null, inAdd: true }; return drawNotice(); }
@@ -534,7 +536,7 @@ function drawAddSheet() {
     return;
   }
   if (AS.mode === 'photo' && !AS.files) {   // 📷 ขั้น 1: เลือกรูปก่อน
-    $('pbox').innerHTML = `<div class="ehead"><div><h3>＋ เพิ่ม</h3></div><button class="b" onclick="closePhoto()">✕</button></div>${asSeg()}
+    $('pbox').innerHTML = `<div class="ehead"><div><h3>＋ เพิ่ม</h3>${lateNote()}</div><button class="b" onclick="closePhoto()">✕</button></div>${asSeg()}
       <label class="b p" style="display:flex;align-items:center;justify-content:center;cursor:pointer;min-height:56px">🖼 เลือกรูป / วิดีโอ (หลายรูปได้)<input type="file" accept="image/*,video/*" multiple style="display:none" onchange="asFiles(this.files)"></label>
       <div class="meta" style="text-align:center">เลือกรูปก่อน แล้วค่อยเลือกคนไข้ · วันที่อ่านจากรูปให้เอง (แก้ได้)</div>`;
     return;
@@ -542,7 +544,7 @@ function drawAddSheet() {
   // 1️⃣ เลือกประเภทก่อน (ลำดับเดียวกับ "ww รับใหม่ …" ในไลน์) · 🛏 ward = เลือกคนไข้จากตาราง · 🆕/📞 = กรอกชื่อ/HN/ward เอง
   if (AS.mode === 'task' && !AS.free && !AS.pt && !AS.kind) {
     const last = LS.get('ww_askind') || '', K = [['ward', '🛏', 'งานคนไข้ใน ward'], ['new', '🆕', 'รับใหม่'], ['consult', '📞', 'consult'], ['general', '📋', 'ทั่วไป']];
-    $('pbox').innerHTML = `<div class="ehead"><div><h3>＋ เพิ่ม</h3></div><button class="b" onclick="closePhoto()">✕</button></div>${asSeg()}
+    $('pbox').innerHTML = `<div class="ehead"><div><h3>＋ เพิ่ม</h3>${lateNote()}</div><button class="b" onclick="closePhoto()">✕</button></div>${asSeg()}
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px">${K.map(([k, i, l]) => `<button class="b${k === last ? ' p' : ''}" style="min-height:76px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:15px" onclick="asKind('${k}')"><span style="font-size:24px">${i}</span>${l}</button>`).join('')}</div>
       <div style="text-align:center;margin-top:10px"><button class="linkb" onclick="AS.free=true;drawAddSheet()">พิมพ์แบบไลน์แทน</button></div>`;
     return;
@@ -579,7 +581,7 @@ function drawAddSheet() {
     }
   }
   const other = AS.off !== 0;
-  $('pbox').innerHTML = `<div class="ehead"><div><h3>＋ เพิ่ม</h3></div><button class="b" onclick="closePhoto()">✕</button></div>${asSeg()}${AS.mode === 'photo' ? `<div class="meta">📷 ${AS.files.length} ไฟล์${AS.exif ? ' · ถ่ายวันที่ ' + esc(AS.exif) : ''} — เลือกคนไข้ (ต้องมี HN ในตาราง)</div>` : ''}
+  $('pbox').innerHTML = `<div class="ehead"><div><h3>＋ เพิ่ม</h3>${lateNote()}</div><button class="b" onclick="closePhoto()">✕</button></div>${asSeg()}${AS.mode === 'photo' ? `<div class="meta">📷 ${AS.files.length} ไฟล์${AS.exif ? ' · ถ่ายวันที่ ' + esc(AS.exif) : ''} — เลือกคนไข้ (ต้องมี HN ในตาราง)</div>` : ''}
     ${AS.free ? `<div class="lbl">พิมพ์แบบไลน์ (ไม่ต้องมี ww)</div><input class="inp" id="asfree" placeholder="เช่น ฉก 7 ต สมชาย CBC" onkeydown="if(event.key==='Enter')asAdd()">`
     : AS.pt ? `<div class="aschosen"><b>${AS.pt.ward === 'ทั่วไป' && !AS.pt.name ? '📋 งานทั่วไป' : esc(firstName(AS.pt.name))}</b> <span class="meta">${AS.pt.adm ? 'รอ admit ' + thd(AS.pt.adm) : AS.pt.name ? esc(AS.pt.ward || 'ไม่มีในตาราง') : ''}</span><button class="b" style="margin-left:auto;min-height:32px" onclick="AS.pt=null;AS.q='';drawAddSheet();setTimeout(()=>$('asq')&&$('asq').focus(),50)">เปลี่ยน</button></div>`
     : `<div style="max-height:55vh;overflow-y:auto;display:flex;flex-direction:column-reverse"><div>${list}</div></div><input class="inp" id="asq" placeholder="ค้นชื่อคนไข้ / HN" value="${esc(AS.q)}" oninput="AS.q=this.value;drawAddSheetKeep()" style="margin-top:8px">`}
