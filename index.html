@@ -212,8 +212,8 @@ input[type=date]{color-scheme:light dark}
 <button class="fab" id="fab" aria-label="เพิ่มงาน" onclick="if(TAB==='round'){openAdd()}else{openAddSheet()}">+</button>
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbw9dsYKGy8pELEBeIatNSjJLFv6W7MGjxhnjj584Z4BUlXN6WEfon-JID4f4eHR9wQ/exec';   // ← วาง URL ของบอท (ลงท้าย /exec)
-const APP_VER = 'v2.88';   // 🔖 ต้องตรงกับ SERVER_VER
-const APP_DATE = '11/11/69 01:05';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
+const APP_VER = 'v2.89';   // 🔖 ต้องตรงกับ SERVER_VER
+const APP_DATE = '11/11/69 01:10';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
 const TOK = new URLSearchParams(location.search).get('t') || '';
 // 🔄 แถบสีด้านบนวิ่งระหว่างโหลด / บันทึก
 let LOADING = 0;
@@ -248,11 +248,19 @@ function eqNext() {
 }
 setTimeout(() => { const lq = LS.get('ww_eq') || []; if (lq.length) { LS.set('ww_out', (LS.get('ww_out') || []).concat(lq.map(q => ({ q, day: dayKey0(), at: Date.now() })))); LS.set('ww_eq', []); outBadge(); setTimeout(outFlush, 2000); } }, 500);
 const QACT = { add: 'เพิ่มคนไข้', move: 'ย้าย ward', remove: 'ลบคนไข้', toggle: 'ไม่ต้องดู', team: 'เปลี่ยนคนดู' };
+let RQ = [], RQB = 0, EQGEN = 0;
+const READ = { data: 1, round: 1, admin: 1, adminrows: 1, fights: 1, admits: 1 };
+let SERP = Promise.resolve(); const ser = f => (SERP = SERP.then(f, f));   // POST เขียนข้อมูล: ทีละคำสั่ง
+function rqNext() {
+  if (RQB || !RQ.length) return; RQB = 1; const x = RQ[0];
+  call(Object.assign({}, x.q, { _rq: 1 }), r => { RQ.shift(); RQB = 0; try { x.ok(r); } catch (e) {} rqNext(); });
+}
 const call = (q, ok) => {
-  if (WRITE[q.api] && !navigator.onLine) return outPush(q);
-  if (q.api === 'edit') { EQ.push({ q, ok }); eqSave(); eqPill(); return eqNext(); }
-  busyOn(); return fetch(API + '?' + new URLSearchParams(Object.assign({ t: TOK }, q))).then(r => r.json()).then(d => { busyOff(); ok(d); })
-    .catch(e => { busyOff(); if (WRITE[q.api] && (!navigator.onLine || e instanceof TypeError)) outPush(q); else fail(e); });
+  if (WRITE[q.api] && !navigator.onLine) { if (q._rq) { RQ.shift(); RQB = 0; setTimeout(rqNext, 0); const q3 = Object.assign({}, q); delete q3._rq; return outPush(q3); } return outPush(q); }
+  if (q.api === 'edit') { EQ.push({ q, ok }); EQGEN++; eqSave(); eqPill(); return eqNext(); }
+  if (!READ[q.api] && !q._rq) { RQ.push({ q, ok }); return rqNext(); }   // ทุกคำสั่งเขียน: ส่งทีละคำสั่ง (กดรัวๆ ไม่ชนล็อกเซิร์ฟเวอร์) · แก้ราวด์มีคิว EQ ของตัวเอง
+  busyOn(); const q2 = Object.assign({}, q); delete q2._rq; return fetch(API + '?' + new URLSearchParams(Object.assign({ t: TOK }, q2))).then(r => r.json()).then(d => { busyOff(); ok(d); })
+    .catch(e => { busyOff(); if (q._rq) { RQ.shift(); RQB = 0; setTimeout(rqNext, 0); } const q3 = Object.assign({}, q); delete q3._rq; if (WRITE[q.api] && (!navigator.onLine || e instanceof TypeError)) outPush(q3); else fail(e); });
 };
 // 📴 เน็ตหลุด → เก็บคำสั่งไว้ในเครื่อง แล้วส่งเองเมื่อเน็ตกลับ (เฉพาะวันเดียวกัน · ข้ามตี 6 = ทิ้ง กันปิดงานผิดวัน)
 const dayKey = () => new Date(Date.now() + 7 * 3600e3 - 6 * 3600e3).toISOString().slice(0, 10);
@@ -476,7 +484,7 @@ function run(cmd, patch) {
     PENDING--;
     if (r.error) return set(r);
     if (/^❗/.test(r.msg || '')) toast(r.msg); else if (!patch) toast(r.msg);
-    if (my === SEQ) set(r.data); else render();
+    if (my === SEQ && RQ.length <= 1) set(r.data); else render();   // ยังมีคำสั่งรอในคิว → ไม่ทับหน้าจอ (งานที่เพิ่งกดจะไม่เด้งกลับ)
   });
 }
 const nowHM = () => new Date(Date.now() + 7 * 3600e3).toISOString().slice(11, 16);
@@ -670,7 +678,8 @@ function setTab(t, force) {
   if (t === 'round') document.body.classList.remove('adding'); $('dnav').style.display = t === 'task' ? 'flex' : 'none';
   if (t === 'round') { if (R) renderRound(); else { $('main').innerHTML = '<div class="empty">กำลังโหลด…</div>'; }
     if (R && !force && LASTR && LASTR >= last5am()) return;   // ⚡ โหลดไว้แล้ว ไม่ต้องดึงใหม่
-    call({ api: 'round' }, r => { if (!r.error) { LASTR = Date.now(); stamp(); } if (r.error) { $('main').innerHTML = '<div class="empty">' + (r.error === 'expired' ? '🔒 ลิงก์หมดอายุ' : '❗ อ่านตารางราวด์ไม่ได้') + '</div>'; return; } setR(r); if (TAB === 'round') renderRound(); }); }
+    const g0 = EQGEN; call({ api: 'round' }, r => { if (!r.error && (EQ.length || EQGEN !== g0)) return;   // มีการแก้ระหว่างโหลด → ไม่ทับ (โหลดใหม่เองหลังคิวหมด)
+      if (!r.error) { LASTR = Date.now(); stamp(); } if (r.error) { $('main').innerHTML = '<div class="empty">' + (r.error === 'expired' ? '🔒 ลิงก์หมดอายุ' : '❗ อ่านตารางราวด์ไม่ได้') + '</div>'; return; } setR(r); if (TAB === 'round') renderRound(); }); }
   else if (D) render();
 }
 const EVE_RE = /ราว[นด]์?\s*เย็น/;   // "ราวน์เย็น" / "ราวด์เย็น"
@@ -907,7 +916,7 @@ async function admEditSave(row, cancel) {
   const p = (AD.plan || []).find(x => x.row === row); if (!p) return;
   if (cancel && AD.arm !== row) { AD.arm = row; return drawAdmit(); }
   const vals = {}; ['name', 'hn', 'date', 'staff', 'sec', 'dx', 'proc'].forEach(k => { const e = $('ae_' + k); vals[k] = e ? e.value.trim() : p[k]; }); vals.ds = !!($('ae_ds') || {}).checked;
-  busyOn(); let r; try { r = await (await fetch(API, { method: 'POST', body: JSON.stringify({ app: 'admitedit', t: TOK, row, origName: p.name, origDate: p.date, cancel: !!cancel, vals }) })).json(); } catch (e) { r = { msg: 'ส่งไม่ได้ ลองใหม่' }; } finally { busyOff(); }
+  busyOn(); let r; try { r = await ser(() => fetch(API, { method: 'POST', body: JSON.stringify({ app: 'admitedit', t: TOK, row, origName: p.name, origDate: p.date, cancel: !!cancel, vals }) }).then(x => x.json())); } catch (e) { r = { msg: 'ส่งไม่ได้ ลองใหม่' }; } finally { busyOff(); }
   toast(r.ok ? r.msg : '❗ ' + (r.msg || 'ไม่สำเร็จ')); if (r.ok) { AD.edit = null; AD.arm = 0; openAdmit(true); }
 }
 // 📐 หาเส้นตารางจากรูป แล้วทำรูปใหม่ "ช่องละบรรทัด" มีป้าย R<แถว>C<คอลัมน์> นำหน้า → OCR ของ Google อ่านทีละบรรทัด → รู้ว่าข้อความอยู่ช่องไหนแน่นอน
@@ -989,7 +998,7 @@ async function admitSave() {
   const bad = rows.find(r => !String(r.name).trim() || !/^\d{4}-\d\d-\d\d$/.test(r.date) || (r.hn && !/^\d{7,8}$/.test(String(r.hn).trim())));
   if (bad) return toast('❗ ตรวจแถว ' + (bad.name || '(ไม่มีชื่อ)') + ': ต้องมีชื่อ วันที่ และ HN 7–8 หลัก');
   s.busy = true; drawAdmit();
-  busyOn(); let r; try { r = await (await fetch(API, { method: 'POST', body: JSON.stringify({ app: 'admitsave', t: TOK, rows }) })).json(); } catch (e) { r = { error: 'msg', msg: 'ส่งไม่ได้ ลองใหม่' }; } finally { busyOff(); }
+  busyOn(); let r; try { r = await ser(() => fetch(API, { method: 'POST', body: JSON.stringify({ app: 'admitsave', t: TOK, rows }) }).then(x => x.json())); } catch (e) { r = { error: 'msg', msg: 'ส่งไม่ได้ ลองใหม่' }; } finally { busyOff(); }
   s.busy = false;
   if (!r.ok) { toast('❗ ' + (r.msg || 'บันทึกไม่ได้')); return drawAdmit(); }
   toast(r.msg); R = null; AD.step = 'list'; openAdmit(true);
@@ -1061,7 +1070,7 @@ async function roomPick(file, bt, k) {
     const bm = await createImageBitmap(file), s = Math.min(1, 2000 / Math.max(bm.width, bm.height)), c = document.createElement('canvas');
     c.width = Math.round(bm.width * s); c.height = Math.round(bm.height * s); c.getContext('2d').drawImage(bm, 0, 0, c.width, c.height);
     const blob = await new Promise(res => c.toBlob(res, 'image/jpeg', 0.85));
-    busyOn(); let r; try { r = await (await fetch(API, { method: 'POST', body: JSON.stringify({ app: 'roomimg', kind: k || 'room', t: TOK, data: await b64(blob) }) })).json(); } finally { busyOff(); }
+    busyOn(); let r; try { const d64 = await b64(blob); r = await ser(() => fetch(API, { method: 'POST', body: JSON.stringify({ app: 'roomimg', kind: k || 'room', t: TOK, data: d64 }) }).then(x => x.json())); } finally { busyOff(); }
     toast(r.ok ? r.msg : '❗ ' + (r.msg || 'ไม่สำเร็จ')); if (r.ok) loadRooms(true);
   } catch (e) { toast('❗ ส่งรูปไม่ได้ ลองใหม่'); }
   bt && (bt.style.opacity = '');
