@@ -29,7 +29,7 @@ h1{margin:0;font-size:20px;font-weight:700}
 .pill:before{content:'';display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--or);margin-right:6px}
 .rf{width:36px;height:36px;border:0;border-radius:50%;background:var(--bg2);color:var(--tx2);display:flex;align-items:center;justify-content:center}
 .rf svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.rf.spin svg{animation:sp 1s linear infinite}@keyframes sp{to{transform:rotate(360deg)}}
+.rf.spin svg,body.loading .rf svg{animation:sp 1s linear infinite}@keyframes sp{to{transform:rotate(360deg)}}
 .loadbar{position:fixed;top:0;left:0;right:0;height:4px;z-index:7;pointer-events:none;opacity:0;transition:opacity .2s;background:linear-gradient(90deg,transparent 0,rgba(255,255,255,.85) 50%,transparent 100%);background-size:40% 100%;background-repeat:no-repeat}
 body.loading .loadbar{opacity:1;animation:lb 1s ease-in-out infinite}
 @keyframes lb{from{background-position:-40% 0}to{background-position:140% 0}}
@@ -212,8 +212,8 @@ input[type=date]{color-scheme:light dark}
 <button class="fab" id="fab" aria-label="เพิ่มงาน" onclick="if(TAB==='round'){openAdd()}else{openAddSheet()}">+</button>
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbw9dsYKGy8pELEBeIatNSjJLFv6W7MGjxhnjj584Z4BUlXN6WEfon-JID4f4eHR9wQ/exec';   // ← วาง URL ของบอท (ลงท้าย /exec)
-const APP_VER = 'v2.83';   // 🔖 ต้องตรงกับ SERVER_VER
-const APP_DATE = '11/11/69 00:35';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
+const APP_VER = 'v2.84';   // 🔖 ต้องตรงกับ SERVER_VER
+const APP_DATE = '11/11/69 00:40';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
 const TOK = new URLSearchParams(location.search).get('t') || '';
 // 🔄 แถบสีด้านบนวิ่งระหว่างโหลด / บันทึก
 let LOADING = 0;
