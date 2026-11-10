@@ -212,8 +212,8 @@ input[type=date]{color-scheme:light dark}
 <button class="fab" id="fab" aria-label="เพิ่มงาน" onclick="if(TAB==='round'){openAdd()}else{openAddSheet()}">+</button>
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbw9dsYKGy8pELEBeIatNSjJLFv6W7MGjxhnjj584Z4BUlXN6WEfon-JID4f4eHR9wQ/exec';   // ← วาง URL ของบอท (ลงท้าย /exec)
-const APP_VER = 'v2.89';   // 🔖 ต้องตรงกับ SERVER_VER
-const APP_DATE = '11/11/69 01:10';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
+const APP_VER = 'v2.90';   // 🔖 ต้องตรงกับ SERVER_VER
+const APP_DATE = '11/11/69 01:20';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
 const TOK = new URLSearchParams(location.search).get('t') || '';
 // 🔄 แถบสีด้านบนวิ่งระหว่างโหลด / บันทึก
 let LOADING = 0;
@@ -322,13 +322,16 @@ const short = b => String(b).replace(/^ตึก\s*/, '');
 
 // ⚡ เปลี่ยนวัน: ขึ้นวันที่ใหม่ + "กำลังโหลด…" ทันที · วันที่เคยเปิดแล้วโชว์จากที่จำไว้ก่อน · โหลดวันข้างๆ รอไว้
 const DAYC = {};
+const isNight = () => new Date(Date.now() + 7 * 3600e3).getUTCHours() < 6;   // 00:00–06:00 ยังนับเป็นวันก่อน
+const dm = n => offLabel(n).replace(/\/\d+$/, '');
+const dayNames = () => isNight() ? { '-1': 'เมื่อวาน', '0': 'เวรนี้', '1': 'เช้านี้' } : { '-1': 'เมื่อวาน', '0': 'วันนี้', '1': 'พรุ่งนี้' };
 const offLabel = n => { const d = new Date(todayUTC() + n * 864e5); return `${d.getUTCDate()}/${d.getUTCMonth() + 1}/${(d.getUTCFullYear() + 543) % 100}`; };
 function load() {
   $('count').textContent = '…';
   const want = OFF;
   if (DAYC[want] && (!D || D.off !== want)) { D = DAYC[want]; render(); }
   else if (!D || D.off !== want) {
-    const names = { 0: 'วันนี้', 1: 'พรุ่งนี้', '-1': 'เมื่อวาน' };
+    const names = dayNames();
     $('date').textContent = offLabel(want); $('ttl').textContent = 'งาน' + (names[want] ? names[want] : want < 0 ? ` ${-want} วันก่อน` : ` อีก ${want} วัน`);
     const md = $('dnav').querySelector('.mid'); if (md && md.firstChild) md.firstChild.textContent = offLabel(want) + ' · กำลังโหลด… ';
     $('main').innerHTML = `<div class="empty"><div class="spin"></div>กำลังโหลดงาน ${offLabel(want)}…</div>`;
@@ -475,12 +478,13 @@ function toast(m) { if (!m) return; const t = $('toast'); t.textContent = m; t.s
 // ⚡ ตอบสนองทันที: แก้บนจอก่อน (patch) แล้วค่อยส่งให้บอท ; ผลจากบอทมาทีหลังจะแทนข้อมูลบนจอ
 let SEQ = 0, PENDING = 0;
 function run(cmd, patch) {
+  const tn = cmd.match(/^ww \S+ #?(\d+)\b/), tt = tn && D && T(Number(tn[1])), TID = tt && tt.id;   // ID งาน (ก่อน patch ลบออกจากรายการ) → เซิร์ฟเวอร์เช็กว่าเลขข้อยังเป็นงานเดิม
   if (PTASK) { $('psheet').style.display = 'none'; PTASK = null; }
   const mn = cmd.match(/^ww \S+ (\d+)/); if (mn && D) markMine(Number(mn[1]));
   OPEN = null; QEDIT = null; ARM = null;
   if (patch && D) { try { patch(); } catch (e) {} }
   const my = ++SEQ; PENDING++; render();
-  call({ api: 'run', cmd: W(cmd), off: OFF }, r => {
+  call(Object.assign({ api: 'run', cmd: W(cmd), off: OFF }, TID ? { tid: TID } : {}), r => {
     PENDING--;
     if (r.error) return set(r);
     if (/^❗/.test(r.msg || '')) toast(r.msg); else if (!patch) toast(r.msg);
@@ -511,7 +515,7 @@ function drawNotice() {
     <div class="lbl" style="margin-top:6px">แจ้งใหม่</div>
     <textarea class="inp" id="ntnew" rows="2" placeholder="เช่น อ. ราวด์ 7 โมง · R2 ไปสอบ 8–9"></textarea>
     <div class="adg"><label class="ef" style="flex:1"><span class="lbl">วันที่</span><input class="inp adi" type="date" id="ntfrom" value="${isoOff(OFF)}" min="${isoOff(-30)}" max="${isoOff(30)}"></label><label class="ef" style="flex:1"><span class="lbl">ถึง (หลายวัน · ไม่ใส่ก็ได้)</span><input class="inp adi" type="date" id="ntto" min="${isoOff(-30)}" max="${isoOff(60)}"></label></div>
-    <div class="qr">${[[0, 'วันนี้'], [1, 'พรุ่งนี้'], [2, 'มะรืน']].map(([n, l]) => `<button class="qrb" onclick="$('ntfrom').value='${isoOff(n)}'">${l}</button>`).join('')}</div>
+    <div class="qr">${(isNight() ? [[0, dm(0) + ' เวรนี้'], [1, dm(1) + ' เช้านี้'], [2, dm(2)]] : [[0, 'วันนี้'], [1, 'พรุ่งนี้'], [2, 'มะรืน']]).map(([n, l]) => `<button class="qrb" onclick="$('ntfrom').value='${isoOff(n)}'">${l}</button>`).join('')}</div>
     <button class="b p" onclick="ntAct('add')">📢 แจ้ง</button>`;
 }
 function ntAct(act, k) {
@@ -532,7 +536,7 @@ const firstName = s => String(s || '').trim().split(/\s+/)[0];
 function openAddSheet() { if (!(AD && AD.plan) && !LS.get('ww_c_adm')) call({ api: 'admits' }, r => { if (r && r.rows) { LS.set('ww_c_adm', r.rows); if (AS && !AS.pt) drawAddSheetKeep(); } }); AS = { mode: 'task', pt: null, q: '', off: OFF, urg: false, free: false }; drawAddSheet(); $('psheet').style.display = 'flex'; setTimeout(() => { const e = $('asq'); if (e) e.focus(); }, 60); }
 function asSeg() { return `<div class="seg2">${[['task', '📝 งาน'], ['notice', '📢 ประกาศ']].concat(R && R.canEdit ? [['photo', '📷 รูป']] : []).map(([m, l]) => `<button class="${AS.mode === m ? 'on' : ''}" onclick="AS.mode='${m}';drawAddSheet()">${l}</button>`).join('')}</div>`; }
 function lateNote() {   // 00:00–06:00 งานยังลงวันก่อน (เหมือนบอท) → บอกให้รู้ · ย้ายได้จากหน้างาน
-  const h = new Date(Date.now() + 7 * 3600e3).getUTCHours(); return OFF === 0 && h < 6 ? `<div class="meta">🌙 ยังไม่ 6 โมง งานจะลงวันที่ ${offLabel(0)}</div>` : ''; }
+  const h = new Date(Date.now() + 7 * 3600e3).getUTCHours(); return ''; }   // ตัดออก: ปุ่มวันมีวันที่กำกับแล้ว
 function drawAddSheet() {
   if (!AS) return;
   if (AS.mode === 'notice') { NT = { edit: null, arm: null, inAdd: true }; return drawNotice(); }
@@ -570,7 +574,7 @@ function drawAddSheet() {
     return;
   }
   const pts = (R && R.pts) || [], q = AS.q.trim().toLowerCase(), me = LS.get('ww_myteam') || '', rec = LS.get(AS.mode === 'photo' ? 'ww_recent_ph' : 'ww_recent') || [];
-  const lab = n => n === 0 ? 'วันนี้' : n === 1 ? 'พรุ่งนี้' : n === 2 ? 'มะรืน' : offLabel(n);
+  const lab = n => isNight() ? (n === 0 ? dm(0) + ' เวรนี้' : n === 1 ? dm(1) + ' เช้านี้' : dm(n)) : n === 0 ? 'วันนี้' : n === 1 ? 'พรุ่งนี้' : n === 2 ? 'มะรืน' : offLabel(n);   // ตี 0–6: ใส่วันที่กำกับ กันสับสน
   const pick = (p, extra) => `<button class="aspt${AS.pt && AS.pt.name === p.name && AS.pt.ward === p.ward ? ' on' : ''}" onclick="asPick('${esc(p.name).replace(/'/g, '')}','${esc(p.ward).replace(/'/g, '')}')"><b>${esc(firstName(p.name))}</b> <span class="meta">${esc(p.ward)}${extra || ''}</span></button>`;
   let list = '';
   if (!AS.pt) {
@@ -1302,7 +1306,7 @@ function go(n) { OFF = n === 0 ? 0 : OFF + n; OPEN = null; QEDIT = null; load();
 function render() {
   if (TAB !== 'task') { if (TAB === 'round' && R) renderRound(); return; }   // อยู่แท็บอื่น → ไม่วาดหน้างานทับ (เบื้องหลังยังอัปเดตข้อมูล)
   if (TAB === 'round') return;
-  const names = { '-1': 'เมื่อวาน', '0': 'วันนี้', '1': 'พรุ่งนี้' };
+  const names = dayNames();
   $('date').textContent = D.day;
   if ($('updAt')) $('updAt').style.display = OFF === 0 && greet() ? 'none' : '';   // ตอนทักทาย ซ่อนวันที่ + เวลาอัปเดต ให้ข้อความอยู่บรรทัดเดียว (ชื่อยาวก็ไม่ดันปุ่ม ⟳)
   if (OFF === 0 && greet()) $('date').textContent = '';   // ตอนทักทาย ซ่อนวันที่ ให้ข้อความอยู่บรรทัดเดียว
