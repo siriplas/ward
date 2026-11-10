@@ -212,8 +212,8 @@ input[type=date]{color-scheme:light dark}
 <button class="fab" id="fab" aria-label="เพิ่มงาน" onclick="if(TAB==='round'){openAdd()}else{openAddSheet()}">+</button>
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbw9dsYKGy8pELEBeIatNSjJLFv6W7MGjxhnjj584Z4BUlXN6WEfon-JID4f4eHR9wQ/exec';   // ← วาง URL ของบอท (ลงท้าย /exec)
-const APP_VER = 'v2.82';   // 🔖 ต้องตรงกับ SERVER_VER
-const APP_DATE = '11/11/69 00:30';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
+const APP_VER = 'v2.83';   // 🔖 ต้องตรงกับ SERVER_VER
+const APP_DATE = '11/11/69 00:35';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
 const TOK = new URLSearchParams(location.search).get('t') || '';
 // 🔄 แถบสีด้านบนวิ่งระหว่างโหลด / บันทึก
 let LOADING = 0;
@@ -1266,8 +1266,8 @@ function addFor(n) { setTab('task'); document.body.classList.add('adding'); $('n
 // วันอื่น: ใส่วันที่ในคำสั่ง (ww 22/10/69 เสร็จ 5 … / ww แก้ผล 22/10/69 5 …)
 function W(cmd) {
   if (!OFF || !D) return cmd;
-  const d = D.day, m = cmd.match(/^ww แก้ผล (\d+) ([\s\S]*)$/);
-  return m ? `ww แก้ผล ${d} ${m[1]} ${m[2]}` : cmd.replace(/^ww /, `ww ${d} `);
+  const d = D.day, m = cmd.match(/^ww (แก้ผล|ย้ายวัน) (\d+) ([\s\S]*)$/);   // คำสั่งที่วันที่ต้องอยู่หลังคำสั่ง
+  return m ? `ww ${m[1]} ${d} ${m[2]} ${m[3]}` : cmd.replace(/^ww /, `ww ${d} `);
 }
 // ปฏิทิน: วันนี้ (เริ่ม 06:00) ± n วัน เป็น yyyy-mm-dd
 const todayUTC = () => { const d = new Date(Date.now() + 7 * 3600e3 - 6 * 3600e3); return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()); };
@@ -1330,7 +1330,7 @@ function byPatient(list) {
 }
 function moveDay(no, v) {   // ย้ายงานไปวันอื่น (สิทธิ์แก้งาน · เช็กที่เซิร์ฟเวอร์)
   const m = String(v).match(/^(\d{4})-(\d{2})-(\d{2})$/); if (!m) return;
-  closePhoto(); run('ww ย้ายวัน ' + (OFF ? offLabel(OFF) + ' ' : '') + no + ' ' + (+m[3]) + '/' + (+m[2]) + '/' + m[1], () => { D.tasks = D.tasks.filter(x => x.no !== no); }); }
+  closePhoto(); run('ww ย้ายวัน ' + no + ' ' + (+m[3]) + '/' + (+m[2]) + '/' + m[1], () => { D.tasks = D.tasks.filter(x => x.no !== no); }); }
 function delDone(no, bt) {   // admin: ลบงานที่ปิดแล้ว (กด 2 ครั้ง)
   if (ARM !== 'del' + no) { ARM = 'del' + no; bt.textContent = 'กดอีกครั้ง = ลบถาวร'; return; } ARM = null; bt.disabled = true;
   run('ww ' + (OFF ? offLabel(OFF) + ' ' : '') + 'ลบ ' + no, () => { D.tasks = D.tasks.filter(x => x.no !== no); }); }
