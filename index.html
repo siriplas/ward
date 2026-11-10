@@ -211,8 +211,8 @@ input[type=date]{color-scheme:light dark}
 <button class="fab" id="fab" aria-label="เพิ่มงาน" onclick="if(TAB==='round'){openAdd()}else{openAddSheet()}">+</button>
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbw9dsYKGy8pELEBeIatNSjJLFv6W7MGjxhnjj584Z4BUlXN6WEfon-JID4f4eHR9wQ/exec';   // ← วาง URL ของบอท (ลงท้าย /exec)
-const APP_VER = 'v2.64';   // 🔖 ต้องตรงกับ SERVER_VER
-const APP_DATE = '10/11/69 01:50';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
+const APP_VER = 'v2.65';   // 🔖 ต้องตรงกับ SERVER_VER
+const APP_DATE = '10/11/69 23:30';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
 const TOK = new URLSearchParams(location.search).get('t') || '';
 // 🔄 แถบสีด้านบนวิ่งระหว่างโหลด / บันทึก
 let LOADING = 0;
@@ -1066,6 +1066,12 @@ async function roomPick(file, bt, k) {
 const imgAdminUI = () => IMGK.map(([k, n]) => `<div class="xrow" style="gap:6px"><div style="flex:1"><b>${n}</b><div class="meta">${IMGS[k] && IMGS[k].data ? 'ลง ' + esc(IMGS[k].at || '') : 'ยังไม่มีรูป'}</div></div><label class="b p" style="min-height:34px;font-size:13px;position:relative;flex:none;width:auto">📷 ลงรูป<input type="file" accept="image/*" style="position:absolute;inset:0;opacity:0" onchange="roomPick(this.files[0], this.parentNode, '${k}');this.value=''"></label>${IMGS[k] && IMGS[k].data ? `<button class="b" style="min-height:34px;font-size:13px;flex:none" onclick="openRoomImg('${k}')">ดู</button><button class="b" style="min-height:34px;font-size:13px;flex:none" onclick="imgDel('${k}', this)">🗑</button>` : ''}</div>`).join('') + '<div class="meta">เอาออกอัตโนมัติ: ห้อง + Admit ทุกเช้าวันเสาร์ · เวร ทุกเช้าวันที่ 1 (รูปยังเก็บใน Drive)</div>';
 function imgDel(k, bt) { if (ARM !== 'img' + k) { ARM = 'img' + k; bt.textContent = 'ยืนยัน?'; return; } ARM = null; bt.disabled = true;
   call({ api: 'imgclear', kind: k }, r => { toast(r.ok ? r.msg : '❗ ' + (r.msg || 'ไม่สำเร็จ')); if (r.ok) { delete IMGS[k]; LS.set(k === 'room' ? 'ww_c_roomi' : 'ww_c_img_' + k, null); drawAdminX(); } }); }
+function perfUI(p) {
+  if (!p || !p.kinds || !p.kinds.length) return '<div class="meta">ยังไม่มี (บันทึกเฉพาะที่ช้ากว่า 2 วิ)</div>';
+  const s = ms => (ms / 1000).toFixed(1) + ' วิ';
+  return `<table style="width:100%;font-size:13px;border-collapse:collapse"><tr class="meta"><td>คำสั่ง</td><td>ครั้ง</td><td>เฉลี่ย</td><td>นานสุด</td></tr>${p.kinds.map(k => `<tr><td>${esc(k.kind)}</td><td>${k.n}</td><td>${s(k.avg)}</td><td>${s(k.max)}</td></tr>`).join('')}</table>
+    <details style="margin-top:6px"><summary class="meta">ล่าสุด ${p.rows.length} ครั้ง</summary>${p.rows.map(r => `<div class="meta">${esc(r.t)} · ${esc(r.kind)} · <b>${s(r.ms)}</b> ${esc(r.d)}</div>`).join('')}</details>`;
+}
 let CMDN = 30;
 function cmdUI(c) {
   if (!c.length) return '<div class="meta">—</div>';
@@ -1092,6 +1098,7 @@ function drawAdminX() {
     <div class="lbl">🆕 ป้าย NEW วันนี้</div><div class="xrow"><div style="flex:1" class="meta">${R && R.pts ? 'ติดอยู่ ' + R.pts.filter(p => p.isNew).length + ' คน' : 'ปิดป้าย NEW ของทุกคนในวันนี้'}</div><button class="b" style="min-height:34px;font-size:13px" onclick="newClear(this)">🧹 ปิดทั้งหมด</button></div>
     <div class="lbl">🐞 error ล่าสุด</div>${errs}
     <div class="lbl">💬 คำสั่งล่าสุด (3 วัน)</div>${cmdUI(d.cmds || [])}
+    <div class="lbl">⏱ คำสั่งที่ช้า ≥ 2 วิ (7 วัน)</div>${perfUI(d.perf)}
     <div class="lbl">🔁 เพิ่มแล้วยกเลิกเร็ว (อาจพิมพ์ผิด · 14 วัน)</div>${(d.oops || []).length ? d.oops.map(o => `<div class="xrow"><div style="flex:1"><div class="meta">${hmTxt(o.t)} · ${esc(o.by)} · ยกเลิกหลัง ${o.mins} นาที</div><div style="font-size:13px">❌ ${esc(o.ward)} ${esc(o.task)}</div>${o.fix ? `<div style="font-size:13px;color:var(--g)">✅ ลงใหม่: ${esc(o.fix)}</div>` : ''}</div></div>`).join('') : '<div class="meta">ไม่มี 👍</div>'}
     <div class="lbl">📝 สิ่งที่ admin เปลี่ยนล่าสุด</div>${alog}
     <div class="lbl">👥 ผู้ใช้ (${d.users.length})</div>${users}
