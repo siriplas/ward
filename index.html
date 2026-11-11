@@ -212,7 +212,7 @@ input[type=date]{color-scheme:light dark}
 <button class="fab" id="fab" aria-label="เพิ่มงาน" onclick="if(TAB==='round'){openAdd()}else{openAddSheet()}">+</button>
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbw9dsYKGy8pELEBeIatNSjJLFv6W7MGjxhnjj584Z4BUlXN6WEfon-JID4f4eHR9wQ/exec';   // ← วาง URL ของบอท (ลงท้าย /exec)
-const APP_VER = 'v3.15';   // 🔖 ต้องตรงกับ SERVER_VER
+const APP_VER = 'v3.16';   // 🔖 ต้องตรงกับ SERVER_VER
 const APP_DATE = '12/11/69 03:15';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
 const TOK = new URLSearchParams(location.search).get('t') || '';
 // 🔄 แถบสีด้านบนวิ่งระหว่างโหลด / บันทึก
@@ -1525,7 +1525,7 @@ function drawFight() {
   const card = f => { const r = f.result.split(' '), w = r[0] === 'a' ? f.a : r[0] === 'b' ? f.b : '', ko = r[1] === 'KO';
     const shake = f.shake === 'ab' ? '🤝 จับมือกันแล้ว' : f.mine && f.result && !f.shake.includes(f.mine) ? `<button class="chip2" onclick="fightShake('${f.id}')">🤝 จับมือ</button>` : '';
     const del = d.admin ? `<button class="fdel" onclick="fightDel('${f.id}')">${FG.arm === f.id ? 'กดอีกครั้ง = ลบ' : '🗑'}</button>` : '';
-    return `<div class="fcard">${del}<div><b>${esc(f.a)}</b> <span class="meta">vs</span> <b>${esc(f.b)}</b>${f.reason ? `<div class="meta">เรื่อง: ${esc(f.reason)}</div>` : ''}</div>
+    return `<div class="fcard">${del}${f.result ? (f.reason ? `<div class="meta">เรื่อง: ${esc(f.reason)}</div>` : '') : `<div><b>${esc(f.a)}</b> <span class="meta">vs</span> <b>${esc(f.b)}</b>${f.reason ? `<div class="meta">เรื่อง: ${esc(f.reason)}</div>` : ''}</div>`}
       ${f.result ? `<div class="fres">${w ? `🏆 <b>${esc(w)}</b> ชนะ${ko ? 'น็อค 💥' : ''} <b>${esc(w === f.a ? f.b : f.a)}</b>` : `🤝 ${esc(f.a)} เสมอ ${esc(f.b)}`}</div>${w && f.penalty ? `<div class="meta">${esc(w === f.a ? f.b : f.a)}: ${esc(f.penalty)}</div>` : ''}${f.aScore ? `<button class="chip2" style="margin-top:6px" onclick="FG.det=FG.det===\'${f.id}\'?null:\'${f.id}\';drawFight()">${FG.det === f.id ? 'ซ่อนรายละเอียด ▴' : 'ดูรายละเอียด ▾'}</button>${FG.det === f.id ? fightDetail(f) : ''}` : ''}${shake ? `<div style="margin-top:4px">${shake}</div>` : ''}`
         : f.myTurn ? `<button class="b p" style="margin-top:8px;width:100%" onclick="fightPlay('${f.id}')">🥊 ถึงตาคุณ — ชกเลย</button>${f.penalty ? `<div class="meta">คนแพ้: ${esc(f.penalty)}</div>` : ''}`
         : `<div class="meta">⏳ รอ ${esc(f.mine === 'a' ? f.b : f.a)} ชก</div>`}</div>`; };
