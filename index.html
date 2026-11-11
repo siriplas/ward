@@ -212,7 +212,7 @@ input[type=date]{color-scheme:light dark}
 <button class="fab" id="fab" aria-label="เพิ่มงาน" onclick="if(TAB==='round'){openAdd()}else{openAddSheet()}">+</button>
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbw9dsYKGy8pELEBeIatNSjJLFv6W7MGjxhnjj584Z4BUlXN6WEfon-JID4f4eHR9wQ/exec';   // ← วาง URL ของบอท (ลงท้าย /exec)
-const APP_VER = 'v3.18';   // 🔖 ต้องตรงกับ SERVER_VER
+const APP_VER = 'v3.19';   // 🔖 ต้องตรงกับ SERVER_VER
 const APP_DATE = '12/11/69 03:15';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
 const TOK = new URLSearchParams(location.search).get('t') || '';
 // 🔄 แถบสีด้านบนวิ่งระหว่างโหลด / บันทึก
@@ -499,9 +499,18 @@ function setR(r) { R = r; verCheck(r && r.ver); document.body.classList.toggle('
 const verNum = v => { const m = String(v || '').match(/^v(\d+)\.(\d+)/); return m ? +m[1] * 1000 + +m[2] : 0; };
 function verCheck(sv) {
   if (!sv || verNum(sv) <= verNum(APP_VER) || $('newver')) return;
-  document.body.insertAdjacentHTML('afterbegin', `<button id="newver" class="newver" onclick="verReload()">🔔 มีเวอร์ชันใหม่ (${esc(sv)}) · แตะเพื่อโหลด</button>`);
+  document.body.insertAdjacentHTML('afterbegin', `<button id="newver" class="newver" onclick="verReload(0)">🔔 มีเวอร์ชันใหม่ (${esc(sv)}) · แตะเพื่อโหลด</button>`);
 }
-function verReload() { const u = new URL(location.href); u.searchParams.set('nc', Date.now()); location.replace(u.toString()); }
+// เช็กว่า GitHub Pages มีหน้าใหม่แล้วจริงก่อนโหลด (หลังอัป เว็บใช้เวลา 1–3 นาที) · ยังเก่า = รอแล้วลองเองอีก
+function verReload(n) {
+  n = n || 0; const u = new URL(location.href); u.searchParams.set('nc', Date.now()); const b = $('newver');
+  fetch(u.pathname + '?nc=' + Date.now(), { cache: 'no-store' }).then(x => x.text()).then(tx => {
+    const m = tx.match(/const APP_VER = '(v[\d.]+)'/), nv = m ? m[1] : '';
+    if (verNum(nv) > verNum(APP_VER)) return location.replace(u.toString());
+    if (n >= 8) { if (b) b.textContent = '🔔 เว็บยังไม่อัปเดต · แตะเพื่อลองอีกครั้ง'; return; }
+    if (b) b.textContent = `⏳ เว็บกำลังอัปเดต รอสักครู่… (${n + 1})`; setTimeout(() => verReload(n + 1), 20000);
+  }).catch(() => location.replace(u.toString()));
+}
 // ✋ ขอสิทธิ์แก้ไข (ลิงก์ธรรมดา) → admin กดอนุมัติในแท็บผู้ดูแล
 function reqEditBtn() { const s = LS.get('ww_req'); return `<div class="reqe">${s && Date.now() - s < 864e5 ? '⏳ ส่งคำขอสิทธิ์แก้ไขแล้ว รอผู้ดูแลอนุมัติ' : `<button class="b" onclick="reqEdit(this)">✋ ขอสิทธิ์แก้ไข</button><div class="meta">แก้ข้อมูลคนไข้ · ลงตาราง admit · เพิ่มคนไข้</div>`}</div>`; }
 function reqEdit(btn) { btn.disabled = true; call({ api: 'reqedit' }, r => { toast(r.ok ? r.msg : '❗ ' + (r.msg || 'ส่งไม่ได้')); if (r.ok) { LS.set('ww_req', Date.now()); TAB === 'round' ? renderRound() : drawAdmit(); } else btn.disabled = false; }); }
