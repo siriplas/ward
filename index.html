@@ -212,7 +212,7 @@ input[type=date]{color-scheme:light dark}
 <button class="fab" id="fab" aria-label="เพิ่มงาน" onclick="if(TAB==='round'){openAdd()}else{openAddSheet()}">+</button>
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbw9dsYKGy8pELEBeIatNSjJLFv6W7MGjxhnjj584Z4BUlXN6WEfon-JID4f4eHR9wQ/exec';   // ← วาง URL ของบอท (ลงท้าย /exec)
-const APP_VER = 'v3.13';   // 🔖 ต้องตรงกับ SERVER_VER
+const APP_VER = 'v3.14';   // 🔖 ต้องตรงกับ SERVER_VER
 const APP_DATE = '12/11/69 03:15';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
 const TOK = new URLSearchParams(location.search).get('t') || '';
 // 🔄 แถบสีด้านบนวิ่งระหว่างโหลด / บันทึก
@@ -1526,7 +1526,7 @@ function drawFight() {
     const shake = f.shake === 'ab' ? '🤝 จับมือกันแล้ว' : f.mine && f.result && !f.shake.includes(f.mine) ? `<button class="chip2" onclick="fightShake('${f.id}')">🤝 จับมือ</button>` : '';
     const del = d.admin ? `<button class="fdel" onclick="fightDel('${f.id}')">${FG.arm === f.id ? 'กดอีกครั้ง = ลบ' : '🗑'}</button>` : '';
     return `<div class="fcard">${del}<div><b>${esc(f.a)}</b> <span class="meta">vs</span> <b>${esc(f.b)}</b>${f.reason ? `<div class="meta">เรื่อง: ${esc(f.reason)}</div>` : ''}</div>
-      ${f.result ? `<div class="fres">${w ? `🏆 <b>${esc(w)}</b> ชนะ${ko ? 'น็อค 💥' : ''}` : '🤝 เสมอ'} <span class="meta">${sum(f.aScore)}–${sum(f.bScore)}</span></div>${f.aScore ? `<div class="meta">${f.aScore.map((x, k) => `ยก${k + 1} ${x}${f.aBonus && f.aBonus[k] ? '★' : ''}–${f.bScore[k]}${f.bBonus && f.bBonus[k] ? '★' : ''}`).join(' · ')}${(f.aBonus || []).concat(f.bBonus || []).some(Boolean) ? ' · ★ = ตอบชนะคู่ชก +15' : ''}</div>` : ''}${rpsLine(f)}${w && f.penalty ? `<div class="meta">${esc(w === f.a ? f.b : f.a)}: ${esc(f.penalty)}</div>` : ''}${shake ? `<div style="margin-top:4px">${shake}</div>` : ''}`
+      ${f.result ? `<div class="fres">${w ? `🏆 <b>${esc(w)}</b> ชนะ${ko ? 'น็อค 💥' : ''} <b>${esc(w === f.a ? f.b : f.a)}</b>` : `🤝 ${esc(f.a)} เสมอ ${esc(f.b)}`}</div>${w && f.penalty ? `<div class="meta">${esc(w === f.a ? f.b : f.a)}: ${esc(f.penalty)}</div>` : ''}${f.aScore ? `<button class="chip2" style="margin-top:6px" onclick="FG.det=FG.det===\'${f.id}\'?null:\'${f.id}\';drawFight()">${FG.det === f.id ? 'ซ่อนรายละเอียด ▴' : 'ดูรายละเอียด ▾'}</button>${FG.det === f.id ? fightDetail(f) : ''}` : ''}${shake ? `<div style="margin-top:4px">${shake}</div>` : ''}`
         : f.myTurn ? `<button class="b p" style="margin-top:8px;width:100%" onclick="fightPlay('${f.id}')">🥊 ถึงตาคุณ — ชกเลย</button>${f.penalty ? `<div class="meta">คนแพ้: ${esc(f.penalty)}</div>` : ''}`
         : `<div class="meta">⏳ รอ ${esc(f.mine === 'a' ? f.b : f.a)} ชก</div>`}</div>`; };
   $('main').innerHTML = `<div class="amain"><div class="ehead"><div><h3>🥊 สังเวียน</h3><div class="meta">ผลัดกันชก 3 ยก ยกละ 10 วิ · ไม่ต้องออนไลน์พร้อมกัน</div></div></div>
@@ -1573,19 +1573,19 @@ const FQ = [
   ['โมโหจนคว้าอะไรใกล้มือ?', '🔪 มีด #15', '🪝 Skin hook', '🦾 Retractor'],
   ['ถ้ามันเป็นแผล… จะปิดด้วยอะไร?', '🧵 เย็บปิดเลย ไม่ต้องเยอะ', '🩹 แปะกราฟให้เข็ด', '🔬 Free flap 8 ชั่วโมง ให้รู้ซึ้ง']];
 // ฝ่ายโดนท้า: คำถามฝั่งขอโทษ/ง้อ จับคู่กับ FQ ทีละชุด (ลำดับเดียวกัน)
-const FQD = [
-  ['มันหน้าบึ้งเดินมา… ทำไงดี?', '🙏 ขอโทษก่อนเลย', '☕ ยื่นกาแฟให้', '😅 ยิ้มแห้งๆ'],
-  ['ยอมรับผิดเรื่องไหน?', '⏰ "มาสายจริง ขอโทษ"', '🩹 "ลืมทำแผล ผิดเอง"', '🧪 "แลปเดี๋ยวตามให้เลย"'],
-  ['มันจะซัดแล้ว… รับมือยังไง?', '🙇 ก้มหัวขอโทษรัวๆ', '🏃 ถอยไปตั้งหลัก', '🤗 เข้าไปกอดให้ใจเย็น'],
-  ['คราวนี้จะแก้ตัวว่า…?', '🙏 "ไม่แก้ตัว ผิดจริง"', '📱 "ต่อไปจะอ่านไลน์ทันที"', '🤝 "ครั้งหน้าทำเอง ไม่โยน"'],
-  ['ขึ้นเวทีด้วยความรู้สึกผิดระดับไหน?', '😔 ผิดมาทั้งเดือน', '😓 เพิ่งรู้ตัวเมื่อเช้า', '😬 ผิดนิดเดียวเอง'],
+const FQD = [   // ลำดับคำตอบ: ข้อ j ชนะคำตอบข้อ j+1 ของคนท้า (ง้อถูกเรื่อง) · ข้อเดียวกัน = เสมอ
+  ['มันหน้าบึ้งเดินมา… ทำไงดี?', '☕ ยื่นกาแฟให้', '😅 ยิ้มแห้งๆ', '🙏 ขอโทษก่อนเลย'],
+  ['ยอมรับผิดเรื่องไหน?', '🩹 "ลืมทำแผล ผิดเอง"', '🧪 "แลปเดี๋ยวตามให้เลย"', '⏰ "มาสายจริง ขอโทษ"'],
+  ['มันจะซัดแล้ว… รับมือยังไง?', '🤗 เข้าไปกอดให้ใจเย็น', '🙇 ก้มหัวขอโทษรัวๆ', '🏃 ถอยไปตั้งหลัก'],
+  ['คราวนี้จะแก้ตัวว่า…?', '📱 "ต่อไปจะอ่านไลน์ทันที"', '🤝 "ครั้งหน้าทำเอง ไม่โยน"', '🙏 "ไม่แก้ตัว ผิดจริง"'],
+  ['ขึ้นเวทีด้วยความรู้สึกผิดระดับไหน?', '😓 เพิ่งรู้ตัวเมื่อเช้า', '😬 ผิดนิดเดียวเอง', '😔 ผิดมาทั้งเดือน'],
   ['ในใจคิดว่า…', '🥺 "ยกโทษให้นะ…"', '😇 "ใจเย็นๆ เพื่อน"', '🙈 "รอบนี้ยอมจริงๆ"'],
-  ['ทำมันโดนอาจารย์ด่า… จะไถ่โทษยังไง?', '🍩 เลี้ยงขนมทั้งทีม', '🌙 รับเวรแทน 1 คืน', '🙏 ไปขอโทษอาจารย์ให้'],
-  ['อาจารย์ถาม เราเผลอชี้ไปที่มัน… แก้ยังไง?', '🙋 "จริงๆ เคสผมครับ"', '🫣 "เดี๋ยวไปเช็กด้วยกันครับ"', '😅 ยิ้มขอโทษมัน'],
-  ['ตอบแทนมันมั่วไป… ทำไงต่อ?', '🙏 "ขอโทษ ไม่น่าตอบเลย"', '📚 ไปอ่านมาตอบใหม่', '🤐 ต่อไปเงียบไว้'],
-  ['ขอพรให้ตัวเองรอด…', '🔥 "ขอเวรไม่มี burn"', '🦵 "ขอ flap แดงทุกเวร"', '🩸 "ขอไม่มี bleed สักเคส"'],
-  ['มันคว้าอาวุธ… จะปกป้องตัวยังไง?', '🛡 ยกถาดเครื่องมือบัง', '🧤 ใส่ถุงมือสองชั้น', '🙏 วางมือขอโทษ'],
-  ['ถ้าเราเป็นแผล… ขอให้มันปิดด้วยอะไร?', '🩹 "แปะพลาสเตอร์พอ"', '🧵 "เย็บสวยๆ นะ"', '🙏 "อย่าทำ flap เลย"']];
+  ['ทำมันโดนอาจารย์ด่า… จะไถ่โทษยังไง?', '🌙 รับเวรแทน 1 คืน', '🍩 เลี้ยงขนมทั้งทีม', '🙏 ไปขอโทษอาจารย์ให้'],
+  ['อาจารย์ถาม เราเผลอชี้ไปที่มัน… แก้ยังไง?', '🫣 "เดี๋ยวไปเช็กด้วยกันครับ"', '😅 ยิ้มขอโทษมัน', '🙋 "จริงๆ เคสผมครับ"'],
+  ['ตอบแทนมันมั่วไป… ทำไงต่อ?', '📚 ไปอ่านมาตอบใหม่', '🤐 ต่อไปเงียบไว้', '🙏 "ขอโทษ ไม่น่าตอบเลย"'],
+  ['ขอพรให้ตัวเองรอด…', '🦵 "ขอ flap แดงทุกเวร"', '🩸 "ขอไม่มี bleed สักเคส"', '🔥 "ขอเวรไม่มี burn"'],
+  ['มันคว้าอาวุธ… จะปกป้องตัวยังไง?', '🧤 ใส่ถุงมือสองชั้น', '🙏 วางมือขอโทษ', '🛡 ยกถาดเครื่องมือบัง'],
+  ['ถ้าเราเป็นแผล… ขอให้มันปิดด้วยอะไร?', '🩹 "แปะพลาสเตอร์พอ"', '🙏 "อย่าทำ flap เลย"', '🧵 "เย็บสวยๆ นะ"']];
 // ชุดคำถามของยก r: ไฟต์ที่เลือกหัวข้อไว้ (q = "q3,7,1") ใช้ตามนั้น · ไฟต์เก่าสุ่มตาม id · ฝ่ายท้า = FQ ฝ่ายโดนท้า = FQD
 const fqIdx = (f, r) => { const m = /^q([\d,]+)$/.exec((f && f.q) || ''); if (m) { const n = Number(m[1].split(',')[r]); if (n >= 0 && n < FQ.length) return n; } let x = 0; String(f.id + ':' + r).split('').forEach(c => x = (x * 31 + c.charCodeAt(0)) >>> 0); return x % FQ.length; };
 const fqOf = (f, r) => (f.mine === 'b' ? FQD : FQ)[fqIdx(f, r)];
@@ -1610,6 +1610,17 @@ function fightHelp() {
     <button class="b p" style="width:100%;min-height:50px;margin-top:8px" onclick="if($('fhno').checked)LS.set('ww_fhelp',1);pickMove()">พร้อม 🥊</button></div>`;
 }
 // ผู้ถูกท้า: เลือกคำตอบแล้วเฉลยคำตอบคนท้าทันที (ชนะ +15) · คนท้าชกก่อนเสมอ
+// รายละเอียดไฟต์ (กดดู): 2 คอลัมน์ คนท้า | ผู้ถูกท้า — แต่ละยก: คำถาม คำตอบ แต้ม (+15 ตอบชนะ)
+function fightDetail(f) {
+  const s = a => a.reduce((x, y) => x + y, 0), none = f.q === 'none';
+  const cell = (side, r) => { const sc = side === 'a' ? f.aScore : f.bScore, bo = (side === 'a' ? f.aBonus : f.bBonus) || [], mv = (side === 'a' ? f.aMove : f.bMove) || [];
+    const q = none ? '' : (side === 'a' ? FQ : FQD)[fqIdx(f, r)][0];
+    return `<div style="padding:6px 0;border-top:1px solid var(--ln)">${q ? `<div class="meta">${esc(q)}</div><div>${esc(fqL(side, f, r, mv[r]))}</div>` : ''}<div><b>${sc[r]}</b> แต้ม${bo[r] ? ' <span class="meta">(+15 ตอบชนะ)</span>' : ''}</div></div>`; };
+  let h = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;margin-top:8px;font-size:14px"><b>${esc(f.a)}</b><b>${esc(f.b)}</b>`;
+  for (let r = 0; r < 3; r++) h += `<div style="grid-column:1/3" class="meta">ยก ${r + 1}${none ? '' : ' · ' + esc(rpsLine1(f, r))}</div>` + cell('a', r) + cell('b', r);
+  return h + `<div style="border-top:1px solid var(--ln);padding-top:6px"><b>${s(f.aScore)}</b></div><div style="border-top:1px solid var(--ln);padding-top:6px"><b>${s(f.bScore)}</b></div></div>`;
+}
+function rpsLine1(f, r) { const W = { a: 'f', f: 'd', d: 'a' }, am = (f.aMove || [])[r], bm = (f.bMove || [])[r]; if (!am || !bm) return ''; const LA = fqL('a', f, r, am).replace(/^\S+\s/, ''), LB = fqL('b', f, r, bm).replace(/^\S+\s/, ''); return W[am] === bm ? `${LA} ชนะ ${LB}` : W[bm] === am ? `${LB} ชนะ ${LA}` : 'เสมอ'; }
 // การ์ดผล: แต่ละยกใครตอบอะไร อะไรชนะอะไร
 function rpsLine(f) {
   if (!f.aMove || !f.bMove || f.q === 'none') return '';
