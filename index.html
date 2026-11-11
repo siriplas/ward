@@ -212,7 +212,7 @@ input[type=date]{color-scheme:light dark}
 <button class="fab" id="fab" aria-label="เพิ่มงาน" onclick="if(TAB==='round'){openAdd()}else{openAddSheet()}">+</button>
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbw9dsYKGy8pELEBeIatNSjJLFv6W7MGjxhnjj584Z4BUlXN6WEfon-JID4f4eHR9wQ/exec';   // ← วาง URL ของบอท (ลงท้าย /exec)
-const APP_VER = 'v3.14';   // 🔖 ต้องตรงกับ SERVER_VER
+const APP_VER = 'v3.15';   // 🔖 ต้องตรงกับ SERVER_VER
 const APP_DATE = '12/11/69 03:15';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
 const TOK = new URLSearchParams(location.search).get('t') || '';
 // 🔄 แถบสีด้านบนวิ่งระหว่างโหลด / บันทึก
@@ -1615,9 +1615,9 @@ function fightDetail(f) {
   const s = a => a.reduce((x, y) => x + y, 0), none = f.q === 'none';
   const cell = (side, r) => { const sc = side === 'a' ? f.aScore : f.bScore, bo = (side === 'a' ? f.aBonus : f.bBonus) || [], mv = (side === 'a' ? f.aMove : f.bMove) || [];
     const q = none ? '' : (side === 'a' ? FQ : FQD)[fqIdx(f, r)][0];
-    return `<div style="padding:6px 0;border-top:1px solid var(--ln)">${q ? `<div class="meta">${esc(q)}</div><div>${esc(fqL(side, f, r, mv[r]))}</div>` : ''}<div><b>${sc[r]}</b> แต้ม${bo[r] ? ' <span class="meta">(+15 ตอบชนะ)</span>' : ''}</div></div>`; };
+    return `<div style="padding:6px 0;border-top:1px solid var(--ln)">${q ? `<div class="meta">${esc(q)}</div><div>${esc(fqL(side, f, r, mv[r]))}</div>` : ''}<div><b>${sc[r]}</b> แต้ม${bo[r] ? ' <span class="meta">(ได้ +15)</span>' : ''}</div></div>`; };
   let h = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;margin-top:8px;font-size:14px"><b>${esc(f.a)}</b><b>${esc(f.b)}</b>`;
-  for (let r = 0; r < 3; r++) h += `<div style="grid-column:1/3" class="meta">ยก ${r + 1}${none ? '' : ' · ' + esc(rpsLine1(f, r))}</div>` + cell('a', r) + cell('b', r);
+  for (let r = 0; r < 3; r++) h += `<div style="grid-column:1/3" class="meta">ยก ${r + 1}</div>` + cell('a', r) + cell('b', r);
   return h + `<div style="border-top:1px solid var(--ln);padding-top:6px"><b>${s(f.aScore)}</b></div><div style="border-top:1px solid var(--ln);padding-top:6px"><b>${s(f.bScore)}</b></div></div>`;
 }
 function rpsLine1(f, r) { const W = { a: 'f', f: 'd', d: 'a' }, am = (f.aMove || [])[r], bm = (f.bMove || [])[r]; if (!am || !bm) return ''; const LA = fqL('a', f, r, am).replace(/^\S+\s/, ''), LB = fqL('b', f, r, bm).replace(/^\S+\s/, ''); return W[am] === bm ? `${LA} ชนะ ${LB}` : W[bm] === am ? `${LB} ชนะ ${LA}` : 'เสมอ'; }
@@ -1633,9 +1633,9 @@ function fqPick(k) {
   const g = FG.g; g.moves.push(k); const om = g.f.oppMoves && g.f.oppMoves[g.round];
   if (!om) return fightRound();
   const W = { a: 'f', f: 'd', d: 'a' }, me = g.f.mine || 'b', op = me === 'a' ? 'b' : 'a', lab = (x, s) => fqL(s, g.f, g.round, x);
-  const res = W[k] === om ? '✨ ชนะ! +15' : W[om] === k ? '😵 แพ้ทาง' : '🤝 เสมอ';
+  const res = W[k] === om ? '✨ ได้ +15' : '';
   const why = W[k] === om ? `${lab(k, me)} ชนะ ${lab(om, op)}` : W[om] === k ? `${lab(om, op)} ชนะ ${lab(k, me)}` : 'ตอบตรงกัน เสมอ';
-  $('fpick').innerHTML = `<div style="text-align:center;padding:14px 0"><div class="meta">${esc(g.f.mine === 'b' ? g.f.a : g.f.b)} ตอบ</div><div style="font-size:20px;font-weight:800;margin:4px 0">${esc(lab(om, op))}</div><div style="font-size:18px">${res}</div><div class="meta" style="margin-top:4px">${esc(why)}</div></div>`;
+  $('fpick').innerHTML = `<div style="text-align:center;padding:14px 0"><div class="meta">${esc(g.f.mine === 'b' ? g.f.a : g.f.b)} ตอบ</div><div style="font-size:20px;font-weight:800;margin:4px 0">${esc(lab(om, op))}</div>${res ? `<div style="font-size:18px">${res}</div>` : ''}</div>`;
   setTimeout(fightRound, 2200);
 }
 function pickMove() {
