@@ -212,8 +212,8 @@ input[type=date]{color-scheme:light dark}
 <button class="fab" id="fab" aria-label="เพิ่มงาน" onclick="if(TAB==='round'){openAdd()}else{openAddSheet()}">+</button>
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbw9dsYKGy8pELEBeIatNSjJLFv6W7MGjxhnjj584Z4BUlXN6WEfon-JID4f4eHR9wQ/exec';   // ← วาง URL ของบอท (ลงท้าย /exec)
-const APP_VER = 'v2.92';   // 🔖 ต้องตรงกับ SERVER_VER
-const APP_DATE = '11/11/69 01:25';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
+const APP_VER = 'v2.93';   // 🔖 ต้องตรงกับ SERVER_VER
+const APP_DATE = '11/11/69 15:45';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
 const TOK = new URLSearchParams(location.search).get('t') || '';
 // 🔄 แถบสีด้านบนวิ่งระหว่างโหลด / บันทึก
 let LOADING = 0;
@@ -293,6 +293,7 @@ async function outFlush() {
 window.addEventListener('online', () => setTimeout(outFlush, 1500));
 setInterval(outFlush, 30000);
 
+let RQS = null;   // 🔍 ค้นชื่อในราวด์: null = ปิด
 let OFF = 0, TAB = 'task', R = null, RBLD = 'ทั้งหมด', RG = 'ทุกคน', RST = '', RACT = 'active', RDUE = false, RNEW = false, RDUEOFF = 0, ROPEN = null, D = null, BLD = 'ทั้งหมด', OPEN = null, QEDIT = null, QDRAFT = null, ARM = null;
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -717,11 +718,14 @@ function renderRound() {
   const quick = (nNew ? `<button class="gchip${RNEW ? ' on' : ''}" onclick="RNEW=!RNEW;if(RNEW){RG='ทุกคน';RACT='all'}renderRound()">NEW ${nNew}</button>` : '') + (nDue ? `<button class="gchip due${RDUE ? ' on' : ''}" onclick="RDUE=!RDUE;RDUEOFF=0;if(RDUE){RST='';RG='ทุกคน';RBLD='ทั้งหมด';RACT='active'}renderRound()">${RDUE && RDUEOFF ? offLabel(RDUEOFF).replace(/\/\d+$/, '') + ' ต้องดู' : 'วันนี้ต้องดู ' + nDue}</button>` : '') + myBtn + mySel + (cnt['ว่าง'] ? `<button class="gchip warn${RG === 'ว่าง' ? ' on' : ''}" onclick="RG=RG==='ว่าง'?'ทุกคน':'ว่าง';renderRound()">ยังไม่จัดคน ${cnt['ว่าง']}</button>` : '');
   const seg = `<span class="seg3">${[['active', 'กำลังดู'], ['all', 'ทั้งหมด'], ['inactive', 'ไม่ต้องดู ' + nIn]].map(([v, t]) => `<button class="${RACT === v ? 'on' : ''}" onclick="RACT='${v}';renderRound()">${t}</button>`).join('')}</span>`;
   const any = RBLD !== 'ทั้งหมด' || RG !== 'ทุกคน' || RST || RACT !== 'active' || RDUE || RNEW;
-  $('notices').innerHTML = `<div class="fbar">${bSel}${gSel}${sSel}</div><div class="fbar2">${seg}${quick}${any ? `<button class="gchip" onclick="RBLD='ทั้งหมด';RG='ทุกคน';RST='';RACT='active';RDUE=false;RNEW=false;renderRound()">✕ ล้างตัวกรอง</button>` : ''}</div>`;
-  const ps = all.filter(p => (!RNEW || p.isNew) && (RBLD === 'ทั้งหมด' || p.bld === RBLD) && (RDUE ? dueToday(p, RDUEOFF) : actOk(p)) && (RG === 'ทุกคน' || p.tags.includes(RG) || ((p.eve || p.tags.includes('ว่าง')) && RG !== 'ว่าง' && RG !== 'ราวน์เย็น' && !/^ทุก/.test(RG))) && (!RST || p.staff === RST));   // เลือกชื่อคน → เคสราวน์เย็นขึ้นด้วย
+  const srch = RQS === null ? `<button class="gchip" style="padding:0 14px" onclick="RQS='';renderRound();setTimeout(()=>$('rqs')&&$('rqs').focus(),30)">🔍</button>` : '';
+  if (RQS !== null) { $('notices').innerHTML = `<div class="fbar" style="grid-template-columns:1fr auto"><input id="rqs" class="inp" style="flex:1;min-height:38px" placeholder="🔍 ชื่อ / HN / วอร์ด / Dx" value="${esc(RQS)}" oninput="RQS=this.value;const c=this.selectionStart;renderRound();const e=$('rqs');e.focus();e.setSelectionRange(c,c)"><button class="gchip" style="padding:0 14px" onclick="RQS=null;renderRound()">✕</button></div>`; }
+  else $('notices').innerHTML = `<div class="fbar" style="grid-template-columns:1fr 1fr 1fr auto">${bSel}${gSel}${sSel}${srch}</div><div class="fbar2">${seg}${quick}${any ? `<button class="gchip" onclick="RBLD='ทั้งหมด';RG='ทุกคน';RST='';RACT='active';RDUE=false;RNEW=false;renderRound()">✕ ล้างตัวกรอง</button>` : ''}</div>`;
+  const qs = (RQS || '').trim().toLowerCase();
+  const ps = qs ? all.filter(p => [p.name, p.hn, p.ward, p.dx, p.bld].some(x => String(x || '').toLowerCase().includes(qs))) : all.filter(p => (!RNEW || p.isNew) && (RBLD === 'ทั้งหมด' || p.bld === RBLD) && (RDUE ? dueToday(p, RDUEOFF) : actOk(p)) && (RG === 'ทุกคน' || p.tags.includes(RG) || ((p.eve || p.tags.includes('ว่าง')) && RG !== 'ว่าง' && RG !== 'ราวน์เย็น' && !/^ทุก/.test(RG))) && (!RST || p.staff === RST));   // เลือกชื่อคน → เคสราวน์เย็นขึ้นด้วย
   $('count').textContent = ps.length + ' คน';
   // 🌆 เลือกชื่อคน → เคสราวน์เย็นขึ้นด้วย แยกไว้ล่างสุด "ราวน์เย็น (ทุกคน)"
-  const person = RG !== 'ทุกคน' && RG !== 'ว่าง' && RG !== 'ราวน์เย็น' && !/^ทุก/.test(RG);
+  const person = !qs && RG !== 'ทุกคน' && RG !== 'ว่าง' && RG !== 'ราวน์เย็น' && !/^ทุก/.test(RG);
   const psMain = person ? ps.filter(p => !(p.eve && !p.tags.includes(RG)) && !(p.tags.includes('ว่าง') && !p.tags.includes(RG))) : ps, psEve = person ? ps.filter(p => p.eve && !p.tags.includes(RG)) : [], psNone = person ? ps.filter(p => p.tags.includes('ว่าง') && !p.eve) : [];   // เลือกชื่อคน → เคสไม่มีคนดู ขึ้นท้าย "รอจัดสรรคน"
   const block = arr => { const wards = [...new Set(arr.map(p => p.ward))];
   let lastB = null;
@@ -743,7 +747,7 @@ function renderRound() {
           <button class="b p" style="flex-grow:0" onclick="addR(${i})">เพิ่ม</button></div></div>` : ''}</div>`;
     }).join('')}</div></div>`;
   }).join(''); };
-  $('main').innerHTML = (block(psMain) + (psEve.length ? `<div class="bldh evh">ราวน์เย็น · ดูรวมกัน · ${psEve.length} คน</div>` + block(psEve).replace(/<div class="bldh">[^<]*<\/div>/g, '') : '') + (psNone.length ? `<div class="bldh noh">รอจัดสรรคน · ${psNone.length} คน</div>` + block(psNone).replace(/<div class="bldh">[^<]*<\/div>/g, '') : '')) || '<div class="empty">ไม่มีคนไข้ในตาราง</div>';
+  $('main').innerHTML = (block(psMain) + (psEve.length ? `<div class="bldh evh">ราวน์เย็น · ดูรวมกัน · ${psEve.length} คน</div>` + block(psEve).replace(/<div class="bldh">[^<]*<\/div>/g, '') : '') + (psNone.length ? `<div class="bldh noh">รอจัดสรรคน · ${psNone.length} คน</div>` + block(psNone).replace(/<div class="bldh">[^<]*<\/div>/g, '') : '')) || `<div class="empty">${qs ? 'ไม่เจอ "' + esc(RQS.trim()) + '"' : 'ไม่มีคนไข้ในตาราง'}</div>`;
   if (!R.canEdit) $('main').insertAdjacentHTML('beforeend', reqEditBtn());
 }
 // เพิ่มงานจากหน้าราวด์ (ลงวันนี้) — ใส่ ward + ชื่อให้เอง กันชื่อซ้ำคนละ ward
