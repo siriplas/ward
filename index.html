@@ -212,8 +212,8 @@ input[type=date]{color-scheme:light dark}
 <button class="fab" id="fab" aria-label="เพิ่มงาน" onclick="if(TAB==='round'){openAdd()}else{openAddSheet()}">+</button>
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbw9dsYKGy8pELEBeIatNSjJLFv6W7MGjxhnjj584Z4BUlXN6WEfon-JID4f4eHR9wQ/exec';   // ← วาง URL ของบอท (ลงท้าย /exec)
-const APP_VER = 'v3.10';   // 🔖 ต้องตรงกับ SERVER_VER
-const APP_DATE = '12/11/69 03:05';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
+const APP_VER = 'v3.11';   // 🔖 ต้องตรงกับ SERVER_VER
+const APP_DATE = '12/11/69 03:15';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
 const TOK = new URLSearchParams(location.search).get('t') || '';
 // 🔄 แถบสีด้านบนวิ่งระหว่างโหลด / บันทึก
 let LOADING = 0;
@@ -1604,15 +1604,24 @@ function fightPlay(id) {
 }
 // 📖 วิธีเล่นก่อนชก (ติ๊ก "ไม่ต้องแสดงอีก" ได้)
 function fightHelp() {
-  $('fpick').innerHTML = `<div class="fhelp" style="text-align:left;line-height:1.7;font-size:15px;padding:12px 4px"><b>🥊 3 ยก · ยกละ 10 วิ</b><br>🎲 ก่อนยก: ตอบคำถามขำๆ ชนะคำตอบคู่ชก <b>+15</b><br>🎯 แตะตอนขีดอยู่กลาง: เป๊ะ <b>+5</b> · ใกล้ <b>+2</b><br>🔥 ขึ้น "กดรัว!": แตะรัวๆ <b>+1</b> ต่อครั้ง<br><span class="meta">ยกหลังขีดวิ่งเร็วขึ้น · แต้มรวมมากกว่าชนะ</span>
+  $('fpick').innerHTML = `<div class="fhelp" style="text-align:left;line-height:1.7;font-size:15px;padding:12px 4px"><b>🥊 3 ยก · ยกละ 10 วิ</b><br>🎲 ก่อนยก: ตอบคำถามขำๆ ชนะคำตอบคู่ชก <b>+15</b> (คนท้าชกก่อน · ผู้ถูกท้าเห็นคำตอบคนท้าหลังเลือก)<br>🎯 แตะตอนขีดอยู่กลาง: เป๊ะ <b>+5</b> · ใกล้ <b>+2</b><br>🔥 ขึ้น "กดรัว!": แตะรัวๆ <b>+1</b> ต่อครั้ง<br><span class="meta">ยกหลังขีดวิ่งเร็วขึ้น · แต้มรวมมากกว่าชนะ</span>
     <label class="meta" style="display:flex;align-items:center;gap:6px;margin-top:8px"><input type="checkbox" id="fhno"> ไม่ต้องแสดงอีก</label>
     <button class="b p" style="width:100%;min-height:50px;margin-top:8px" onclick="if($('fhno').checked)LS.set('ww_fhelp',1);pickMove()">พร้อม 🥊</button></div>`;
+}
+// ผู้ถูกท้า: เลือกคำตอบแล้วเฉลยคำตอบคนท้าทันที (ชนะ +15) · คนท้าชกก่อนเสมอ
+function fqPick(k) {
+  const g = FG.g; g.moves.push(k); const om = g.f.oppMoves && g.f.oppMoves[g.round];
+  if (!om) return fightRound();
+  const W = { a: 'f', f: 'd', d: 'a' }, lab = x => (fqMoves(fqOf(g.f, g.round)).find(m => m[0] === x) || [, x])[1];
+  const res = W[k] === om ? '✨ ชนะ! +15' : W[om] === k ? '😵 แพ้ทาง' : '🤝 เสมอ';
+  $('fpick').innerHTML = `<div style="text-align:center;padding:14px 0"><div class="meta">${esc(g.f.mine === 'b' ? g.f.a : g.f.b)} ตอบ</div><div style="font-size:20px;font-weight:800;margin:4px 0">${esc(lab(om))}</div><div style="font-size:18px">${res}</div></div>`;
+  setTimeout(fightRound, 1600);
 }
 function pickMove() {
   const g = FG.g;
   if (g.f.q === 'none') { g.moves.push('a'); return fightRound(); }   // ท้าเฉยๆ: ไม่มีคำถาม
   const q = fqOf(g.f, g.round);
-  $('fpick').innerHTML = `<div class="lbl" style="text-align:center">ยก ${g.round + 1}: ${esc(q[0])} <span class="meta">(ชนะคู่ชก +15)</span></div><div style="display:flex;flex-direction:column;gap:6px">${fqMoves(q).sort(() => Math.random() - .5).map(([k, l, w]) => `<button class="b" style="min-height:52px;text-align:left" onclick="FG.g.moves.push('${k}');fightRound()">${esc(l)}</button>`).join('')}</div>`;
+  $('fpick').innerHTML = `<div class="lbl" style="text-align:center">ยก ${g.round + 1}: ${esc(q[0])} <span class="meta">(ชนะคู่ชก +15)</span></div><div style="display:flex;flex-direction:column;gap:6px">${fqMoves(q).sort(() => Math.random() - .5).map(([k, l, w]) => `<button class="b" style="min-height:52px;text-align:left" onclick="fqPick('${k}')">${esc(l)}</button>`).join('')}</div>`;
 }
 const fupd = () => { const g = FG.g; $('fp').textContent = g.pts; };
 const fmsg = t => { const m = $('fm'); if (m) { m.innerHTML = t; m.style.opacity = 1; clearTimeout(m._t); m._t = setTimeout(() => m.style.opacity = 0, 700); } };
