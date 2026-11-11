@@ -212,7 +212,7 @@ input[type=date]{color-scheme:light dark}
 <button class="fab" id="fab" aria-label="เพิ่มงาน" onclick="if(TAB==='round'){openAdd()}else{openAddSheet()}">+</button>
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbw9dsYKGy8pELEBeIatNSjJLFv6W7MGjxhnjj584Z4BUlXN6WEfon-JID4f4eHR9wQ/exec';   // ← วาง URL ของบอท (ลงท้าย /exec)
-const APP_VER = 'v3.11';   // 🔖 ต้องตรงกับ SERVER_VER
+const APP_VER = 'v3.12';   // 🔖 ต้องตรงกับ SERVER_VER
 const APP_DATE = '12/11/69 03:15';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
 const TOK = new URLSearchParams(location.search).get('t') || '';
 // 🔄 แถบสีด้านบนวิ่งระหว่างโหลด / บันทึก
@@ -1526,7 +1526,7 @@ function drawFight() {
     const shake = f.shake === 'ab' ? '🤝 จับมือกันแล้ว' : f.mine && f.result && !f.shake.includes(f.mine) ? `<button class="chip2" onclick="fightShake('${f.id}')">🤝 จับมือ</button>` : '';
     const del = d.admin ? `<button class="fdel" onclick="fightDel('${f.id}')">${FG.arm === f.id ? 'กดอีกครั้ง = ลบ' : '🗑'}</button>` : '';
     return `<div class="fcard">${del}<div><b>${esc(f.a)}</b> <span class="meta">vs</span> <b>${esc(f.b)}</b>${f.reason ? `<div class="meta">เรื่อง: ${esc(f.reason)}</div>` : ''}</div>
-      ${f.result ? `<div class="fres">${w ? `🏆 <b>${esc(w)}</b> ชนะ${ko ? 'น็อค 💥' : ''}` : '🤝 เสมอ'} <span class="meta">${sum(f.aScore)}–${sum(f.bScore)}</span></div>${f.aScore ? `<div class="meta">${f.aScore.map((x, k) => `ยก${k + 1} ${x}${f.aBonus && f.aBonus[k] ? '★' : ''}–${f.bScore[k]}${f.bBonus && f.bBonus[k] ? '★' : ''}`).join(' · ')}${(f.aBonus || []).concat(f.bBonus || []).some(Boolean) ? ' · ★ = ตอบชนะคู่ชก +15' : ''}</div>` : ''}${w && f.penalty ? `<div class="meta">${esc(w === f.a ? f.b : f.a)}: ${esc(f.penalty)}</div>` : ''}${shake ? `<div style="margin-top:4px">${shake}</div>` : ''}`
+      ${f.result ? `<div class="fres">${w ? `🏆 <b>${esc(w)}</b> ชนะ${ko ? 'น็อค 💥' : ''}` : '🤝 เสมอ'} <span class="meta">${sum(f.aScore)}–${sum(f.bScore)}</span></div>${f.aScore ? `<div class="meta">${f.aScore.map((x, k) => `ยก${k + 1} ${x}${f.aBonus && f.aBonus[k] ? '★' : ''}–${f.bScore[k]}${f.bBonus && f.bBonus[k] ? '★' : ''}`).join(' · ')}${(f.aBonus || []).concat(f.bBonus || []).some(Boolean) ? ' · ★ = ตอบชนะคู่ชก +15' : ''}</div>` : ''}${rpsLine(f)}${w && f.penalty ? `<div class="meta">${esc(w === f.a ? f.b : f.a)}: ${esc(f.penalty)}</div>` : ''}${shake ? `<div style="margin-top:4px">${shake}</div>` : ''}`
         : f.myTurn ? `<button class="b p" style="margin-top:8px;width:100%" onclick="fightPlay('${f.id}')">🥊 ถึงตาคุณ — ชกเลย</button>${f.penalty ? `<div class="meta">คนแพ้: ${esc(f.penalty)}</div>` : ''}`
         : `<div class="meta">⏳ รอ ${esc(f.mine === 'a' ? f.b : f.a)} ชก</div>`}</div>`; };
   $('main').innerHTML = `<div class="amain"><div class="ehead"><div><h3>🥊 สังเวียน</h3><div class="meta">ผลัดกันชก 3 ยก ยกละ 10 วิ · ไม่ต้องออนไลน์พร้อมกัน</div></div></div>
@@ -1609,13 +1609,22 @@ function fightHelp() {
     <button class="b p" style="width:100%;min-height:50px;margin-top:8px" onclick="if($('fhno').checked)LS.set('ww_fhelp',1);pickMove()">พร้อม 🥊</button></div>`;
 }
 // ผู้ถูกท้า: เลือกคำตอบแล้วเฉลยคำตอบคนท้าทันที (ชนะ +15) · คนท้าชกก่อนเสมอ
+// การ์ดผล: แต่ละยกใครตอบอะไร อะไรชนะอะไร
+function rpsLine(f) {
+  if (!f.aMove || !f.bMove || f.q === 'none') return '';
+  const W = { a: 'f', f: 'd', d: 'a' }, out = [];
+  for (let r = 0; r < 3; r++) { const am = f.aMove[r], bm = f.bMove[r]; if (!am || !bm) continue; const L = x => ((fqMoves(fqOf(f, r)).find(m => m[0] === x) || [, x])[1] || '').replace(/^\S+\s/, '');
+    out.push(`ยก${r + 1} ${W[am] === bm ? `${L(am)} ชนะ ${L(bm)}` : W[bm] === am ? `${L(bm)} ชนะ ${L(am)}` : 'เสมอ'}`); }
+  return out.length ? `<div class="meta">🎲 ${esc(out.join(' · '))}</div>` : '';
+}
 function fqPick(k) {
   const g = FG.g; g.moves.push(k); const om = g.f.oppMoves && g.f.oppMoves[g.round];
   if (!om) return fightRound();
   const W = { a: 'f', f: 'd', d: 'a' }, lab = x => (fqMoves(fqOf(g.f, g.round)).find(m => m[0] === x) || [, x])[1];
   const res = W[k] === om ? '✨ ชนะ! +15' : W[om] === k ? '😵 แพ้ทาง' : '🤝 เสมอ';
-  $('fpick').innerHTML = `<div style="text-align:center;padding:14px 0"><div class="meta">${esc(g.f.mine === 'b' ? g.f.a : g.f.b)} ตอบ</div><div style="font-size:20px;font-weight:800;margin:4px 0">${esc(lab(om))}</div><div style="font-size:18px">${res}</div></div>`;
-  setTimeout(fightRound, 1600);
+  const why = W[k] === om ? `${lab(k)} ชนะ ${lab(om)}` : W[om] === k ? `${lab(om)} ชนะ ${lab(k)}` : 'ตอบเหมือนกัน';
+  $('fpick').innerHTML = `<div style="text-align:center;padding:14px 0"><div class="meta">${esc(g.f.mine === 'b' ? g.f.a : g.f.b)} ตอบ</div><div style="font-size:20px;font-weight:800;margin:4px 0">${esc(lab(om))}</div><div style="font-size:18px">${res}</div><div class="meta" style="margin-top:4px">${esc(why)}</div></div>`;
+  setTimeout(fightRound, 2200);
 }
 function pickMove() {
   const g = FG.g;
