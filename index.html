@@ -212,8 +212,8 @@ input[type=date]{color-scheme:light dark}
 <button class="fab" id="fab" aria-label="เพิ่มงาน" onclick="if(TAB==='round'){openAdd()}else{openAddSheet()}">+</button>
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbw9dsYKGy8pELEBeIatNSjJLFv6W7MGjxhnjj584Z4BUlXN6WEfon-JID4f4eHR9wQ/exec';   // ← วาง URL ของบอท (ลงท้าย /exec)
-const APP_VER = 'v3.07';   // 🔖 ต้องตรงกับ SERVER_VER
-const APP_DATE = '12/11/69 03:00';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
+const APP_VER = 'v3.08';   // 🔖 ต้องตรงกับ SERVER_VER
+const APP_DATE = '12/11/69 03:05';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
 const TOK = new URLSearchParams(location.search).get('t') || '';
 // 🔄 แถบสีด้านบนวิ่งระหว่างโหลด / บันทึก
 let LOADING = 0;
@@ -1534,7 +1534,9 @@ function drawFight() {
     ${turn.length ? `<div class="lbl">ถึงตาคุณ</div>${turn.map(card).join('')}` : ''}
     ${wait.length ? `<div class="lbl">รอคู่ชก</div>${wait.map(card).join('')}` : ''}
     ${d.stats && d.stats.length ? (() => { const me = d.stats.find(x => x.name === d.me); return `<div class="lbl">📊 ซีซั่นนี้ ${d.season ? '(' + d.season + ')' : ''}</div>${me ? `<div class="meta" style="margin:-2px 0 6px">คุณ: ชก ${me.n} · ชนะ ${me.w} · แพ้ ${me.l}${me.d ? ' · เสมอ ' + me.d : ''} · คะแนนเฉลี่ย <b>${(me.ppf || 0).toFixed(2)}</b></div>` : ''}${box(`<table class="fst"><tr><th></th><th>ชก</th><th>ชนะ</th><th>แพ้</th><th>น็อค</th><th>%</th><th>คะแนน<br>เฉลี่ย</th><th>หมัด<br>เฉลี่ย</th></tr>${d.stats.map(x => `<tr${x.name === d.me ? ' class="me"' : ''}><td>${x === d.stats[0] && x.w ? '👑 ' : ''}${esc(x.name)}</td><td>${x.n}</td><td>${x.w}</td><td>${x.l}</td><td>${x.ko}</td><td>${x.pct}%</td><td><b>${(x.ppf || 0).toFixed(2)}</b></td><td>${x.avg || 0}</td></tr>`).join('')}</table><div class="meta">คะแนนเฉลี่ย = คะแนนรวม ÷ จำนวนที่ชก<br>ชนะ 3 · เสมอ 1 · แพ้ 0 · ชนะน็อค +1 (สูงสุด 4 ต่อไฟต์)${d.stats.some(x => x.n < 5) ? '<br>ชกไม่ถึง 5 ไฟต์ อยู่ท้ายตาราง' : ''}<br>หมัดเฉลี่ย = แต้มที่ชกได้ต่อไฟต์</div>`)}`; })() : ''}
-    <div class="lbl">ผลล่าสุด</div>${done.length ? done.slice(0, 5).map(card).join('') : '<div class="meta">ยังไม่มีไฟต์ ท้าใครสักคนเลย</div>'}</div>`;
+    <div class="lbl">ผลล่าสุด</div>${done.length ? done.slice(0, 5).map(card).join('') : '<div class="meta">ยังไม่มีไฟต์ ท้าใครสักคนเลย</div>'}
+    ${d.debts && d.debts.length ? (() => { const c = {}; d.debts.forEach(x => c[x.who] = (c[x.who] || 0) + 1);
+      return `<div class="lbl">🍩 ติดค้างกันอยู่ (${d.debts.length})</div>${box(d.debts.map(x => `<div style="display:flex;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--ln)"><div style="flex:1"><b>${esc(x.who)}</b> ติด <b>${esc(x.to)}</b>: ${esc(x.pen)}<div class="meta">${esc(x.at.slice(8, 10) + '/' + x.at.slice(5, 7))}</div></div>${x.canPay ? `<button class="chip2" onclick="fightPay('${x.id}')">✅ ได้แล้ว</button>` : ''}</div>`).join('') + `<div class="meta" style="margin-top:6px">สรุป: ${Object.entries(c).sort((a, b) => b[1] - a[1]).map(([n, k]) => esc(n) + ' ติด ' + k).join(' · ')}</div>`)}`; })() : ''}</div>`;
 }
 let FQM = 'r';
 function fqMode(v) { FQM = v; document.querySelectorAll('#fg_qm .chip2').forEach(b => b.classList.toggle('on', b.dataset.v === v)); $('fg_qp').style.display = v === 'pick' ? '' : 'none'; $('fg_qn').style.display = v === 'none' ? '' : 'none'; }
@@ -1549,6 +1551,7 @@ function fightGo() {
   call({ api: 'fightnew', k, reason: $('fg_r').value.trim(), penalty: $('fg_p').value.trim(), q, qt }, r => { FG.sending = false; FQM = 'r'; if (r.error) { if (bt) { bt.disabled = false; bt.textContent = '🥊 ส่งคำท้า'; } return toast('❗ ' + (r.msg || 'ส่งไม่ได้')); } toast('🥊 ส่งคำท้าแล้ว'); FG.data = r; FG.view = 'list'; drawFight(); });
 }
 function fightDel(id) { if (FG.arm !== id) { FG.arm = id; return drawFight(); } FG.arm = null; call({ api: 'fightdel', id }, r => { if (r.error) return toast('❗ ' + (r.msg || 'ลบไม่ได้')); toast('🗑 ลบไฟต์แล้ว'); FG.data = r; drawFight(); }); }
+function fightPay(id) { call({ api: 'fightpay', id }, r => { if (r.error) return toast('❗ ' + (r.msg || 'ไม่สำเร็จ')); FG.data = r; drawFight(); toast('🍩 เคลียร์แล้ว'); }); }
 function fightShake(id) { call({ api: 'fightshake', id }, r => { if (r.error) return toast('❗ ' + (r.msg || 'ไม่สำเร็จ')); FG.data = r; drawFight(); }); }
 // ── เกม ──
 const BOXER = (c, flip) => `<svg viewBox="0 0 100 140" class="boxer${flip ? ' flip' : ''}"><circle cx="50" cy="32" r="22" fill="#f2c9a0"/><rect x="28" y="54" width="44" height="50" rx="14" fill="${c}"/><rect x="32" y="102" width="14" height="34" rx="6" fill="#334155"/><rect x="54" y="102" width="14" height="34" rx="6" fill="#334155"/><circle class="gl" cx="86" cy="60" r="13" fill="${c}"/><circle cx="18" cy="70" r="12" fill="${c}"/><circle cx="58" cy="28" r="3" fill="#111"/><rect x="20" y="10" width="60" height="9" rx="4" fill="${c}"/></svg>`;
