@@ -212,7 +212,7 @@ input[type=date]{color-scheme:light dark}
 <button class="fab" id="fab" aria-label="เพิ่มงาน" onclick="if(TAB==='round'){openAdd()}else{openAddSheet()}">+</button>
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbw9dsYKGy8pELEBeIatNSjJLFv6W7MGjxhnjj584Z4BUlXN6WEfon-JID4f4eHR9wQ/exec';   // ← วาง URL ของบอท (ลงท้าย /exec)
-const APP_VER = 'v3.25';   // 🔖 ต้องตรงกับ SERVER_VER
+const APP_VER = 'v3.26';   // 🔖 ต้องตรงกับ SERVER_VER
 const APP_DATE = '12/11/69 23:05';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
 const TOK = new URLSearchParams(location.search).get('t') || '';
 // 🔄 แถบสีด้านบนวิ่งระหว่างโหลด / บันทึก
@@ -699,13 +699,12 @@ function setTab(t, force) {
   else if (D) render();
 }
 const EVE_RE = /ราว[นด]์?\s*เย็น/;   // "ราวน์เย็น" / "ราวด์เย็น"
-// 🔗 ลิงก์นอก (ประวัติ): แอปบนหน้าจอโฮมไอโฟนเปิดเป็นหน้าต่างชั่วคราว (ลืมล็อกอิน) → เปิดใน Chrome ก่อน ไม่มี Chrome → Safari · อย่างอื่นเปิดแท็บใหม่ปกติ
+// 🔗 ลิงก์นอก (ประวัติ): แอปบนหน้าจอโฮมไอโฟนเปิดเป็นหน้าต่างชั่วคราว (ลืมล็อกอิน) → เปิดใน Safari ตัวจริง (iOS 17+) · เปิดไม่ได้ = แบบเดิม
 function openExt(u) {
   const ios = /iPhone|iPad|iPod/.test(navigator.userAgent), standalone = navigator.standalone || matchMedia('(display-mode: standalone)').matches;
   if (!ios || !standalone) return true;
-  const rest = u.replace(/^https:\/\//, ''); let gone = false; const h = () => { gone = true; }; document.addEventListener('visibilitychange', h, { once: true });
-  location.href = 'googlechromes://' + rest;
-  setTimeout(() => { if (gone || document.hidden) return; location.href = 'x-safari-https://' + rest; setTimeout(() => { if (!document.hidden) window.open(u, '_blank'); }, 1200); }, 1200);
+  location.href = 'x-safari-https://' + u.replace(/^https:\/\//, '');
+  setTimeout(() => { if (!document.hidden) window.open(u, '_blank'); }, 1200);
   return false;
 }
 let PENDPT = null;
