@@ -212,8 +212,8 @@ input[type=date]{color-scheme:light dark}
 <button class="fab" id="fab" aria-label="เพิ่มงาน" onclick="if(TAB==='round'){openAdd()}else{openAddSheet()}">+</button>
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbw9dsYKGy8pELEBeIatNSjJLFv6W7MGjxhnjj584Z4BUlXN6WEfon-JID4f4eHR9wQ/exec';   // ← วาง URL ของบอท (ลงท้าย /exec)
-const APP_VER = 'v3.24';   // 🔖 ต้องตรงกับ SERVER_VER
-const APP_DATE = '12/11/69 16:00';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
+const APP_VER = 'v3.25';   // 🔖 ต้องตรงกับ SERVER_VER
+const APP_DATE = '12/11/69 23:05';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
 const TOK = new URLSearchParams(location.search).get('t') || '';
 // 🔄 แถบสีด้านบนวิ่งระหว่างโหลด / บันทึก
 let LOADING = 0;
@@ -699,6 +699,15 @@ function setTab(t, force) {
   else if (D) render();
 }
 const EVE_RE = /ราว[นด]์?\s*เย็น/;   // "ราวน์เย็น" / "ราวด์เย็น"
+// 🔗 ลิงก์นอก (ประวัติ): แอปบนหน้าจอโฮมไอโฟนเปิดเป็นหน้าต่างชั่วคราว (ลืมล็อกอิน) → เปิดใน Chrome ก่อน ไม่มี Chrome → Safari · อย่างอื่นเปิดแท็บใหม่ปกติ
+function openExt(u) {
+  const ios = /iPhone|iPad|iPod/.test(navigator.userAgent), standalone = navigator.standalone || matchMedia('(display-mode: standalone)').matches;
+  if (!ios || !standalone) return true;
+  const rest = u.replace(/^https:\/\//, ''); let gone = false; const h = () => { gone = true; }; document.addEventListener('visibilitychange', h, { once: true });
+  location.href = 'googlechromes://' + rest;
+  setTimeout(() => { if (gone || document.hidden) return; location.href = 'x-safari-https://' + rest; setTimeout(() => { if (!document.hidden) window.open(u, '_blank'); }, 1200); }, 1200);
+  return false;
+}
 let PENDPT = null;
 function goPt(name, ward) { closePhoto(); RQS = name; PENDPT = { name, ward }; ROPEN = null; setTab('round'); if (R) renderRound(); }
 function renderRound() {
@@ -756,7 +765,7 @@ function renderRound() {
         <span style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;flex-shrink:0">${p.open ? `<span class="badge">ค้าง ${p.open}</span>` : p.done ? '<span class="badge ok">✓ เสร็จ</span>' : ''}${p.flap ? '<span class="badge fl">flap</span>' : ''}${op ? '<span class="chev" style="margin-top:4px"><svg viewBox="0 0 24 24"><path d="M6 15l6-6 6 6"/></svg></span>' : ''}</span></button>
         ${isPend(p.ward) ? `<div class="qmv" style="padding:0 16px 10px" onclick="event.stopPropagation()"><select class="inp" onchange="qMove(${i}, this.value)"><option value="">🚚 ย้ายไป ward จริง…</option>${(R.wards || []).filter(w => !isPend(w)).map(w => `<option>${esc(w)}</option>`).join('')}</select>${R.canEdit ? `<div class="btns" style="margin-top:6px">${[['noshow', '🚫 ไม่มา'], ['cancel', '✖ ยกเลิก admit']].map(([w, l]) => `<button class="b r" style="min-height:34px;font-size:13px" onclick="qGone(${i}, '${w}')">${QGONE === i + w ? 'กดอีกครั้ง = ' + l.slice(2) : l}</button>`).join('')}</div>` : ''}</div>` : ''}
         ${op ? `<div class="panel" style="padding-left:16px">${p.hist.length ? `<div class="hist">${p.hist.map(x => `<div${x.fut ? ' class="fut"' : ''}><div class="meta">${x.fut ? '⏭ ' : ''}${esc(x.day)}</div><div style="display:flex;gap:8px;align-items:center"><span style="flex:1;display:flex;gap:8px;align-items:flex-start;cursor:pointer" onclick="event.stopPropagation();taskPop(${i}, ${p.hist.indexOf(x)})">${x.mark === '✅' ? '<span class="mk d">✓</span>' : x.mark === '👁' ? '<span class="mk f"></span>' : '<span class="mk"></span>'}<span>${x.mark === '👁' ? '<span class="fltag">flap</span> ' : ''}${esc(x.task)}${x.res ? ` <span class="${x.upd ? 'arr upd' : 'arr'}">→ ${esc(x.res)}</span>` : ''}</span></span>${x.canClose ? `<button class="b" style="min-height:34px;padding:0 10px" onclick="event.stopPropagation();closeRound(${x.no}, this)">✓ เสร็จ</button>` : ''}</div></div>`).join('')}</div>` : '<div class="meta">ไม่มีงานใน 3 วันล่าสุด และไม่มีงานล่วงหน้า</div>'}
-          <div class="links"><button onclick="openPhoto(${i})"><svg viewBox="0 0 24 24"><path d="M4 7h3l2-3h6l2 3h3v13H4z"/><circle cx="12" cy="13" r="3.5"/></svg>ลงรูป</button><a target="_blank" rel="noopener" href="https://drive.google.com/drive/search?q=${encodeURIComponent('type:folder ' + (p.hn || p.name.split(/\s+/)[0]))}"><svg viewBox="0 0 24 24"><path d="M3 7h6l2 2h10v10H3z"/></svg>Drive</a>${/^\d{6,9}$/.test(String(p.hn || '')) ? `<a target="_blank" rel="noopener" href="https://siriraj.cloud:9001/v4/siit/${p.hn}"><svg viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6zM9 12h7M9 16h7"/></svg>ประวัติ</a>` : ''}${R.canEdit ? `<button onclick="openEdit(${i})"><svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg>แก้ไข</button>` : ''}${R.admin ? `<button onclick="newMark(${i})">🆕 ${p.isNew ? 'เอา NEW ออก' : 'ติด NEW'}</button>` : ''}</div>
+          <div class="links"><button onclick="openPhoto(${i})"><svg viewBox="0 0 24 24"><path d="M4 7h3l2-3h6l2 3h3v13H4z"/><circle cx="12" cy="13" r="3.5"/></svg>ลงรูป</button><a target="_blank" rel="noopener" href="https://drive.google.com/drive/search?q=${encodeURIComponent('type:folder ' + (p.hn || p.name.split(/\s+/)[0]))}"><svg viewBox="0 0 24 24"><path d="M3 7h6l2 2h10v10H3z"/></svg>Drive</a>${/^\d{6,9}$/.test(String(p.hn || '')) ? `<a target="_blank" rel="noopener" href="https://siriraj.cloud:9001/v4/siit/${p.hn}" onclick="return openExt(this.href)"><svg viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6zM9 12h7M9 16h7"/></svg>ประวัติ</a>` : ''}${R.canEdit ? `<button onclick="openEdit(${i})"><svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg>แก้ไข</button>` : ''}${R.admin ? `<button onclick="newMark(${i})">🆕 ${p.isNew ? 'เอา NEW ออก' : 'ติด NEW'}</button>` : ''}</div>
           <div class="btns" style="flex-wrap:nowrap"><input class="inp" id="radd${i}" placeholder="งาน เช่น CBC" style="flex:1;width:auto;min-width:0" onkeydown="if(event.key==='Enter')addR(${i})">
           <button class="b p" style="flex-grow:0" onclick="addR(${i})">เพิ่ม</button></div></div>` : ''}</div>`;
     }).join('')}</div></div>`;
