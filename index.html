@@ -212,7 +212,7 @@ input[type=date]{color-scheme:light dark}
 <button class="fab" id="fab" aria-label="เพิ่มงาน" onclick="if(TAB==='round'){openAdd()}else{openAddSheet()}">+</button>
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbw9dsYKGy8pELEBeIatNSjJLFv6W7MGjxhnjj584Z4BUlXN6WEfon-JID4f4eHR9wQ/exec';   // ← วาง URL ของบอท (ลงท้าย /exec)
-const APP_VER = 'v3.32';   // 🔖 ต้องตรงกับ SERVER_VER
+const APP_VER = 'v3.33';   // 🔖 ต้องตรงกับ SERVER_VER
 const APP_DATE = '13/11/69 01:00';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
 const TOK = new URLSearchParams(location.search).get('t') || '';
 // 🔄 แถบสีด้านบนวิ่งระหว่างโหลด / บันทึก
@@ -1126,6 +1126,11 @@ function cmdUI(c) {
   return c.slice(0, CMDN).map(x => `<div class="xrow"><div style="flex:1"><div class="meta">${esc(x.t)} · ${esc(x.who || '?')} · ${esc(x.at)} · ${x.err ? '❗ ' + esc(x.err) : x.ok === '✓' ? '✓ ตอบ' : '— เงียบ'}</div><div style="font-size:13px;word-break:break-word">${esc(x.m)}</div></div></div>`).join('')
     + (c.length > CMDN ? `<button class="b" style="min-height:34px;font-size:13px;margin-top:6px" onclick="CMDN+=30;drawAdminX()">ดูเพิ่ม (${c.length - CMDN})</button>` : '');
 }
+// 🧹 ล้างที่ดูแล้ว: จำ key รายการบนสุดตอนกด → ซ่อนรายการนั้นและที่เก่ากว่า (รายการเรียงใหม่→เก่า)
+const akey = x => String((x.t || x.at || '') + '|' + (x.m || x.typed || x.task || x.by || '')).slice(0, 300);
+function unseen(sec, arr) { const k = AX && AX.data && AX.data.seen && AX.data.seen[sec]; if (!k) return arr; const i = arr.findIndex(x => akey(x) === k); return i < 0 ? arr : arr.slice(0, i); }
+function clrBtn(sec, arr) { return arr.length ? ` <button class="xname" onclick="admSeen('${sec}', ${JSON.stringify(akey(arr[0])).replace(/"/g, '&quot;')})">🧹 ล้าง</button>` : ''; }
+function admSeen(sec, key) { call({ api: 'admseen', sec, key }, r => { if (r.error) return toast('❗ ' + (r.msg || 'ไม่สำเร็จ')); AX.data = r; drawAdminX(); toast('🧹 ล้างแล้ว'); }); }
 function drawAdminX() {
   if (TAB !== 'admin') return; const d = AX && AX.data;
   if (!d) return $('main').innerHTML = '<div class="amain"><div class="meta">กำลังโหลด…</div></div>';
@@ -1133,7 +1138,7 @@ function drawAdminX() {
   const okJob = j => j.on && j.last && (j.last.ok !== false);
   const jobs = d.jobs.map(j => `<div class="xrow"><span class="xdot ${!j.on ? 'bad' : j.last && j.last.ok === false ? 'bad' : j.last ? 'ok' : 'wait'}"></span><div style="flex:1"><b>${esc(j.name)}</b>
     <div class="meta">${!j.on ? '❗ ยังไม่ได้ตั้งเวลา — รัน install ใน Apps Script' : j.last ? (j.last.day ? 'ล่าสุด ' + esc(j.last.day) : (j.last.ok === false ? '❗ พัง ' : '✓ ') + agoTxt(j.last.t) + (j.last.r ? ' · ' + esc(j.last.r) : '')) : 'ยังไม่เคยรัน'}${j.dup ? ' · ⚠️ ตั้งซ้ำ' : ''}</div></div><input class="inp adi" type="time" style="width:auto;min-height:36px;padding:4px 8px" value="${j.when}" onchange="adminTime('${j.key}', this.value)"></div>${j.key === 'admit' ? `<div class="xrow" style="border:0;padding-top:0"><button class="b" style="min-height:34px;font-size:13px;margin-left:auto" onclick="admitNow(this)">▶ เข้าตารางทันที</button></div>` : ''}`).join('');
-  const realErr = d.errors.filter(e => e.w !== 'admin'), adminLog = d.errors.filter(e => e.w === 'admin');
+  const realErr = unseen('err', d.errors.filter(e => e.w !== 'admin')), adminLog = unseen('alog', d.errors.filter(e => e.w === 'admin')), cmdsU = unseen('cmd', d.cmds || []), missU = unseen('miss', d.miss || []), oopsU = unseen('oops', d.oops || []);
   const alog = adminLog.length ? adminLog.slice(0, 5).map(e => `<div class="xrow"><div style="flex:1"><span class="meta">${hmTxt(e.t)}</span> ${esc(e.m)}</div></div>`).join('') : '<div class="meta">—</div>';
   const errs = realErr.length ? realErr.slice(0, 8).map(e => `<div class="xrow"><div style="flex:1"><div class="meta">${hmTxt(e.t)} · ${esc(e.w)}</div><div style="font-size:13px">${esc(e.m)}</div></div></div>`).join('') : '<div class="meta">ไม่มี error 👍</div>';
   const users = d.users.map(u => `<div class="xrow"><span class="xdot ${u.seen && Date.now() - u.seen < 864e5 ? 'ok' : 'wait'}"></span><div style="flex:1"><b>${esc(u.name)}</b> <button class="xname" onclick="adminName('${u.uid}', '${esc(u.name).replace(/'/g, '')}')">✏️ ชื่อ</button>${u.me ? ' <span class="meta">(คุณ)</span>' : ''}${u.inGroup ? '' : ' <span class="itag">ออกจากกลุ่มแล้ว</span>'}<div class="meta">เปิดแอพล่าสุด ${agoTxt(u.seen)}</div></div>${u.me ? '<span class="meta">🛠 admin</span>' : `<div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end"><select class="inp adi" style="min-height:34px;padding:4px 8px;font-size:14px;width:auto" onchange="adminRole('${u.uid}', this.value)">${[['', '👁 ปกติ'], ['edit', '✏️ แก้ไขได้'], ['block', '⛔ ปิดการใช้']].map(([v, l]) => `<option value="${v}"${(u.role || '') === v ? ' selected' : ''}>${l}</option>`).join('')}</select><button class="b r" style="min-height:30px;font-size:12px" onclick="adminRevoke('${u.uid}', this)">${AX.arm === u.uid ? 'กดอีกครั้ง = ยกเลิก' : 'ยกเลิกลิงก์'}</button></div>`}</div>`).join('');
@@ -1144,12 +1149,12 @@ function drawAdminX() {
     <div class="lbl">🩺 งานตั้งเวลา</div>${jobs}
     <div class="lbl">📷 รูปตาราง</div>${imgAdminUI()}
     <div class="lbl">🆕 ป้าย NEW วันนี้</div><div class="xrow"><div style="flex:1" class="meta">${R && R.pts ? 'ติดอยู่ ' + R.pts.filter(p => p.isNew).length + ' คน' : 'ปิดป้าย NEW ของทุกคนในวันนี้'}</div><button class="b" style="min-height:34px;font-size:13px" onclick="newClear(this)">🧹 ปิดทั้งหมด</button></div>
-    <div class="lbl">🐞 error ล่าสุด</div>${errs}
-    <div class="lbl">💬 คำสั่งล่าสุด (3 วัน)</div>${cmdUI(d.cmds || [])}
-    <div class="lbl">🤔 คำสั่งที่บอทไม่เข้าใจ (14 วัน)</div>${missUI(d.miss || [])}
+    <div class="lbl">🐞 error ล่าสุด${clrBtn('err', realErr)}</div>${errs}
+    <div class="lbl">💬 คำสั่งล่าสุด (3 วัน)${clrBtn('cmd', cmdsU)}</div>${cmdUI(cmdsU)}
+    <div class="lbl">🤔 คำสั่งที่บอทไม่เข้าใจ (14 วัน)${clrBtn('miss', missU)}</div>${missUI(missU)}
     <div class="lbl">⏱ คำสั่งที่ช้า ≥ 2 วิ (7 วัน)</div>${perfUI(d.perf)}
-    <div class="lbl">🔁 เพิ่มแล้วยกเลิกเร็ว (อาจพิมพ์ผิด · 14 วัน)</div>${(d.oops || []).length ? d.oops.map(o => `<div class="xrow"><div style="flex:1"><div class="meta">${hmTxt(o.t)} · ${esc(o.by)} · ยกเลิกหลัง ${o.mins} นาที</div><div style="font-size:13px">❌ ${esc(o.ward)} ${esc(o.task)}</div>${o.fix ? `<div style="font-size:13px;color:var(--g)">✅ ลงใหม่: ${esc(o.fix)}</div>` : ''}</div></div>`).join('') : '<div class="meta">ไม่มี 👍</div>'}
-    <div class="lbl">📝 สิ่งที่ admin เปลี่ยนล่าสุด</div>${alog}
+    <div class="lbl">🔁 เพิ่มแล้วยกเลิกเร็ว (อาจพิมพ์ผิด · 14 วัน)${clrBtn('oops', oopsU)}</div>${oopsU.length ? oopsU.map(o => `<div class="xrow"><div style="flex:1"><div class="meta">${hmTxt(o.t)} · ${esc(o.by)} · ยกเลิกหลัง ${o.mins} นาที</div><div style="font-size:13px">❌ ${esc(o.ward)} ${esc(o.task)}</div>${o.fix ? `<div style="font-size:13px;color:var(--g)">✅ ลงใหม่: ${esc(o.fix)}</div>` : ''}</div></div>`).join('') : '<div class="meta">ไม่มี 👍</div>'}
+    <div class="lbl">📝 สิ่งที่ admin เปลี่ยนล่าสุด${clrBtn('alog', adminLog)}</div>${alog}
     <div class="lbl">👥 ผู้ใช้ (${d.users.length})</div>${users}
     <div class="meta">ชีต Tasks ${d.sizes.tasks || '?'} แถว${d.sizes.backup ? ' · ไฟล์สำรอง ' + d.sizes.backup + ' แถว' : ''}</div></div>`;
 }
