@@ -181,7 +181,7 @@ body.adding .add{display:flex}.rtab .fab{display:none}.rtab.canedit .fab{display
 .chip2{min-height:34px;padding:0 12px;border-radius:999px;border:0;background:var(--bg2);color:var(--tx2)}
 .chip2.on{background:var(--inv);color:var(--invt);font-weight:600}
 .prog{font-size:14px;white-space:pre-line}
-.toast{align-items:center;position:fixed;left:12px;right:12px;bottom:90px;background:var(--inv);color:var(--invt);border-radius:12px;padding:10px 14px;font-size:14px;white-space:pre-line;display:none;z-index:9}
+.toast{align-items:center;position:fixed;left:12px;right:12px;bottom:90px;background:var(--inv);color:var(--invt);border-radius:12px;padding:10px 14px;font-size:14px;white-space:pre-line;display:none;z-index:40}
 .empty{color:var(--mu);text-align:center;padding:30px 0}
 .busy{opacity:.5;pointer-events:none}
 input[type=date]{color-scheme:light dark}
@@ -212,7 +212,7 @@ input[type=date]{color-scheme:light dark}
 <button class="fab" id="fab" aria-label="เพิ่มงาน" onclick="if(TAB==='round'){openAdd()}else{openAddSheet()}">+</button>
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbw9dsYKGy8pELEBeIatNSjJLFv6W7MGjxhnjj584Z4BUlXN6WEfon-JID4f4eHR9wQ/exec';   // ← วาง URL ของบอท (ลงท้าย /exec)
-const APP_VER = 'v3.22';   // 🔖 ต้องตรงกับ SERVER_VER
+const APP_VER = 'v3.23';   // 🔖 ต้องตรงกับ SERVER_VER
 const APP_DATE = '12/11/69 13:30';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
 const TOK = new URLSearchParams(location.search).get('t') || '';
 // 🔄 แถบสีด้านบนวิ่งระหว่างโหลด / บันทึก
@@ -665,13 +665,15 @@ function asPhotoGo(i) {
   if (multi) PH.log = '⚠️ รูปที่เลือกถ่ายคนละวัน — ใช้วันที่ของรูปแรก ถ้าไม่ถูกให้แก้วันที่ หรือลงแยกทีละวัน';
   drawPhoto();
 }
+// ช่องที่ยังไม่กรอก: ขอบแดง + โฟกัส + ข้อความในช่อง (toast อาจโดนคีย์บอร์ดบัง)
+function need(id, msg) { const e = $(id); if (e) { e.style.borderColor = '#dc2626'; e.placeholder = '❗ ' + msg; e.focus(); e.oninput = () => e.style.borderColor = ''; } toast('❗ ' + msg); }
 function asAdd(more) {
   let body;
   if (AS.free) { body = ($('asfree').value || '').trim(); if (!body) return toast('พิมพ์งานก่อน'); }
   else if (AS.kind === 'new' || AS.kind === 'consult') { const nm = ($('ak_name').value || '').trim(), task = ($('astask').value || '').trim();
-    if (!nm) return toast('ใส่ชื่อคนไข้ก่อน'); if (!task) return toast('พิมพ์งานก่อน');
+    if (!nm) return need('ak_name', 'ใส่ชื่อคนไข้ก่อน'); if (!task) return need('astask', 'พิมพ์งานก่อน');
     body = [AS.kind === 'new' ? 'รับใหม่' : 'consult', nm, ($('ak_hn').value || '').trim(), ($('ak_ward').value || '').trim(), task].filter(Boolean).join(' '); AS.kn = AS.kh = AS.kw = ''; }
-  else { const task = ($('astask').value || '').trim(); if (!task) return toast('พิมพ์งานก่อน');
+  else { const task = ($('astask').value || '').trim(); if (!task) return need('astask', 'พิมพ์งานก่อน');
     const p = AS.pt, nm = firstName(p.name);
     body = !p.name ? task : (!p.ward || /รอ\s*admit/i.test(p.ward) ? `${nm} ${task}` : `${p.ward} ${nm} ${task}`);
     if (p.name && p.ward) { const k = p.name + '|' + p.ward, rec = (LS.get('ww_recent') || []).filter(x => x !== k); rec.unshift(k); LS.set('ww_recent', rec.slice(0, 8)); } }
