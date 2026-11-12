@@ -212,8 +212,8 @@ input[type=date]{color-scheme:light dark}
 <button class="fab" id="fab" aria-label="เพิ่มงาน" onclick="if(TAB==='round'){openAdd()}else{openAddSheet()}">+</button>
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbw9dsYKGy8pELEBeIatNSjJLFv6W7MGjxhnjj584Z4BUlXN6WEfon-JID4f4eHR9wQ/exec';   // ← วาง URL ของบอท (ลงท้าย /exec)
-const APP_VER = 'v3.23';   // 🔖 ต้องตรงกับ SERVER_VER
-const APP_DATE = '12/11/69 13:30';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
+const APP_VER = 'v3.24';   // 🔖 ต้องตรงกับ SERVER_VER
+const APP_DATE = '12/11/69 16:00';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
 const TOK = new URLSearchParams(location.search).get('t') || '';
 // 🔄 แถบสีด้านบนวิ่งระหว่างโหลด / บันทึก
 let LOADING = 0;
@@ -710,7 +710,7 @@ function renderRound() {
   if (!blds.includes(RBLD)) RBLD = 'ทั้งหมด';
   $('chips').innerHTML = '';   // ราวด์: ใช้แถบตัวกรองแบบเลือก (ด้านล่าง) แทนปุ่มเลื่อน
   // 👥 ใครดูใคร: กลุ่มจาก Tags (ชื่อคน / ทุกวัน… / ว่าง)
-  const actOk = p => RACT === 'all' || (RACT === 'inactive' ? p.inactive : !p.inactive);   // active / ทั้งหมด / inactive
+  const actOk = p => RACT === 'all' || (RACT === 'inactive' ? p.inactive : (!p.inactive || dueToday(p)));   // กำลังดู: รวมคน 'ไม่ต้องดู' ที่วันนี้ต้องดู (แสดงสีเทา)
   const nIn = all.filter(p => p.inactive).length;
   const cnt = {}; all.filter(actOk).forEach(p => p.tags.filter(g => g !== 'inactive').forEach(g => cnt[g] = (cnt[g] || 0) + 1));
   const gs = Object.keys(cnt).sort((a, b) => (a === 'ว่าง' ? -1 : b === 'ว่าง' ? 1 : 0) || (/^ทุก/.test(a) - /^ทุก/.test(b)) || ((a === 'inactive') - (b === 'inactive')) || a.localeCompare(b));
