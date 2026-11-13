@@ -213,8 +213,8 @@ label.b{display:flex;align-items:center;justify-content:center;cursor:pointer}  
 <button class="fab" id="fab" aria-label="เพิ่มงาน" onclick="if(TAB==='round'){openAdd()}else{openAddSheet()}">+</button>
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbw9dsYKGy8pELEBeIatNSjJLFv6W7MGjxhnjj584Z4BUlXN6WEfon-JID4f4eHR9wQ/exec';   // ← วาง URL ของบอท (ลงท้าย /exec)
-const APP_VER = 'v3.43';   // 🔖 ต้องตรงกับ SERVER_VER
-const APP_DATE = '13/11/69 21:15';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
+const APP_VER = 'v3.44';   // 🔖 ต้องตรงกับ SERVER_VER
+const APP_DATE = '13/11/69 21:35';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
 const TOK = new URLSearchParams(location.search).get('t') || '';
 // 🔄 แถบสีด้านบนวิ่งระหว่างโหลด / บันทึก
 let LOADING = 0;
@@ -716,7 +716,7 @@ function renderRound() {
   if (PENDPT && R) { const c = R.pts.map((p, i) => [p, i]).filter(([p]) => firstName(p.name) === PENDPT.name), w = c.find(([p]) => String(p.ward).replace(/\s/g, '') === PENDPT.ward.replace(/\s/g, '')) || c[0]; if (w) ROPEN = w[1]; PENDPT = null; }   // มาจากกดชื่อในหน้างาน → กางคนนั้น
   document.body.classList.toggle('canedit', !!(R && R.canEdit));   // ราวด์: ปุ่ม ＋ = เพิ่มคนไข้ (เฉพาะลิงก์แก้ไขได้)
   const all = R.pts;
-  all.forEach(p => { if (p.eve === undefined) { p.eve = EVE_RE.test([p.team, p.remark, ...p.tags].join(' ')); if (p.eve) p.tags = p.tags.filter(t => t !== 'ว่าง').concat('ราวน์เย็น'); } if (!p.nb) { p.nb = 1; if (!p.eve && !p.tags.includes('ว่าง') && !p.tags.some(t => !/^ทุก/.test(t) && t !== 'inactive')) p.tags = p.tags.concat('ว่าง'); } });   // มีแต่วันราวด์ ไม่มีชื่อคน = ยังไม่ได้จัดคน   // ราวน์เย็น = ดูรวมกัน ไม่นับว่า "ไม่มีคนดู"
+  all.forEach(p => { if (p.eve === undefined) { p.eve = EVE_RE.test([p.team, p.remark, ...p.tags].join(' ')); if (p.eve) p.tags = p.tags.filter(t => t !== 'ว่าง').concat('ราวน์เย็น'); } if (!p.nb) { p.nb = 1; teamDays(p); if (!p.eve && !p.tags.includes('ว่าง') && !p.tags.some(t => !/^ทุก/.test(t) && t !== 'inactive')) p.tags = p.tags.concat('ว่าง'); } });   // มีแต่วันราวด์ ไม่มีชื่อคน = ยังไม่ได้จัดคน   // ราวน์เย็น = ดูรวมกัน ไม่นับว่า "ไม่มีคนดู"
   const blds = ['ทั้งหมด', ...new Set(all.map(p => p.bld))];
   if (!blds.includes(RBLD)) RBLD = 'ทั้งหมด';
   $('chips').innerHTML = '';   // ราวด์: ใช้แถบตัวกรองแบบเลือก (ด้านล่าง) แทนปุ่มเลื่อน
@@ -762,7 +762,7 @@ function renderRound() {
       return `<div class="task prow${p.inactive ? ' inact' : ''}"><button class="row" onclick="ROPEN=ROPEN===${i}?null:${i};renderRound()" style="align-items:flex-start">
         <span style="flex-grow:1;min-width:0"><div><b>${esc(p.name)}</b>${p.isNew ? '<span class="itag newt">NEW</span>' : ''}${eqBusy(p) ? ' <span class="meta">⏳</span>' : ''}${p.inactive ? '<span class="itag">ไม่ต้องดู</span>' : ''}${dueToday(p) ? `<span class="itag duet">${p.inactive && setIn(p) === 1 && visitIn(p) !== 0 ? 'วันนี้ (พรุ่งนี้ set)' : 'วันนี้'}</span>` : ''} <span class="hn">${p.hn ? 'HN ' + esc(p.hn) : ''}</span></div>
         <div style="font-size:13px">${[p.dx, p.staff].filter(Boolean).map(esc).join(' · ')}</div>${podTxt(p.proc) ? `<div class="pod">${esc(podTxt(p.proc))}</div>` : ''}
-        <div class="who">${p.eve ? `<span class="eve">ดูรวมตอนราวน์เย็น</span>${p.team && !EVE_RE.test(p.team) ? ' · ' + esc(p.team) : ''}` : p.tags.includes('ว่าง') ? '<span class="nobody">ยังไม่ได้จัดคน</span>' + (p.team ? ' · ' + esc(p.team) : '') : esc(p.team || p.tags.join(', '))}${p.remark && !(p.eve && !p.remark.replace(EVE_RE, '').trim()) ? ' · ' + esc(p.eve ? p.remark.replace(EVE_RE, '').trim() : p.remark) : ''}</div>
+        <div class="who">${p.eve ? `<span class="eve">ดูรวมตอนราวน์เย็น</span>${p.team && !EVE_RE.test(p.team) ? ' · ' + esc(p.team) : ''}` : p.tags.includes('ว่าง') ? '<span class="nobody">ยังไม่ได้จัดคน</span>' + (p.team ? ' · ' + esc(p.team) : '') : esc(p.team || p.tags.join(', '))}${p.dayw ? ' · ดูวัน' + p.dayw.map(d => DAYTH[d]).join(', ') : ''}${p.remark && !(p.eve && !p.remark.replace(EVE_RE, '').trim()) ? ' · ' + esc(p.eve ? p.remark.replace(EVE_RE, '').trim() : p.remark) : ''}</div>
         ${p.ww ? `<div class="ww">${esc(p.ww)}</div>` : ''}</span>
         <span style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;flex-shrink:0">${p.open ? `<span class="badge">ค้าง ${p.open}</span>` : p.done ? '<span class="badge ok">✓ เสร็จ</span>' : ''}${p.flap ? '<span class="badge fl">flap</span>' : ''}${op ? '<span class="chev" style="margin-top:4px"><svg viewBox="0 0 24 24"><path d="M6 15l6-6 6 6"/></svg></span>' : ''}</span></button>
         ${isPend(p.ward) ? `<div class="qmv" style="padding:0 16px 10px" onclick="event.stopPropagation()"><select class="inp" onchange="qMove(${i}, this.value)"><option value="">🚚 ย้ายไป ward จริง…</option>${(R.wards || []).filter(w => !isPend(w)).map(w => `<option>${esc(w)}</option>`).join('')}</select>${R.canEdit ? `<div class="btns" style="margin-top:6px">${[['noshow', '🚫 ไม่มา'], ['cancel', '✖ ยกเลิก admit']].map(([w, l]) => `<button class="b r" style="min-height:34px;font-size:13px" onclick="qGone(${i}, '${w}')">${QGONE === i + w ? 'กดอีกครั้ง = ' + l.slice(2) : l}</button>`).join('')}${/^\d{6,9}$/.test(String(p.hn || '')) ? `<button class="b" style="min-height:34px;font-size:13px" onclick="openHist('${p.hn}')">📄 ประวัติ</button>` : ''}</div>` : ''}</div>` : ''}
@@ -1299,9 +1299,20 @@ function fallbackCopy(t, cb) { const a = document.createElement('textarea'); a.v
 // วันที่ต้องดูประจำ: "q thu" · "q อังคาร,ศุกร์" · "ทุกวันพฤหัส" · "(ดูทุกวันคู่)" / วันคี่ — อ่านจาก คนดู · หมายเหตุ · กลุ่ม
 const DAYW = [['อาทิตย์', 0], ['จันทร์', 1], ['อังคาร', 2], ['พุธ', 3], ['พฤหัสบดี', 4], ['พฤหัส', 4], ['ศุกร์', 5], ['เสาร์', 6], ['sun', 0], ['mon', 1], ['tue', 2], ['wed', 3], ['thu', 4], ['fri', 5], ['sat', 6], ['พฤ', 4], ['อา', 0], ['จ', 1], ['อ', 2], ['พ', 3], ['ศ', 5], ['ส', 6]];
 const DAYRE = DAYW.map(d => d[0]).join('|');
+const DAYX = { sunday: 0, sun: 0, monday: 1, mon: 1, tuesday: 2, tue: 2, wednesday: 3, wed: 3, thursday: 4, thu: 4, friday: 5, fri: 5, saturday: 6, sat: 6, 'อาทิตย์': 0, 'อา': 0, 'จันทร์': 1, 'จ': 1, 'อังคาร': 2, 'อ': 2, 'พุธ': 3, 'พ': 3, 'พฤหัสบดี': 4, 'พฤหัส': 4, 'พฤ': 4, 'ศุกร์': 5, 'ศ': 5, 'เสาร์': 6, 'ส': 6 }, DAYTH = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัส', 'ศุกร์', 'เสาร์'];
+// ชื่อวันในช่องคนดู (sunday / ศ. / บี sun/mon) = วันที่ต้องดู ไม่ใช่ชื่อคน
+function teamDays(p) {
+  const dk = t => { t = t.toLowerCase().replace(/^วัน/, '').replace(/\.$/, ''); return t in DAYX ? DAYX[t] : -1; };
+  const toks = String(p.team || '').split(/[\s,\/]+/).filter(Boolean), ds = toks.map(dk).filter(d => d >= 0);
+  if (!ds.length) return;
+  p.dayw = [...new Set(ds)];
+  p.team = toks.filter(t => dk(t) < 0).join(' ').trim();
+  p.tags = p.tags.filter(t => dk(t) < 0 && t.split(/[\s\/]+/).every(x => dk(x) < 0) || t === 'inactive');
+  if (p.team) p.tags = p.tags.concat(p.team.split(/[\s,]+/).filter(x => x && !p.tags.includes(x)));
+}
 function schedOf(p) {
   const s = [p.team, p.remark, ...(p.tags || [])].join(' ');   // อ่านเฉพาะ คนดู · หมายเหตุ · กลุ่ม (ไม่อ่าน ww ประจำ / Plan เช่น "ตามรูปแผล q อ" = งาน ไม่ใช่วันราวด์)
-  const days = new Set();
+  const days = new Set(p.dayw || []);
   const seg = new RegExp(`(?:\\bq|ทุก|every)\\s*(?:วัน)?\\s*((?:(?:วัน)?(?:${DAYRE})\\.?(?![ก-๙a-z])\\s*(?:,|/|และ|&|\\s)?\\s*)+)`, 'gi');
   let m; while ((m = seg.exec(s))) { const w = new RegExp(`(?:วัน)?(${DAYRE})\\.?(?![ก-๙a-z])`, 'gi'); let d; while ((d = w.exec(m[1]))) { const hit = DAYW.find(x => x[0] === d[1].toLowerCase()); if (hit) days.add(hit[1]); } }
   return { days, even: /วันคู่/.test(s), odd: /วันคี่/.test(s) };
