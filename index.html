@@ -186,6 +186,7 @@ body.adding .add{display:flex}.rtab .fab{display:none}.rtab.canedit .fab{display
 .busy{opacity:.5;pointer-events:none}
 input[type=date]{color-scheme:light dark}
 .dmove{position:relative;border-bottom:1px dashed currentColor;cursor:pointer}.dmove input{position:absolute;inset:0;opacity:0;width:100%;cursor:pointer}
+label.b{display:flex;align-items:center;justify-content:center;cursor:pointer}   /* label ที่ทำเป็นปุ่ม (เลือกไฟล์) ต้องจัดกลางเอง */
 </style>
 </head>
 <body>
@@ -212,8 +213,8 @@ input[type=date]{color-scheme:light dark}
 <button class="fab" id="fab" aria-label="เพิ่มงาน" onclick="if(TAB==='round'){openAdd()}else{openAddSheet()}">+</button>
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbw9dsYKGy8pELEBeIatNSjJLFv6W7MGjxhnjj584Z4BUlXN6WEfon-JID4f4eHR9wQ/exec';   // ← วาง URL ของบอท (ลงท้าย /exec)
-const APP_VER = 'v3.36';   // 🔖 ต้องตรงกับ SERVER_VER
-const APP_DATE = '13/11/69 20:20';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
+const APP_VER = 'v3.37';   // 🔖 ต้องตรงกับ SERVER_VER
+const APP_DATE = '13/11/69 20:30';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
 const TOK = new URLSearchParams(location.search).get('t') || '';
 // 🔄 แถบสีด้านบนวิ่งระหว่างโหลด / บันทึก
 let LOADING = 0;
