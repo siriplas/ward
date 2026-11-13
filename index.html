@@ -213,8 +213,8 @@ label.b{display:flex;align-items:center;justify-content:center;cursor:pointer}  
 <button class="fab" id="fab" aria-label="เพิ่มงาน" onclick="if(TAB==='round'){openAdd()}else{openAddSheet()}">+</button>
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbw9dsYKGy8pELEBeIatNSjJLFv6W7MGjxhnjj584Z4BUlXN6WEfon-JID4f4eHR9wQ/exec';   // ← วาง URL ของบอท (ลงท้าย /exec)
-const APP_VER = 'v3.44';   // 🔖 ต้องตรงกับ SERVER_VER
-const APP_DATE = '13/11/69 21:35';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
+const APP_VER = 'v3.45';   // 🔖 ต้องตรงกับ SERVER_VER
+const APP_DATE = '13/11/69 21:40';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
 const TOK = new URLSearchParams(location.search).get('t') || '';
 // 🔄 แถบสีด้านบนวิ่งระหว่างโหลด / บันทึก
 let LOADING = 0;
@@ -495,7 +495,7 @@ function run(cmd, patch) {
 }
 const nowHM = () => new Date(Date.now() + 7 * 3600e3).toISOString().slice(11, 16);
 
-function setR(r) { R = r; verCheck(r && r.ver); document.body.classList.toggle('canedit', !!(r && r.canEdit)); document.body.classList.toggle('isadmin', !!(r && r.admin)); try { r._t = Date.now(); localStorage.setItem('ww_c_r', JSON.stringify(r)); } catch (e) {} }
+function setR(r) { R = r; tdNorm(); verCheck(r && r.ver); document.body.classList.toggle('canedit', !!(r && r.canEdit)); document.body.classList.toggle('isadmin', !!(r && r.admin)); try { r._t = Date.now(); localStorage.setItem('ww_c_r', JSON.stringify(r)); } catch (e) {} }
 // 🔔 เซิร์ฟเวอร์ใหม่กว่าหน้าแอพ → แถบ "มีเวอร์ชันใหม่ · แตะเพื่อโหลด" (โหลดแบบไม่ใช้หน้าเก่าในเครื่อง)
 const verNum = v => { const m = String(v || '').match(/^v(\d+)\.(\d+)/); return m ? +m[1] * 1000 + +m[2] : 0; };
 function verCheck(sv) {
@@ -716,7 +716,8 @@ function renderRound() {
   if (PENDPT && R) { const c = R.pts.map((p, i) => [p, i]).filter(([p]) => firstName(p.name) === PENDPT.name), w = c.find(([p]) => String(p.ward).replace(/\s/g, '') === PENDPT.ward.replace(/\s/g, '')) || c[0]; if (w) ROPEN = w[1]; PENDPT = null; }   // มาจากกดชื่อในหน้างาน → กางคนนั้น
   document.body.classList.toggle('canedit', !!(R && R.canEdit));   // ราวด์: ปุ่ม ＋ = เพิ่มคนไข้ (เฉพาะลิงก์แก้ไขได้)
   const all = R.pts;
-  all.forEach(p => { if (p.eve === undefined) { p.eve = EVE_RE.test([p.team, p.remark, ...p.tags].join(' ')); if (p.eve) p.tags = p.tags.filter(t => t !== 'ว่าง').concat('ราวน์เย็น'); } if (!p.nb) { p.nb = 1; teamDays(p); if (!p.eve && !p.tags.includes('ว่าง') && !p.tags.some(t => !/^ทุก/.test(t) && t !== 'inactive')) p.tags = p.tags.concat('ว่าง'); } });   // มีแต่วันราวด์ ไม่มีชื่อคน = ยังไม่ได้จัดคน   // ราวน์เย็น = ดูรวมกัน ไม่นับว่า "ไม่มีคนดู"
+  tdNorm();
+  all.forEach(p => { if (p.eve === undefined) { p.eve = EVE_RE.test([p.team, p.remark, ...p.tags].join(' ')); if (p.eve) p.tags = p.tags.filter(t => t !== 'ว่าง').concat('ราวน์เย็น'); } if (!p.nb) { p.nb = 1; if (!p.eve && !p.tags.includes('ว่าง') && !p.tags.some(t => !/^ทุก/.test(t) && t !== 'inactive')) p.tags = p.tags.concat('ว่าง'); } });   // มีแต่วันราวด์ ไม่มีชื่อคน = ยังไม่ได้จัดคน   // ราวน์เย็น = ดูรวมกัน ไม่นับว่า "ไม่มีคนดู"
   const blds = ['ทั้งหมด', ...new Set(all.map(p => p.bld))];
   if (!blds.includes(RBLD)) RBLD = 'ทั้งหมด';
   $('chips').innerHTML = '';   // ราวด์: ใช้แถบตัวกรองแบบเลือก (ด้านล่าง) แทนปุ่มเลื่อน
@@ -1301,11 +1302,19 @@ const DAYW = [['อาทิตย์', 0], ['จันทร์', 1], ['อั�
 const DAYRE = DAYW.map(d => d[0]).join('|');
 const DAYX = { sunday: 0, sun: 0, monday: 1, mon: 1, tuesday: 2, tue: 2, wednesday: 3, wed: 3, thursday: 4, thu: 4, friday: 5, fri: 5, saturday: 6, sat: 6, 'อาทิตย์': 0, 'อา': 0, 'จันทร์': 1, 'จ': 1, 'อังคาร': 2, 'อ': 2, 'พุธ': 3, 'พ': 3, 'พฤหัสบดี': 4, 'พฤหัส': 4, 'พฤ': 4, 'ศุกร์': 5, 'ศ': 5, 'เสาร์': 6, 'ส': 6 }, DAYTH = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัส', 'ศุกร์', 'เสาร์'];
 // ชื่อวันในช่องคนดู (sunday / ศ. / บี sun/mon) = วันที่ต้องดู ไม่ใช่ชื่อคน
+// วันในช่องคนดู (ช่อง A แถวแรก) = ของคนแรกใน ward เท่านั้น
+function tdNorm() {
+  if (!R || !R.pts || R.tdOk) return;
+  R.tdOk = 1; const seen = {};
+  R.pts.forEach(p => { teamDays(p); const f = !seen[p.ward]; seen[p.ward] = 1; if (f && p.tdays) p.dayw = [...new Set([...p.tdays, ...(p.dayw || [])])]; });
+}
 function teamDays(p) {
   const dk = t => { t = t.toLowerCase().replace(/^วัน/, '').replace(/\.$/, ''); return t in DAYX ? DAYX[t] : -1; };
+  const rd = [...new Set(String(p.remark || '').split(/[\s,\/()]+/).map(dk).filter(d => d >= 0))];   // วันในหมายเหตุของคนนั้น
+  if (rd.length) p.dayw = rd;
   const toks = String(p.team || '').split(/[\s,\/]+/).filter(Boolean), ds = toks.map(dk).filter(d => d >= 0);
   if (!ds.length) return;
-  p.dayw = [...new Set(ds)];
+  p.tdays = [...new Set(ds)];
   p.team = toks.filter(t => dk(t) < 0).join(' ').trim();
   p.tags = p.tags.filter(t => dk(t) < 0 && t.split(/[\s\/]+/).every(x => dk(x) < 0) || t === 'inactive');
   if (p.team) p.tags = p.tags.concat(p.team.split(/[\s,]+/).filter(x => x && !p.tags.includes(x)));
