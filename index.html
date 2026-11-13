@@ -213,8 +213,8 @@ label.b{display:flex;align-items:center;justify-content:center;cursor:pointer}  
 <button class="fab" id="fab" aria-label="เพิ่มงาน" onclick="if(TAB==='round'){openAdd()}else{openAddSheet()}">+</button>
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbw9dsYKGy8pELEBeIatNSjJLFv6W7MGjxhnjj584Z4BUlXN6WEfon-JID4f4eHR9wQ/exec';   // ← วาง URL ของบอท (ลงท้าย /exec)
-const APP_VER = 'v3.45';   // 🔖 ต้องตรงกับ SERVER_VER
-const APP_DATE = '13/11/69 21:40';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
+const APP_VER = 'v3.46';   // 🔖 ต้องตรงกับ SERVER_VER
+const APP_DATE = '13/11/69 21:45';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
 const TOK = new URLSearchParams(location.search).get('t') || '';
 // 🔄 แถบสีด้านบนวิ่งระหว่างโหลด / บันทึก
 let LOADING = 0;
@@ -1312,6 +1312,7 @@ function teamDays(p) {
   const dk = t => { t = t.toLowerCase().replace(/^วัน/, '').replace(/\.$/, ''); return t in DAYX ? DAYX[t] : -1; };
   const rd = [...new Set(String(p.remark || '').split(/[\s,\/()]+/).map(dk).filter(d => d >= 0))];   // วันในหมายเหตุของคนนั้น
   if (rd.length) p.dayw = rd;
+  if (rd.length && String(p.remark).split(/[\s,\/()]+/).filter(Boolean).every(t => dk(t) >= 0 || /^(q|ทุก|every|วัน|และ|&)$/i.test(t))) p.remark = '';   // หมายเหตุมีแต่วัน (q จ พฤ) = แสดงเป็น ดูวัน… อย่างเดียว ไม่ซ้ำ
   const toks = String(p.team || '').split(/[\s,\/]+/).filter(Boolean), ds = toks.map(dk).filter(d => d >= 0);
   if (!ds.length) return;
   p.tdays = [...new Set(ds)];
