@@ -20,27 +20,35 @@ main{padding:12px 16px 40px;max-width:640px;margin:0 auto}
 .big{font-size:20px;font-weight:700}.ok{color:var(--g)}.warn{color:var(--or)}.bad{color:var(--rd)}
 .note{font-size:13px;color:var(--mu);margin-top:10px;line-height:1.5}
 </style></head><body>
-<header><b>🎨 วัดสี flap</b><div class="mu">แตะ 3 จุดบนรูป → ได้ค่าความต่างของสีเป็นตัวเลข · คำนวณในเครื่อง ไม่ส่งรูปไปไหน</div></header>
+<header><b>🎨 วัดสี flap</b><div class="mu">แตะ flap 3–5 จุด · ผิวปกติ 3 จุด · อ้างอิง 1–2 จุด → ได้ค่าความต่างของสี · คำนวณในเครื่อง ไม่ส่งรูปไปไหน</div></header>
 <main>
   <label class="b p">📷 ถ่าย / เลือกรูป flap<input type="file" accept="image/*" style="display:none" onchange="load(this.files[0])"></label>
   <div class="steps" id="steps"></div>
   <div class="wrap"><canvas id="cv" height="10"></canvas></div>
   <div id="res"></div>
-  <div class="note">• ⚪ <b>อ้างอิง</b> = ก๊อซขาวหรือการ์ดเทาในภาพเดียวกัน (ไม่บังคับ แต่ช่วยปรับแสงให้เทียบข้ามรอบได้)<br>• แตะซ้ำที่จุดเดิมเพื่อย้าย · ใช้เป็นตัวช่วยดูแนวโน้มเท่านั้น ไม่แทนการตรวจ flap</div>
+  <div class="note">• ⚪ <b>อ้างอิง</b> = ก๊อซขาวหรือการ์ดเทาในภาพเดียวกัน (ไม่บังคับ แต่ช่วยปรับแสงให้เทียบข้ามรอบได้)<br>• จุดที่สีเพี้ยนจากจุดอื่น (เงา · แสงวาว · ขน) = กรอบเส้นประ ไม่นำมาเฉลี่ย · กด ล้าง เพื่อแตะกลุ่มนั้นใหม่ · ใช้เป็นตัวช่วยดูแนวโน้มเท่านั้น ไม่แทนการตรวจ flap</div>
 </main>
 <script>
 const $ = id => document.getElementById(id);
-const PTS = { ref: null, flap: null, skin: null }, NAMES = { ref: '⚪ อ้างอิง', flap: '🔴 flap', skin: '🟤 ผิวปกติ' }, COL = { ref: '#ffffff', flap: '#ef4444', skin: '#a16207' };
+const MAX = 5, PTS = { ref: [], flap: [], skin: [] }, NAMES = { ref: 'อ้างอิง', flap: 'flap', skin: 'ผิวปกติ' }, COL = { ref: '#ffffff', flap: '#ef4444', skin: '#a16207' };
 let MODE = 'flap', IMG = null, R = 12;
-function steps() { $('steps').innerHTML = ['flap', 'skin', 'ref'].map(k => `<button class="${MODE === k ? 'on' : ''}" onclick="MODE='${k}';steps()"><i style="background:${COL[k]}"></i>${NAMES[k].slice(2)}${PTS[k] ? ' ✓' : ''}</button>`).join(''); }
+function steps() {
+  $('steps').innerHTML = ['flap', 'skin', 'ref'].map(k => `<button class="${MODE === k ? 'on' : ''}" onclick="MODE='${k}';steps()"><i style="background:${COL[k]}"></i>${NAMES[k]} ${PTS[k].length}/${MAX}</button>`).join('')
+    + `<button style="flex:0 0 auto;padding:0 10px" onclick="PTS[MODE]=[];draw();steps();calc()">ล้าง</button>`;
+}
 function load(f) {
   if (!f) return; const u = URL.createObjectURL(f), im = new Image();
-  im.onload = () => { const cv = $('cv'), s = Math.min(1, 1600 / Math.max(im.width, im.height)); cv.width = im.width * s; cv.height = im.height * s; R = Math.max(6, Math.round(cv.width / 80)); IMG = im; PTS.ref = PTS.flap = PTS.skin = null; MODE = 'flap'; draw(); steps(); calc(); };
+  im.onload = () => { const cv = $('cv'), s = Math.min(1, 1600 / Math.max(im.width, im.height)); cv.width = im.width * s; cv.height = im.height * s; R = Math.max(6, Math.round(cv.width / 90)); IMG = im; PTS.ref = []; PTS.flap = []; PTS.skin = []; MODE = 'flap'; draw(); steps(); calc(); };
   im.src = u;
 }
 function draw() {
   const cv = $('cv'), c = cv.getContext('2d'); if (!IMG) return; c.drawImage(IMG, 0, 0, cv.width, cv.height);
-  for (const k in PTS) { const p = PTS[k]; if (!p) continue; c.lineWidth = Math.max(2, R / 4); c.strokeStyle = '#000'; c.strokeRect(p.x - R - 1, p.y - R - 1, 2 * R + 2, 2 * R + 2); c.strokeStyle = COL[k]; c.strokeRect(p.x - R, p.y - R, 2 * R, 2 * R); }
+  const fs = Math.max(12, R * 1.4); c.font = `bold ${fs}px system-ui`;
+  for (const k in PTS) PTS[k].forEach((p, i) => {
+    c.setLineDash(p.out ? [4, 3] : []); c.lineWidth = Math.max(2, R / 4);
+    c.strokeStyle = '#000'; c.strokeRect(p.x - R - 1, p.y - R - 1, 2 * R + 2, 2 * R + 2); c.strokeStyle = COL[k]; c.strokeRect(p.x - R, p.y - R, 2 * R, 2 * R);
+    c.setLineDash([]); c.lineWidth = 3; c.strokeStyle = '#000'; c.strokeText(i + 1, p.x + R + 2, p.y - R); c.fillStyle = COL[k]; c.fillText(i + 1, p.x + R + 2, p.y - R);
+  });
 }
 function avg(p) {
   const cv = $('cv'), c = cv.getContext('2d'); c.drawImage(IMG, 0, 0, cv.width, cv.height);
@@ -50,12 +58,11 @@ function avg(p) {
 }
 $('cv').addEventListener('click', e => {
   if (!IMG) return; const cv = $('cv'), rc = cv.getBoundingClientRect();
-  PTS[MODE] = { x: Math.round((e.clientX - rc.left) * cv.width / rc.width), y: Math.round((e.clientY - rc.top) * cv.height / rc.height) };
-  PTS[MODE].rgb = avg(PTS[MODE]);
-  if (MODE === 'flap' && !PTS.skin) MODE = 'skin'; else if (MODE === 'skin' && !PTS.ref) MODE = 'ref';
-  draw(); steps(); calc();
+  const p = { x: Math.round((e.clientX - rc.left) * cv.width / rc.width), y: Math.round((e.clientY - rc.top) * cv.height / rc.height) };
+  const L = PTS[MODE]; if (L.length >= MAX) L.shift(); p.rgb = avg(p); L.push(p);
+  if (L.length >= MAX) MODE = MODE === 'flap' ? 'skin' : MODE === 'skin' ? 'ref' : 'ref';
+  calc(); draw(); steps();
 });
-// sRGB → Lab (D65)
 function lab([r, g, b]) {
   const f = v => { v /= 255; return v > 0.04045 ? Math.pow((v + 0.055) / 1.055, 2.4) : v / 12.92; };
   const R = f(r), G = f(g), B = f(b);
@@ -63,26 +70,38 @@ function lab([r, g, b]) {
   const h = t => t > 0.008856 ? Math.cbrt(t) : 7.787 * t + 16 / 116; X = h(X); Y = h(Y); Z = h(Z);
   return [116 * Y - 16, 500 * (X - Y), 200 * (Y - Z)];
 }
-// ปรับแสงด้วยจุดอ้างอิง: ทำให้จุดอ้างอิงเป็นสีเทากลาง (ค่าเฉลี่ยของมันเอง)
-function wb(rgb) { if (!PTS.ref) return rgb; const m = (PTS.ref.rgb[0] + PTS.ref.rgb[1] + PTS.ref.rgb[2]) / 3; return rgb.map((v, i) => Math.min(255, v * m / Math.max(1, PTS.ref.rgb[i]))); }
-const hex = c => '#' + c.map(v => Math.round(v).toString(16).padStart(2, '0')).join('');
+const mean = a => a[0].map((_, i) => a.reduce((s, v) => s + v[i], 0) / a.length);
+const med = a => a[0].map((_, i) => { const v = a.map(x => x[i]).sort((p, q) => p - q), m = v.length >> 1; return v.length % 2 ? v[m] : (v[m - 1] + v[m]) / 2; });
+const dist = (p, q) => Math.hypot(p[0] - q[0], p[1] - q[1], p[2] - q[2]);
+// กลุ่มจุด → ตัดจุดเพี้ยน (ห่างจากค่ากลาง > 8 เมื่อมี ≥ 3 จุด) → ค่าเฉลี่ย rgb + ความกระจาย
+function group(k, wbf) {
+  const L = PTS[k]; if (!L.length) return null;
+  const labs = L.map(p => lab(wbf(p.rgb))), m = med(labs);
+  L.forEach((p, i) => p.out = L.length >= 3 && dist(labs[i], m) > 8);
+  const ins = L.filter(p => !p.out), il = labs.filter((_, i) => !L[i].out), mu = mean(il);
+  return { rgb: mean(ins.map(p => wbf(p.rgb))), n: ins.length, out: L.length - ins.length, sd: il.reduce((s, v) => s + dist(v, mu), 0) / il.length };
+}
+const hex = c => '#' + c.map(v => Math.round(Math.max(0, Math.min(255, v))).toString(16).padStart(2, '0')).join('');
 const f1 = v => (v > 0 ? '+' : '') + v.toFixed(1);
 function calc() {
   const el = $('res'); if (!IMG) { el.innerHTML = ''; return; }
-  if (!PTS.flap || !PTS.skin) { el.innerHTML = `<div class="res mu">แตะ ${!PTS.flap ? '🔴 บน flap' : '🟤 บนผิวปกติข้างๆ'} ${PTS.flap && !PTS.skin ? '' : ''}</div>`; return; }
-  const fc = wb(PTS.flap.rgb), sc = wb(PTS.skin.rgb), F = lab(fc), S = lab(sc);
-  const dL = F[0] - S[0], da = F[1] - S[1], db = F[2] - S[2], dE = Math.hypot(dL, da, db);
+  const id = x => x, ref = group('ref', id);
+  const wbf = ref ? (rgb => { const m = (ref.rgb[0] + ref.rgb[1] + ref.rgb[2]) / 3; return rgb.map((v, i) => Math.min(255, v * m / Math.max(1, ref.rgb[i]))); }) : id;
+  const fg = group('flap', wbf), sg = group('skin', wbf);
+  if (!fg || !sg) { el.innerHTML = `<div class="res mu">แตะ ${!fg ? '🔴 บน flap 3–5 จุด' : '🟤 บนผิวปกติข้างๆ 3 จุด'}</div>`; return; }
+  const F = lab(fg.rgb), S = lab(sg.rgb), dL = F[0] - S[0], da = F[1] - S[1], db = F[2] - S[2], dE = Math.hypot(dL, da, db);
   const lv = dE < 5 ? ['ok', 'ใกล้เคียงผิวปกติ'] : dE < 12 ? ['warn', 'ต่างพอสังเกต'] : ['bad', 'ต่างมาก'];
   const words = [];
   if (dL <= -5) words.push('คล้ำกว่า'); else if (dL >= 5) words.push('สว่าง/ซีดกว่า');
   if (da >= 5) words.push('แดงกว่า'); else if (da <= -5) words.push('แดงน้อยกว่า (ซีด)');
   if (db <= -5) words.push('ออกม่วง/ฟ้ากว่า'); else if (db >= 5) words.push('ออกเหลืองกว่า');
+  const st = g => `${g.n} จุด${g.out ? ` (ตัดจุดเพี้ยน ${g.out})` : ''} · ± ${g.sd.toFixed(1)}${g.n >= 2 && g.sd > 4 ? ' <span class="warn">⚠️ กระจาย แตะใหม่</span>' : ''}${g.n < 3 ? ' <span class="mu">(แนะนำ ≥ 3)</span>' : ''}`;
   el.innerHTML = `<div class="res">
-    <div class="row"><div class="sw" style="background:${hex(fc)}"></div><div><b>flap</b> <span class="mu">L ${F[0].toFixed(0)} · a ${F[1].toFixed(0)} · b ${F[2].toFixed(0)}</span></div></div>
-    <div class="row"><div class="sw" style="background:${hex(sc)}"></div><div><b>ผิวปกติ</b> <span class="mu">L ${S[0].toFixed(0)} · a ${S[1].toFixed(0)} · b ${S[2].toFixed(0)}</span></div></div>
+    <div class="row"><div class="sw" style="background:${hex(fg.rgb)}"></div><div><b>flap</b> <span class="mu">L ${F[0].toFixed(0)} · a ${F[1].toFixed(0)} · b ${F[2].toFixed(0)}</span><div class="mu" style="font-size:13px">${st(fg)}</div></div></div>
+    <div class="row"><div class="sw" style="background:${hex(sg.rgb)}"></div><div><b>ผิวปกติ</b> <span class="mu">L ${S[0].toFixed(0)} · a ${S[1].toFixed(0)} · b ${S[2].toFixed(0)}</span><div class="mu" style="font-size:13px">${st(sg)}</div></div></div>
     <div class="row" style="border-top:1px solid var(--ln);margin-top:6px;padding-top:10px"><div><div class="big ${lv[0]}">ΔE ${dE.toFixed(1)} · ${lv[1]}</div>
     <div>flap ${words.length ? words.join(' · ') : 'สีใกล้เคียงผิวปกติ'}</div>
-    <div class="mu" style="font-size:13px">ความสว่าง ${f1(dL)} · แดง ${f1(da)} · เหลือง ${f1(db)}${PTS.ref ? ' · ปรับแสงด้วยจุดอ้างอิงแล้ว ✓' : ' · ⚠️ ยังไม่มีจุดอ้างอิง เทียบข้ามรอบได้ไม่แม่น'}</div></div></div>
+    <div class="mu" style="font-size:13px">ความสว่าง ${f1(dL)} · แดง ${f1(da)} · เหลือง ${f1(db)}${ref ? ` · ปรับแสงด้วยจุดอ้างอิง ${ref.n} จุด ✓` : ' · ⚠️ ยังไม่มีจุดอ้างอิง เทียบข้ามรอบได้ไม่แม่น'}</div></div></div>
   </div>`;
 }
 steps();
