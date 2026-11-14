@@ -10,99 +10,133 @@ main{padding:12px 16px 40px;max-width:640px;margin:0 auto}
 .mu{color:var(--mu)}
 .b{display:flex;align-items:center;justify-content:center;min-height:44px;border-radius:12px;border:1px solid var(--ln);background:var(--bg2);color:var(--tx);font:inherit;cursor:pointer;width:100%}
 .b.p{background:var(--hd);color:#fff;border-color:var(--hd)}
-.steps{display:flex;gap:6px;margin:12px 0}
-.steps button{flex:1;min-height:42px;border-radius:10px;border:2px solid var(--ln);background:var(--bg2);color:var(--tx);font:inherit;font-size:13px;cursor:pointer;line-height:1.2}
-.steps button.on{border-color:var(--hd)}
-.steps i{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:4px;vertical-align:-1px;border:1px solid rgba(0,0,0,.3)}
-.wrap{position:relative;touch-action:manipulation}canvas{width:100%;display:block;border-radius:10px;background:var(--bg2)}
+.bar{display:flex;gap:6px;margin:10px 0 0;flex-wrap:wrap}
+.bar button{flex:1;min-height:40px;border-radius:10px;border:2px solid var(--ln);background:var(--bg2);color:var(--tx);font:inherit;font-size:13px;cursor:pointer;line-height:1.2;padding:0 6px}
+.bar button.on{border-color:var(--hd)}.bar button.sm{flex:0 0 auto}
+.bar i{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:4px;vertical-align:-1px;border:1px solid rgba(0,0,0,.3)}
+.sz{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:13px}.sz input{flex:1}
+.wrap{position:relative;margin-top:10px;overflow:auto;border-radius:10px;background:var(--bg2);max-height:70vh}
+.stage{position:relative;width:100%}
+.stage canvas{position:absolute;left:0;top:0;width:100%;height:100%;display:block}.stage canvas#cv{position:relative}
+.paint .stage canvas#ov{touch-action:none}
 .res{margin-top:12px;border:1px solid var(--ln);border-radius:12px;padding:12px}
 .row{display:flex;align-items:center;gap:10px;padding:6px 0}.sw{width:34px;height:34px;border-radius:8px;border:1px solid rgba(0,0,0,.2);flex:none}
 .big{font-size:20px;font-weight:700}.ok{color:var(--g)}.warn{color:var(--or)}.bad{color:var(--rd)}
 .note{font-size:13px;color:var(--mu);margin-top:10px;line-height:1.5}
+.leg{display:flex;gap:10px;font-size:12px;margin-top:6px}.leg span::before{content:'';display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:-1px;background:var(--c)}
 </style></head><body>
-<header><b>🎨 วัดสี flap</b><div class="mu">แตะ flap 3–5 จุด · ผิวปกติ 3 จุด · อ้างอิง 1–2 จุด → ได้ค่าความต่างของสี · คำนวณในเครื่อง ไม่ส่งรูปไปไหน</div></header>
-<main>
+<header><b>🎨 วัดสี flap</b><div class="mu">ระบายบน flap · ผิวปกติ · ก๊อซขาว (อ้างอิง) → ได้ค่าความต่างของสี + แผนที่สีบน flap · คำนวณในเครื่อง ไม่ส่งรูปไปไหน</div></header>
+<main class="paint" id="mn">
   <label class="b p">📷 ถ่าย / เลือกรูป flap<input type="file" accept="image/*" style="display:none" onchange="load(this.files[0])"></label>
-  <div class="steps" id="steps"></div>
-  <div class="wrap"><canvas id="cv" height="10"></canvas></div>
+  <div class="bar" id="grp"></div>
+  <div class="bar" id="tools"></div>
+  <div class="sz">แปรง <input type="range" id="bs" min="2" max="40" value="14" oninput="BR=+this.value"> <label><input type="checkbox" id="hm" checked onchange="paintOv()"> แผนที่สี</label></div>
+  <div class="wrap" id="wr"><div class="stage" id="st"><canvas id="cv" width="10" height="10"></canvas><canvas id="ov" width="10" height="10"></canvas></div></div>
   <div id="res"></div>
-  <div class="note">• ⚪ <b>อ้างอิง</b> = ก๊อซขาวหรือการ์ดเทาในภาพเดียวกัน (ไม่บังคับ แต่ช่วยปรับแสงให้เทียบข้ามรอบได้)<br>• จุดที่สีเพี้ยนจากจุดอื่น (เงา · แสงวาว · ขน) = กรอบเส้นประ ไม่นำมาเฉลี่ย · กด ล้าง เพื่อแตะกลุ่มนั้นใหม่ · ใช้เป็นตัวช่วยดูแนวโน้มเท่านั้น ไม่แทนการตรวจ flap</div>
+  <div class="note">• ✏️ ระบาย = ลากนิ้ว · 👆 แตะจุด = แตะทีละจุด · 🧽 ลบ = ลบส่วนที่ระบายของกลุ่มที่เลือก · 🔍 = ซูม/เลื่อนภาพ (ระหว่างนี้ระบายไม่ได้)<br>
+  • ตัดพิกเซลที่สว่างสุด/มืดสุดอย่างละ 10% อัตโนมัติ (แสงวาว · เงา · ขน)<br>• ⚪ อ้างอิง (ก๊อซขาว/การ์ดเทา) ไม่บังคับ แต่ช่วยให้เทียบข้ามรอบได้ · ใช้ดูแนวโน้มเท่านั้น ไม่แทนการตรวจ flap</div>
 </main>
 <script>
 const $ = id => document.getElementById(id);
-const MAX = 5, PTS = { ref: [], flap: [], skin: [] }, NAMES = { ref: 'อ้างอิง', flap: 'flap', skin: 'ผิวปกติ' }, COL = { ref: '#ffffff', flap: '#ef4444', skin: '#a16207' };
-let MODE = 'flap', IMG = null, R = 12;
-function steps() {
-  $('steps').innerHTML = ['flap', 'skin', 'ref'].map(k => `<button class="${MODE === k ? 'on' : ''}" onclick="MODE='${k}';steps()"><i style="background:${COL[k]}"></i>${NAMES[k]} ${PTS[k].length}/${MAX}</button>`).join('')
-    + `<button style="flex:0 0 auto;padding:0 10px" onclick="PTS[MODE]=[];draw();steps();calc()">ล้าง</button>`;
+const G = ['flap', 'skin', 'ref'], NAMES = { flap: 'flap', skin: 'ผิวปกติ', ref: 'อ้างอิง' }, COL = { flap: [239, 68, 68], skin: [161, 98, 7], ref: [96, 165, 250] };
+let GRP = 'flap', TOOL = 'paint', ZOOM = 1, BR = 14, IMG = null, PX = null, W = 0, H = 0, M = {}, HEAT = null, timer = 0;
+function ui() {
+  $('grp').innerHTML = G.map(k => `<button class="${GRP === k ? 'on' : ''}" onclick="GRP='${k}';ui()"><i style="background:rgb(${COL[k]})"></i>${NAMES[k]}${M[k] && cnt(k) ? ' ✓' : ''}</button>`).join('');
+  $('tools').innerHTML = [['paint', '✏️ ระบาย'], ['tap', '👆 แตะจุด'], ['erase', '🧽 ลบ'], ['pan', '🔍 ซูม ' + ZOOM + 'x']].map(([t, l]) => `<button class="${TOOL === t ? 'on' : ''}" onclick="tool('${t}')">${l}</button>`).join('')
+    + `<button class="sm" onclick="if(M[GRP]){M[GRP].fill(0);paintOv();later()}">ล้าง${NAMES[GRP]}</button>`;
+  $('mn').className = TOOL === 'pan' ? '' : 'paint';
 }
+function tool(t) { if (t === 'pan') { ZOOM = TOOL === 'pan' ? (ZOOM % 3) + 1 : ZOOM; $('st').style.width = ZOOM * 100 + '%'; } TOOL = t; ui(); }
+const cnt = k => { let n = 0; const m = M[k]; for (let i = 0; i < m.length; i++) n += m[i]; return n; };
 function load(f) {
-  if (!f) return; const u = URL.createObjectURL(f), im = new Image();
-  im.onload = () => { const cv = $('cv'), s = Math.min(1, 1600 / Math.max(im.width, im.height)); cv.width = im.width * s; cv.height = im.height * s; R = Math.max(6, Math.round(cv.width / 90)); IMG = im; PTS.ref = []; PTS.flap = []; PTS.skin = []; MODE = 'flap'; draw(); steps(); calc(); };
-  im.src = u;
+  if (!f) return; const im = new Image();
+  im.onload = () => {
+    const s = Math.min(1, 1200 / Math.max(im.width, im.height)); W = Math.round(im.width * s); H = Math.round(im.height * s);
+    for (const c of [$('cv'), $('ov')]) { c.width = W; c.height = H; }
+    const c = $('cv').getContext('2d'); c.drawImage(im, 0, 0, W, H); PX = c.getImageData(0, 0, W, H).data; IMG = im;
+    G.forEach(k => M[k] = new Uint8Array(W * H)); HEAT = null; GRP = 'flap'; BR = Math.round(Math.max(W, H) / 60); $('bs').max = Math.round(Math.max(W, H) / 12); $('bs').value = BR;
+    ZOOM = 1; $('st').style.width = '100%'; ui(); paintOv(); calc();
+  };
+  im.src = URL.createObjectURL(f);
 }
-function draw() {
-  const cv = $('cv'), c = cv.getContext('2d'); if (!IMG) return; c.drawImage(IMG, 0, 0, cv.width, cv.height);
-  const fs = Math.max(12, R * 1.4); c.font = `bold ${fs}px system-ui`;
-  for (const k in PTS) PTS[k].forEach((p, i) => {
-    c.setLineDash(p.out ? [4, 3] : []); c.lineWidth = Math.max(2, R / 4);
-    c.strokeStyle = '#000'; c.strokeRect(p.x - R - 1, p.y - R - 1, 2 * R + 2, 2 * R + 2); c.strokeStyle = COL[k]; c.strokeRect(p.x - R, p.y - R, 2 * R, 2 * R);
-    c.setLineDash([]); c.lineWidth = 3; c.strokeStyle = '#000'; c.strokeText(i + 1, p.x + R + 2, p.y - R); c.fillStyle = COL[k]; c.fillText(i + 1, p.x + R + 2, p.y - R);
+function stamp(x, y, r, v, sq) {
+  const m = M[TOOL === 'erase' ? GRP : GRP];
+  for (let j = Math.max(0, y - r); j <= Math.min(H - 1, y + r); j++) for (let i = Math.max(0, x - r); i <= Math.min(W - 1, x + r); i++)
+    if (sq || (i - x) ** 2 + (j - y) ** 2 <= r * r) { if (v) G.forEach(k => { if (k !== GRP) M[k][j * W + i] = 0; }); m[j * W + i] = v; }
+}
+let last = null;
+function pt(e) { const rc = $('ov').getBoundingClientRect(); return [Math.round((e.clientX - rc.left) * W / rc.width), Math.round((e.clientY - rc.top) * H / rc.height)]; }
+function line(a, b, v) { const n = Math.max(1, Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1]) / Math.max(1, BR / 3))); for (let s = 0; s <= n; s++) stamp(Math.round(a[0] + (b[0] - a[0]) * s / n), Math.round(a[1] + (b[1] - a[1]) * s / n), BR, v); }
+$('ov').addEventListener('pointerdown', e => {
+  if (!IMG || TOOL === 'pan') return; e.preventDefault(); const p = pt(e);
+  if (TOOL === 'tap') { stamp(p[0], p[1], Math.max(4, Math.round(BR * 0.7)), 1, true); paintOv(); later(); return; }
+  last = p; $('ov').setPointerCapture(e.pointerId); stamp(p[0], p[1], BR, TOOL === 'erase' ? 0 : 1); paintOv();
+});
+$('ov').addEventListener('pointermove', e => { if (!last) return; const p = pt(e); line(last, p, TOOL === 'erase' ? 0 : 1); last = p; paintOv(); });
+const end = () => { if (last) { last = null; later(); } };
+$('ov').addEventListener('pointerup', end); $('ov').addEventListener('pointercancel', end);
+function later() { clearTimeout(timer); timer = setTimeout(() => { calc(); ui(); }, 120); }
+let raf = 0;
+function paintOv() {
+  if (raf) return; raf = requestAnimationFrame(() => {
+    raf = 0; if (!IMG) return; const c = $('ov').getContext('2d'), d = c.createImageData(W, H), o = d.data, hm = $('hm').checked && HEAT;
+    for (let p = 0; p < W * H; p++) {
+      let col = null, a = 0;
+      if (M.flap[p]) { if (hm && HEAT[p] >= 0) { const e = HEAT[p]; col = e < 5 ? [16, 185, 129] : e < 12 ? [250, 204, 21] : [239, 68, 68]; a = 150; } else { col = COL.flap; a = 110; } }
+      else if (M.skin[p]) { col = COL.skin; a = 110; } else if (M.ref[p]) { col = COL.ref; a = 110; }
+      if (col) { o[p * 4] = col[0]; o[p * 4 + 1] = col[1]; o[p * 4 + 2] = col[2]; o[p * 4 + 3] = a; }
+    }
+    c.putImageData(d, 0, 0);
   });
 }
-function avg(p) {
-  const cv = $('cv'), c = cv.getContext('2d'); c.drawImage(IMG, 0, 0, cv.width, cv.height);
-  const d = c.getImageData(Math.max(0, p.x - R), Math.max(0, p.y - R), 2 * R, 2 * R).data; let r = 0, g = 0, b = 0, n = 0;
-  for (let i = 0; i < d.length; i += 4) { r += d[i]; g += d[i + 1]; b += d[i + 2]; n++; }
-  return [r / n, g / n, b / n];
-}
-$('cv').addEventListener('click', e => {
-  if (!IMG) return; const cv = $('cv'), rc = cv.getBoundingClientRect();
-  const p = { x: Math.round((e.clientX - rc.left) * cv.width / rc.width), y: Math.round((e.clientY - rc.top) * cv.height / rc.height) };
-  const L = PTS[MODE]; if (L.length >= MAX) L.shift(); p.rgb = avg(p); L.push(p);
-  if (L.length >= MAX) MODE = MODE === 'flap' ? 'skin' : MODE === 'skin' ? 'ref' : 'ref';
-  calc(); draw(); steps();
-});
-function lab([r, g, b]) {
+function lab(r, g, b) {
   const f = v => { v /= 255; return v > 0.04045 ? Math.pow((v + 0.055) / 1.055, 2.4) : v / 12.92; };
-  const R = f(r), G = f(g), B = f(b);
-  let X = (R * 0.4124 + G * 0.3576 + B * 0.1805) / 0.95047, Y = R * 0.2126 + G * 0.7152 + B * 0.0722, Z = (R * 0.0193 + G * 0.1192 + B * 0.9505) / 1.08883;
+  const R = f(r), Gg = f(g), B = f(b);
+  let X = (R * 0.4124 + Gg * 0.3576 + B * 0.1805) / 0.95047, Y = R * 0.2126 + Gg * 0.7152 + B * 0.0722, Z = (R * 0.0193 + Gg * 0.1192 + B * 0.9505) / 1.08883;
   const h = t => t > 0.008856 ? Math.cbrt(t) : 7.787 * t + 16 / 116; X = h(X); Y = h(Y); Z = h(Z);
   return [116 * Y - 16, 500 * (X - Y), 200 * (Y - Z)];
 }
-const mean = a => a[0].map((_, i) => a.reduce((s, v) => s + v[i], 0) / a.length);
-const med = a => a[0].map((_, i) => { const v = a.map(x => x[i]).sort((p, q) => p - q), m = v.length >> 1; return v.length % 2 ? v[m] : (v[m - 1] + v[m]) / 2; });
-const dist = (p, q) => Math.hypot(p[0] - q[0], p[1] - q[1], p[2] - q[2]);
-// กลุ่มจุด → ตัดจุดเพี้ยน (ห่างจากค่ากลาง > 8 เมื่อมี ≥ 3 จุด) → ค่าเฉลี่ย rgb + ความกระจาย
-function group(k, wbf) {
-  const L = PTS[k]; if (!L.length) return null;
-  const labs = L.map(p => lab(wbf(p.rgb))), m = med(labs);
-  L.forEach((p, i) => p.out = L.length >= 3 && dist(labs[i], m) > 8);
-  const ins = L.filter(p => !p.out), il = labs.filter((_, i) => !L[i].out), mu = mean(il);
-  return { rgb: mean(ins.map(p => wbf(p.rgb))), n: ins.length, out: L.length - ins.length, sd: il.reduce((s, v) => s + dist(v, mu), 0) / il.length };
+// พิกเซลในกลุ่ม → ตัดสว่าง/มืดสุดอย่างละ 10% → ค่าเฉลี่ย rgb
+function grp(k) {
+  const m = M[k], idx = []; for (let p = 0; p < m.length; p++) if (m[p]) idx.push(p);
+  if (idx.length < 20) return null;
+  const lum = p => PX[p * 4] * 0.299 + PX[p * 4 + 1] * 0.587 + PX[p * 4 + 2] * 0.114;
+  idx.sort((a, b) => lum(a) - lum(b)); const cut = Math.floor(idx.length * 0.1), keep = idx.slice(cut, idx.length - cut);
+  let r = 0, g = 0, b = 0; keep.forEach(p => { r += PX[p * 4]; g += PX[p * 4 + 1]; b += PX[p * 4 + 2]; });
+  return { rgb: [r / keep.length, g / keep.length, b / keep.length], n: idx.length };
 }
 const hex = c => '#' + c.map(v => Math.round(Math.max(0, Math.min(255, v))).toString(16).padStart(2, '0')).join('');
 const f1 = v => (v > 0 ? '+' : '') + v.toFixed(1);
 function calc() {
-  const el = $('res'); if (!IMG) { el.innerHTML = ''; return; }
-  const id = x => x, ref = group('ref', id);
-  const wbf = ref ? (rgb => { const m = (ref.rgb[0] + ref.rgb[1] + ref.rgb[2]) / 3; return rgb.map((v, i) => Math.min(255, v * m / Math.max(1, ref.rgb[i]))); }) : id;
-  const fg = group('flap', wbf), sg = group('skin', wbf);
-  if (!fg || !sg) { el.innerHTML = `<div class="res mu">แตะ ${!fg ? '🔴 บน flap 3–5 จุด' : '🟤 บนผิวปกติข้างๆ 3 จุด'}</div>`; return; }
-  const F = lab(fg.rgb), S = lab(sg.rgb), dL = F[0] - S[0], da = F[1] - S[1], db = F[2] - S[2], dE = Math.hypot(dL, da, db);
+  const el = $('res'); HEAT = null; if (!IMG) { el.innerHTML = ''; return; }
+  const ref = grp('ref'), mul = ref ? (() => { const m = (ref.rgb[0] + ref.rgb[1] + ref.rgb[2]) / 3; return ref.rgb.map(v => m / Math.max(1, v)); })() : [1, 1, 1];
+  const wb = c => c.map((v, i) => Math.min(255, v * mul[i])), fg = grp('flap'), sg = grp('skin');
+  if (!fg || !sg) { el.innerHTML = `<div class="res mu">ระบาย ${!fg ? '🔴 บน flap' : '🟤 บนผิวปกติข้างๆ'}</div>`; paintOv(); return; }
+  const fc = wb(fg.rgb), sc = wb(sg.rgb), F = lab(...fc), S = lab(...sc);
+  const dL = F[0] - S[0], da = F[1] - S[1], db = F[2] - S[2], dE = Math.hypot(dL, da, db);
+  // แผนที่สี: ΔE ต่อพิกเซล (เฉลี่ยบล็อก 3×3 กันจุดรบกวน)
+  HEAT = new Float32Array(W * H).fill(-1); const es = [];
+  for (let p = 0; p < W * H; p++) if (M.flap[p]) {
+    const x = p % W, y = (p / W) | 0; let r = 0, g = 0, b = 0, n = 0;
+    for (let j = Math.max(0, y - 1); j <= Math.min(H - 1, y + 1); j++) for (let i = Math.max(0, x - 1); i <= Math.min(W - 1, x + 1); i++) { const q = j * W + i; r += PX[q * 4]; g += PX[q * 4 + 1]; b += PX[q * 4 + 2]; n++; }
+    const L = lab(...wb([r / n, g / n, b / n])), e = Math.hypot(L[0] - S[0], L[1] - S[1], L[2] - S[2]); HEAT[p] = e; es.push(e);
+  }
+  es.sort((a, b) => a - b); const p90 = es[Math.floor(es.length * 0.9)] || 0, bad = es.filter(e => e >= 12).length / es.length * 100, mid = es.filter(e => e >= 5 && e < 12).length / es.length * 100;
   const lv = dE < 5 ? ['ok', 'ใกล้เคียงผิวปกติ'] : dE < 12 ? ['warn', 'ต่างพอสังเกต'] : ['bad', 'ต่างมาก'];
   const words = [];
   if (dL <= -5) words.push('คล้ำกว่า'); else if (dL >= 5) words.push('สว่าง/ซีดกว่า');
   if (da >= 5) words.push('แดงกว่า'); else if (da <= -5) words.push('แดงน้อยกว่า (ซีด)');
   if (db <= -5) words.push('ออกม่วง/ฟ้ากว่า'); else if (db >= 5) words.push('ออกเหลืองกว่า');
-  const st = g => `${g.n} จุด${g.out ? ` (ตัดจุดเพี้ยน ${g.out})` : ''} · ± ${g.sd.toFixed(1)}${g.n >= 2 && g.sd > 4 ? ' <span class="warn">⚠️ กระจาย แตะใหม่</span>' : ''}${g.n < 3 ? ' <span class="mu">(แนะนำ ≥ 3)</span>' : ''}`;
   el.innerHTML = `<div class="res">
-    <div class="row"><div class="sw" style="background:${hex(fg.rgb)}"></div><div><b>flap</b> <span class="mu">L ${F[0].toFixed(0)} · a ${F[1].toFixed(0)} · b ${F[2].toFixed(0)}</span><div class="mu" style="font-size:13px">${st(fg)}</div></div></div>
-    <div class="row"><div class="sw" style="background:${hex(sg.rgb)}"></div><div><b>ผิวปกติ</b> <span class="mu">L ${S[0].toFixed(0)} · a ${S[1].toFixed(0)} · b ${S[2].toFixed(0)}</span><div class="mu" style="font-size:13px">${st(sg)}</div></div></div>
-    <div class="row" style="border-top:1px solid var(--ln);margin-top:6px;padding-top:10px"><div><div class="big ${lv[0]}">ΔE ${dE.toFixed(1)} · ${lv[1]}</div>
+    <div class="row"><div class="sw" style="background:${hex(fc)}"></div><div><b>flap</b> <span class="mu">L ${F[0].toFixed(0)} · a ${F[1].toFixed(0)} · b ${F[2].toFixed(0)}</span></div></div>
+    <div class="row"><div class="sw" style="background:${hex(sc)}"></div><div><b>ผิวปกติ</b> <span class="mu">L ${S[0].toFixed(0)} · a ${S[1].toFixed(0)} · b ${S[2].toFixed(0)}</span></div></div>
+    <div class="row" style="border-top:1px solid var(--ln);margin-top:6px;padding-top:10px"><div><div class="big ${lv[0]}">ΔE เฉลี่ย ${dE.toFixed(1)} · ${lv[1]}</div>
     <div>flap ${words.length ? words.join(' · ') : 'สีใกล้เคียงผิวปกติ'}</div>
-    <div class="mu" style="font-size:13px">ความสว่าง ${f1(dL)} · แดง ${f1(da)} · เหลือง ${f1(db)}${ref ? ` · ปรับแสงด้วยจุดอ้างอิง ${ref.n} จุด ✓` : ' · ⚠️ ยังไม่มีจุดอ้างอิง เทียบข้ามรอบได้ไม่แม่น'}</div></div></div>
+    <div style="margin-top:6px">พื้นที่ที่ระบาย: <b class="bad">${bad.toFixed(0)}% ต่างมาก</b> · <b class="warn">${mid.toFixed(0)}% ต่างพอสังเกต</b> · ส่วนที่แย่สุด 10% ΔE ≥ ${p90.toFixed(1)}</div>
+    <div class="leg"><span style="--c:#10b981">&lt; 5</span><span style="--c:#facc15">5–12</span><span style="--c:#ef4444">≥ 12</span></div>
+    <div class="mu" style="font-size:13px;margin-top:4px">ความสว่าง ${f1(dL)} · แดง ${f1(da)} · เหลือง ${f1(db)}${ref ? ' · ปรับแสงด้วยอ้างอิงแล้ว ✓' : ' · ⚠️ ยังไม่มีอ้างอิง เทียบข้ามรอบได้ไม่แม่น'}</div></div></div>
   </div>`;
+  paintOv();
 }
-steps();
+ui();
 </script></body></html>
