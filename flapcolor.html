@@ -58,7 +58,38 @@ function fit(keep) { if (!W) return; const w = $('wr').clientWidth, h = $('wr').
 new ResizeObserver(() => fit(true)).observe($('wr'));
 function view() { const w = $('wr').clientWidth, h = $('wr').clientHeight; VS = Math.max(1, Math.min(6, VS)); VX = FW * VS <= w ? (w - FW * VS) / 2 : Math.min(0, Math.max(w - FW * VS, VX)); VY = FH * VS <= h ? (h - FH * VS) / 2 : Math.min(0, Math.max(h - FH * VS, VY)); $('st').style.transform = `translate(${VX}px,${VY}px) scale(${VS})`; $('z1').classList.toggle('hid', VS <= 1.01); }
 const cnt = k => { let n = 0; const m = M[k]; for (let i = 0; i < m.length; i++) n += m[i]; return n; };
+
+// 💡 ก๊อซเป็นตัวอ้างอิงทั้งสีและความสว่าง: ปรับให้ก๊อซ = เทากลางสว่าง GW ทุกรูป
+const GW = 200;
+// ตรวจก๊อซ: มืด/มีเงา · สีไม่สม่ำเสมอ (แบ่งครึ่งตามแนวยาว เทียบสัดส่วนสี) → ข้อความเตือน
+function refWarn(idx, px, w) {
+  const out = []; if (idx.length < 20) return out;
+  const mean = a => { const lum = p => px[p * 4] * 0.299 + px[p * 4 + 1] * 0.587 + px[p * 4 + 2] * 0.114; a = a.slice().sort((x, y) => lum(x) - lum(y)); const c = Math.floor(a.length * 0.1), k = a.slice(c, a.length - c); const m = [0, 0, 0]; k.forEach(p => { m[0] += px[p * 4]; m[1] += px[p * 4 + 1]; m[2] += px[p * 4 + 2]; }); return m.map(v => v / Math.max(1, k.length)); };
+  const all = mean(idx), br = (all[0] + all[1] + all[2]) / 3;
+  if (br < 130) out.push('ก๊อซมืด/มีเงา');
+  let x0 = 1e9, x1 = -1, y0 = 1e9, y1 = -1; idx.forEach(p => { const x = p % w, y = p / w | 0; x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); });
+  if (Math.max(x1 - x0, y1 - y0) >= 20) {
+    const hz = x1 - x0 >= y1 - y0, mid = hz ? (x0 + x1) / 2 : (y0 + y1) / 2, A = [], B = [];
+    idx.forEach(p => ((hz ? p % w : p / w | 0) < mid ? A : B).push(p));
+    if (A.length >= 10 && B.length >= 10) { const ch = m => { const s = m[0] + m[1] + m[2] || 1; return [m[0] / s, m[2] / s]; }, a = ch(mean(A)), b = ch(mean(B));
+      if (Math.abs(a[0] - b[0]) + Math.abs(a[1] - b[1]) > 0.025) out.push('แสงไม่สม่ำเสมอ (สีก๊อซ 2 ฝั่งต่างกัน · แสงผสม?)'); }
+  }
+  return out;
+}
+// 📱 รุ่นมือถือจาก EXIF (JPEG) · อ่านไม่ได้ = ''
+async function camModel(f) {
+  try {
+    const v = new DataView(await f.slice(0, 131072).arrayBuffer()); if (v.getUint16(0) !== 0xFFD8) return '';
+    let o = 2; while (o < v.byteLength - 4) { const mk = v.getUint16(o), len = v.getUint16(o + 2);
+      if (mk === 0xFFE1 && v.getUint32(o + 4) === 0x45786966) { const t = o + 10, le = v.getUint16(t) === 0x4949, u16 = a => v.getUint16(a, le), u32 = a => v.getUint32(a, le);
+        const ifd = t + u32(t + 4), n = u16(ifd), tag = {}; for (let i = 0; i < n; i++) { const e = ifd + 2 + i * 12, id = u16(e); if (id === 0x010F || id === 0x0110) { const c = u32(e + 4), a = c > 4 ? t + u32(e + 8) : e + 8; let s = ''; for (let k = 0; k < c - 1; k++) s += String.fromCharCode(v.getUint8(a + k)); tag[id] = s.trim(); } }
+        const mkr = tag[0x010F] || '', md = tag[0x0110] || ''; return md.startsWith(mkr) ? md : (mkr + ' ' + md).trim(); }
+      o += 2 + len; }
+  } catch (e) {} return '';
+}
+let CAM = '';
 function load(f) {
+  CAM = ''; camModel(f).then(m => { CAM = m; if (IMG) calc(); });
   if (!f) return; const im = new Image();
   im.onload = () => {
     const s = Math.min(1, 1200 / Math.max(im.width, im.height)); W = Math.round(im.width * s); H = Math.round(im.height * s);
@@ -130,8 +161,11 @@ const hex = c => '#' + c.map(v => Math.round(Math.max(0, Math.min(255, v))).toSt
 const f1 = v => (v > 0 ? '+' : '') + v.toFixed(1);
 function calc() {
   const el = $('res'); HEAT = null; if (!IMG) { el.innerHTML = ''; return; }
-  const ref = grp('ref'), mul = ref ? (() => { const m = (ref.rgb[0] + ref.rgb[1] + ref.rgb[2]) / 3; return ref.rgb.map(v => m / Math.max(1, v)); })() : [1, 1, 1];
+  const ref = grp('ref'), mul = ref ? (() => { const m = (ref.rgb[0] + ref.rgb[1] + ref.rgb[2]) / 3; return ref.rgb.map(v => GW / Math.max(1, v)); })() : [1, 1, 1];
   const wb = c => c.map((v, i) => Math.min(255, v * mul[i])), fg = grp('flap'), sg = grp('skin');
+  const ri = [], fi = []; for (let p = 0; p < W * H; p++) { if (M.ref[p]) ri.push(p); if (M.flap[p]) fi.push(p); }
+  const WARN = refWarn(ri, PX, W); if (fi.length) { let g = 0; fi.forEach(p => { if (Math.max(PX[p * 4], PX[p * 4 + 1], PX[p * 4 + 2]) >= 250) g++; }); if (g / fi.length > 0.05) WARN.push('แสงสะท้อนบน flap ' + Math.round(g / fi.length * 100) + '%'); }
+  const wtx = (WARN.length ? `<div class="warn">⚠️ ${WARN.join(' · ')}</div>` : '') + (CAM ? `<div class="mu">📱 ${CAM}</div>` : '');
   if (!fg || !sg) { el.innerHTML = `<div class="res mu">ระบาย ${!fg ? '🔴 บน flap' : '🟤 บนผิวปกติข้างๆ'}</div>`; paintOv(); return; }
   const fc = wb(fg.rgb), sc = wb(sg.rgb), F = lab(...fc), S = lab(...sc);
   const dL = F[0] - S[0], da = F[1] - S[1], db = F[2] - S[2], dE = Math.hypot(dL, da, db);
@@ -151,11 +185,11 @@ function calc() {
   const pc = (v, c) => `<b class="${c}">${v.toFixed(0)}%</b>`;
   el.innerHTML = `<div class="res" onclick="DET=!DET;calc()">
     <div><span class="big ${lv[0]}">ΔE ${dE.toFixed(1)} · ${lv[1]}</span> <span class="mu">${DET ? '▴' : '▾ รายละเอียด'}</span></div>
-    <div>${words.length ? words.join(' · ') : 'สีใกล้เคียงผิวปกติ'} · พื้นที่ 🟥 ${pc(bad, 'bad')} 🟨 ${pc(mid, 'warn')}${ref ? '' : ' · ⚠️ไม่มีอ้างอิง'}</div>
+    <div>${words.length ? words.join(' · ') : 'สีใกล้เคียงผิวปกติ'} · พื้นที่ 🟥 ${pc(bad, 'bad')} 🟨 ${pc(mid, 'warn')}${ref ? '' : ' · ⚠️ไม่มีอ้างอิง'}</div>${wtx}
     <div class="det ${DET ? '' : 'hid'}">
       <div class="row"><div class="sw" style="background:${hex(fc)}"></div><div><b>flap</b> <span class="mu">L ${F[0].toFixed(0)} · a ${F[1].toFixed(0)} · b ${F[2].toFixed(0)}</span></div></div>
       <div class="row"><div class="sw" style="background:${hex(sc)}"></div><div><b>ผิวปกติ</b> <span class="mu">L ${S[0].toFixed(0)} · a ${S[1].toFixed(0)} · b ${S[2].toFixed(0)}</span></div></div>
-      <div>ส่วนที่แย่สุด 10% ΔE ≥ ${p90.toFixed(1)} · ความสว่าง ${f1(dL)} · แดง ${f1(da)} · เหลือง ${f1(db)}${ref ? ' · ปรับแสงด้วยอ้างอิงแล้ว ✓' : ''}</div>
+      <div>ส่วนที่แย่สุด 10% ΔE ≥ ${p90.toFixed(1)} · ความสว่าง ${f1(dL)} · แดง ${f1(da)} · เหลือง ${f1(db)}${ref ? ' · ปรับสี+ความสว่างด้วยก๊อซแล้ว ✓' : ''}</div>
       <div class="leg"><span style="--c:#10b981">&lt; 5</span><span style="--c:#facc15">5–12</span><span style="--c:#ef4444">≥ 12</span></div>
     </div></div>`;
   paintOv();
