@@ -213,8 +213,8 @@ label.b{display:flex;align-items:center;justify-content:center;cursor:pointer}  
 <button class="fab" id="fab" aria-label="เพิ่มงาน" onclick="if(TAB==='round'){openAdd()}else{openAddSheet()}">+</button>
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbw9dsYKGy8pELEBeIatNSjJLFv6W7MGjxhnjj584Z4BUlXN6WEfon-JID4f4eHR9wQ/exec';   // ← วาง URL ของบอท (ลงท้าย /exec)
-const APP_VER = 'v3.49';   // 🔖 ต้องตรงกับ SERVER_VER
-const APP_DATE = '14/11/69 10:10';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
+const APP_VER = 'v3.50';   // 🔖 ต้องตรงกับ SERVER_VER
+const APP_DATE = '14/11/69 10:55';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
 const TOK = new URLSearchParams(location.search).get('t') || '';
 // 🔄 แถบสีด้านบนวิ่งระหว่างโหลด / บันทึก
 let LOADING = 0;
@@ -1489,7 +1489,7 @@ function greet() {
 }
 const canFlap = t => isAdm() || !!(R && R.canEdit) || !!(D && D.canEdit) || (t.by && t.by === meName());   // แก้การเฝ้า: คนลงงาน · ลิงก์แก้ไข · ผู้ดูแล
 const isAdm = () => !!((R && R.admin) || (D && D.admin)), meName = () => (D && D.me) || '';
-const canEditText = t => isAdm() || t.by === 'บอท (admit)' || (t.by && t.by === meName()), canEditRes = t => isAdm() || ((t.done ? t.doneBy : t.by) === meName());
+const canEditText = t => isAdm() || !!(D && D.canEdit) || t.by === 'บอท (admit)' || (t.by && t.by === meName()), canEditRes = t => isAdm() || ((t.done ? t.doneBy : t.by) === meName());
 function saveREdit(no) { const v = ($('redit').value || '').replace(/\s+/g, ' ').trim(); if (!v) return toast('พิมพ์ผลก่อน'); REDIT = null; run(`ww แก้ผล ${no} ${v}`, () => T(no).result = v); }
 function saveTEdit(no) { const v = ($('tedit').value || '').replace(/\s+/g, ' ').trim(); if (!v) return toast('พิมพ์ข้อความก่อน'); TEDIT = null; const t = T(no), pre = t && t.pt && !t._gen && !/^ทั่วไป$/.test(t.ward) && t.task !== t.rest ? t.pt + ' ' : ''; run(`ww แก้ ${no} ${pre}${v}`, () => T(no).rest = v); }   // ใส่ชื่อคนไข้ให้ (บอทใช้คำแรกเป็นชื่อ)
 function closeT(no) { closeNo(no, val(no)); }
