@@ -37,25 +37,26 @@ main{padding:6px 16px max(8px,env(safe-area-inset-bottom));max-width:640px;width
 • 1) เลือก ⬜ ขอบ graft แล้วระบายให้ทั่วพื้นที่ graft ทั้งหมด (= 100%)<br>
 • 2) <b>ระบายเอง</b>: ระบาย 🟨 ไม่ติด (slough/fibrin/แผลเปิด) และ ⬛ เนื้อตาย · ที่เหลือในขอบ = ติด<br>
 • 2) <b>แยกให้อัตโนมัติ</b>: แยกจากสี (ชมพู/แดง = ติด · เหลือง/ขาว = ไม่ติด · มืดมาก = เนื้อตาย) แล้วระบาย 🟩 / 🟨 / ⬛ ทับจุดที่ผิดได้ · ปรับ "ความไว" ถ้าแยกแดงไม่ดี<br>
+• 🟪 ก๊อซขาว (โหมดอัตโนมัติ): ระบายบนก๊อซขาว/ผ้าขาวในรูป → แก้สีเพี้ยนจากแสงไฟ ทำให้เกณฑ์แยกสีแม่นขึ้นและเทียบข้ามวันได้ · ไม่บังคับ<br>
 • 2 นิ้ว = ซูม/เลื่อน · ↩️ ย้อนกลับ · 🧽 ลบ = ลบของกลุ่มที่เลือก<br>
 • ถ่ายตั้งฉากกับแผล แสงสม่ำเสมอ · ใช้ประกอบการประเมิน ไม่แทนการตรวจ · คำนวณในเครื่อง ไม่ส่งรูปไปไหน<br>
 <span class="mu">แตะที่ใดก็ได้เพื่อปิด</span></div></div>
 <script>
 const $ = id => document.getElementById(id);
 // ป้าย: 0 = ไม่ระบุ · 1 ติด · 2 ไม่ติด · 3 เนื้อตาย
-const G = ['area', 1, 2, 3], NAMES = { area: 'ขอบ graft', 1: 'ติด', 2: 'ไม่ติด', 3: 'เนื้อตาย' }, COL = { area: [96, 165, 250], 1: [16, 185, 129], 2: [250, 204, 21], 3: [30, 30, 30] };
+const G = ['area', 1, 2, 3, 'ref'], NAMES = { area: 'ขอบ graft', 1: 'ติด', 2: 'ไม่ติด', 3: 'ตาย', ref: 'ก๊อซขาว' }, COL = { area: [96, 165, 250], ref: [168, 85, 247], 1: [16, 185, 129], 2: [250, 204, 21], 3: [30, 30, 30] };
 let GRP = 'area', TOOL = 'paint', MODE = 0, BR = 14, IMG = null, PX = null, W = 0, H = 0, AREA = null, LBL = null, AUTO = null, LA = null, timer = 0, last = null;
 let UNDO = [], VS = 1, VX = 0, VY = 0, FW = 0, FH = 0;
 function ui() {
   $('mA').className = MODE ? '' : 'on'; $('mB').className = MODE ? 'on' : ''; $('thw').classList.toggle('hid', !MODE);
-  $('grp').innerHTML = G.filter(k => MODE || k !== 1).map(k => `<button class="${GRP == k ? 'on' : ''}" onclick="GRP=${k === 'area' ? "'area'" : k};ui()"><i style="background:rgb(${COL[k]})"></i>${NAMES[k]}</button>`).join('');
+  $('grp').innerHTML = G.filter(k => MODE || (k !== 1 && k !== 'ref')).map(k => `<button class="${GRP == k ? 'on' : ''}" onclick="GRP=${typeof k === 'string' ? "'" + k + "'" : k};ui()"><i style="background:rgb(${COL[k]})"></i>${NAMES[k]}</button>`).join('');
   $('tools').innerHTML = [['paint', '✏️ ระบาย'], ['erase', '🧽 ลบ']].map(([t, l]) => `<button class="${TOOL === t ? 'on' : ''}" onclick="TOOL='${t}';ui()">${l}</button>`).join('')
     + `<button class="sm" onclick="undo()" ${UNDO.length ? '' : 'disabled'}>↩️</button><button class="sm" onclick="clr()">ล้าง${NAMES[GRP]}</button>`;
 }
-function setMode(m) { MODE = m; if (!m && GRP === 1) GRP = 2; if (m) auto(); ui(); later(); }
-function snap() { UNDO.push([AREA.slice(), LBL.slice()]); if (UNDO.length > 30) UNDO.shift(); }
-function undo() { const s = UNDO.pop(); if (!s) return; [AREA, LBL] = s; paintOv(); later(); }
-function clr() { if (!AREA) return; snap(); if (GRP === 'area') AREA.fill(0); else for (let p = 0; p < LBL.length; p++) if (LBL[p] === GRP) LBL[p] = 0; paintOv(); later(); }
+function setMode(m) { MODE = m; if (m && WBD) mkLab(); if (!m && (GRP === 1 || GRP === 'ref')) GRP = 2; if (m) auto(); ui(); later(); }
+function snap() { UNDO.push([AREA.slice(), LBL.slice(), REF.slice()]); if (UNDO.length > 30) UNDO.shift(); }
+function undo() { const s = UNDO.pop(); if (!s) return; [AREA, LBL, REF] = s; WBD = 1; paintOv(); later(); }
+function clr() { if (!AREA) return; snap(); if (GRP === 'area') AREA.fill(0); else if (GRP === 'ref') { REF.fill(0); WBD = 1; } else for (let p = 0; p < LBL.length; p++) if (LBL[p] === GRP) LBL[p] = 0; paintOv(); later(); }
 function lab(r, g, b) {
   const f = v => { v /= 255; return v > 0.04045 ? Math.pow((v + 0.055) / 1.055, 2.4) : v / 12.92; };
   const R = f(r), Gg = f(g), B = f(b);
@@ -69,9 +70,7 @@ function load(f) {
     const s = Math.min(1, 1000 / Math.max(im.width, im.height)); W = Math.round(im.width * s); H = Math.round(im.height * s);
     for (const c of [$('cv'), $('ov')]) { c.width = W; c.height = H; }
     const c = $('cv').getContext('2d'); c.drawImage(im, 0, 0, W, H); PX = c.getImageData(0, 0, W, H).data; IMG = im;
-    LA = new Float32Array(W * H * 3);
-    for (let p = 0; p < W * H; p++) { const q = lab(PX[p * 4], PX[p * 4 + 1], PX[p * 4 + 2]); LA[p * 3] = q[0]; LA[p * 3 + 1] = q[1]; LA[p * 3 + 2] = q[2]; }
-    AREA = new Uint8Array(W * H); LBL = new Uint8Array(W * H); AUTO = new Uint8Array(W * H); UNDO = [];
+    AREA = new Uint8Array(W * H); REF = new Uint8Array(W * H); LA = null; mkLab(); LBL = new Uint8Array(W * H); AUTO = new Uint8Array(W * H); UNDO = [];
     GRP = 'area'; BR = Math.round(Math.max(W, H) / 50); $('bs').max = Math.round(Math.max(W, H) / 10); $('bs').value = BR;
     $('cam1').classList.add('hid'); $('cam2').classList.remove('hid'); VX = VY = 0;
     auto(); fit(); ui(); paintOv(); calc();
@@ -79,6 +78,20 @@ function load(f) {
   im.src = URL.createObjectURL(f);
 }
 // แยกสีอัตโนมัติ: มืดมาก = เนื้อตาย · แดงพอ (a* ≥ เกณฑ์) = ติด · ที่เหลือ (เหลือง/ขาว/ซีด) = ไม่ติด
+// ปรับแสงด้วยก๊อซขาว: ค่าเฉลี่ย (ตัดสว่าง/มืดสุด 10%) ของก๊อซ → ตัวคูณให้ก๊อซเป็นสีเทากลาง แล้วคำนวณ Lab ใหม่ทั้งรูป
+let REF = null, WBD = 0, WB = null;
+function mkLab() {
+  WBD = 0; const idx = []; for (let p = 0; p < REF.length; p++) if (REF[p]) idx.push(p);
+  let mul = [1, 1, 1]; WB = null;
+  if (idx.length >= 20) {
+    const lum = p => PX[p * 4] * 0.299 + PX[p * 4 + 1] * 0.587 + PX[p * 4 + 2] * 0.114;
+    idx.sort((a, b) => lum(a) - lum(b)); const cut = Math.floor(idx.length * 0.1), keep = idx.slice(cut, idx.length - cut);
+    const m = [0, 0, 0]; keep.forEach(p => { m[0] += PX[p * 4]; m[1] += PX[p * 4 + 1]; m[2] += PX[p * 4 + 2]; });
+    const avg = (m[0] + m[1] + m[2]) / 3; mul = m.map(v => avg / Math.max(1, v)); WB = mul;
+  }
+  LA = LA || new Float32Array(W * H * 3);
+  for (let p = 0; p < W * H; p++) { const q = lab(Math.min(255, PX[p * 4] * mul[0]), Math.min(255, PX[p * 4 + 1] * mul[1]), Math.min(255, PX[p * 4 + 2] * mul[2])); LA[p * 3] = q[0]; LA[p * 3 + 1] = q[1]; LA[p * 3 + 2] = q[2]; }
+}
 function auto() {
   if (!LA) return; const th = +$('th').value;
   for (let p = 0; p < W * H; p++) { const L = LA[p * 3], a = LA[p * 3 + 1]; AUTO[p] = L < 28 ? 3 : a >= th ? 1 : 2; }
@@ -90,7 +103,7 @@ function view() { const w = $('wr').clientWidth, h = $('wr').clientHeight; VS = 
 function stamp(x, y, r, on) {
   for (let j = Math.max(0, y - r); j <= Math.min(H - 1, y + r); j++) for (let i = Math.max(0, x - r); i <= Math.min(W - 1, x + r); i++)
     if ((i - x) ** 2 + (j - y) ** 2 <= r * r) { const p = j * W + i;
-      if (GRP === 'area') AREA[p] = on ? 1 : 0; else if (on) { LBL[p] = GRP; AREA[p] = 1; } else if (LBL[p] === GRP) LBL[p] = 0; }
+      if (GRP === 'area') AREA[p] = on ? 1 : 0; else if (GRP === 'ref') { REF[p] = on ? 1 : 0; WBD = 1; } else if (on) { LBL[p] = GRP; AREA[p] = 1; } else if (LBL[p] === GRP) LBL[p] = 0; }
 }
 function pt(e) { const rc = $('ov').getBoundingClientRect(); return [Math.round((e.clientX - rc.left) * W / rc.width), Math.round((e.clientY - rc.top) * H / rc.height)]; }
 function line(a, b, on) { const n = Math.max(1, Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1]) / Math.max(1, BR / 3))); for (let s = 0; s <= n; s++) stamp(Math.round(a[0] + (b[0] - a[0]) * s / n), Math.round(a[1] + (b[1] - a[1]) * s / n), BR, on); }
@@ -111,12 +124,13 @@ $('wr').addEventListener('pointermove', e => {
 });
 const end = e => { if (!PT.has(e.pointerId)) return; PT.delete(e.pointerId); if (!PT.size) GS = null; if (last) { last = null; later(); } };
 $('wr').addEventListener('pointerup', end); $('wr').addEventListener('pointercancel', end); $('wr').addEventListener('lostpointercapture', end);
-function later() { clearTimeout(timer); timer = setTimeout(() => { calc(); paintOv(); }, 120); ui(); }
+function later() { clearTimeout(timer); timer = setTimeout(() => { if (WBD && MODE) { mkLab(); auto(); } calc(); paintOv(); }, 120); ui(); }
 let raf = 0;
 function paintOv() {
   if (raf) return; raf = requestAnimationFrame(() => {
     raf = 0; if (!IMG) return; const c = $('ov').getContext('2d'), d = c.createImageData(W, H), o = d.data;
     for (let p = 0; p < W * H; p++) {
+      if (REF[p] && !AREA[p]) { o[p * 4] = 168; o[p * 4 + 1] = 85; o[p * 4 + 2] = 247; o[p * 4 + 3] = 110; continue; }
       if (!AREA[p]) continue; const k = cls(p), col = COL[k], edge = !AREA[p - 1] || !AREA[p + 1] || !AREA[p - W] || !AREA[p + W];
       const cc = edge ? COL.area : col, a = edge ? 255 : k === 1 ? (MODE ? 70 : 40) : 150;
       o[p * 4] = cc[0]; o[p * 4 + 1] = cc[1]; o[p * 4 + 2] = cc[2]; o[p * 4 + 3] = a;
@@ -131,7 +145,7 @@ function calc() {
   if (n < 50) { el.innerHTML = `<div class="res mu">ระบาย ⬜ ขอบ graft ให้ทั่วพื้นที่ graft ก่อน</div>`; return; }
   const pc = k => c[k] / n * 100, take = pc(1), lv = take >= 90 ? 'ok' : take >= 70 ? 'warn' : 'bad';
   el.innerHTML = `<div class="res"><div class="big ${lv}">Take ${take.toFixed(0)}%</div>
-    <div>🟨 ไม่ติด <b>${pc(2).toFixed(0)}%</b> · ⬛ เนื้อตาย <b>${pc(3).toFixed(0)}%</b> <span class="mu">· ${MODE ? 'แยกอัตโนมัติ + ที่แก้เอง' : 'ระบายเอง'}</span></div></div>`;
+    <div>🟨 ไม่ติด <b>${pc(2).toFixed(0)}%</b> · ⬛ เนื้อตาย <b>${pc(3).toFixed(0)}%</b> <span class="mu">· ${MODE ? 'แยกอัตโนมัติ' + (WB ? ' · ปรับแสงด้วยก๊อซแล้ว ✓' : ' · ⚠️ ยังไม่ระบายก๊อซขาว') : 'ระบายเอง'}</span></div></div>`;
 }
 ui();
 </script></body></html>
