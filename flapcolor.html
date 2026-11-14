@@ -1,4 +1,4 @@
-<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>วัดสี flap</title><meta name="theme-color" content="#1d4ed8"><meta name="apple-mobile-web-app-capable" content="yes">
 <style>
 :root{--bg:#fff;--bg2:#f4f5f7;--tx:#111827;--mu:#6b7280;--ln:#e5e7eb;--hd:#1d4ed8;--g:#059669;--or:#d97706;--rd:#dc2626}
@@ -12,13 +12,13 @@ main{padding:12px 16px 40px;max-width:640px;margin:0 auto}
 .b.p{background:var(--hd);color:#fff;border-color:var(--hd)}
 .bar{display:flex;gap:6px;margin:10px 0 0;flex-wrap:wrap}
 .bar button{flex:1;min-height:40px;border-radius:10px;border:2px solid var(--ln);background:var(--bg2);color:var(--tx);font:inherit;font-size:13px;cursor:pointer;line-height:1.2;padding:0 6px}
-.bar button.on{border-color:var(--hd)}.bar button.sm{flex:0 0 auto}
+.bar button:disabled{opacity:.4}.bar button.on{border-color:var(--hd)}.bar button.sm{flex:0 0 auto}
 .bar i{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:4px;vertical-align:-1px;border:1px solid rgba(0,0,0,.3)}
 .sz{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:13px}.sz input{flex:1}
-.wrap{position:relative;margin-top:10px;overflow:auto;border-radius:10px;background:var(--bg2);max-height:70vh}
-.stage{position:relative;width:100%}
+.wrap{position:relative;margin-top:10px;overflow:hidden;border-radius:10px;background:var(--bg2);touch-action:none}
+.stage{position:relative;width:100%;transform-origin:0 0}
 .stage canvas{position:absolute;left:0;top:0;width:100%;height:100%;display:block}.stage canvas#cv{position:relative}
-.paint .stage canvas#ov{touch-action:none}
+html,body{touch-action:pan-y}
 .res{margin-top:12px;border:1px solid var(--ln);border-radius:12px;padding:12px}
 .row{display:flex;align-items:center;gap:10px;padding:6px 0}.sw{width:34px;height:34px;border-radius:8px;border:1px solid rgba(0,0,0,.2);flex:none}
 .big{font-size:20px;font-weight:700}.ok{color:var(--g)}.warn{color:var(--or)}.bad{color:var(--rd)}
@@ -33,20 +33,23 @@ main{padding:12px 16px 40px;max-width:640px;margin:0 auto}
   <div class="sz">แปรง <input type="range" id="bs" min="2" max="40" value="14" oninput="BR=+this.value"> <label><input type="checkbox" id="hm" checked onchange="paintOv()"> แผนที่สี</label></div>
   <div class="wrap" id="wr"><div class="stage" id="st"><canvas id="cv" width="10" height="10"></canvas><canvas id="ov" width="10" height="10"></canvas></div></div>
   <div id="res"></div>
-  <div class="note">• ✏️ ระบาย = ลากนิ้ว · 👆 แตะจุด = แตะทีละจุด · 🧽 ลบ = ลบส่วนที่ระบายของกลุ่มที่เลือก · 🔍 = ซูม/เลื่อนภาพ (ระหว่างนี้ระบายไม่ได้)<br>
+  <div class="note">• ✏️ ระบาย = ลากนิ้ว · 👆 แตะจุด = แตะทีละจุด · 🧽 ลบ = ลบส่วนที่ระบายของกลุ่มที่เลือก · 2 นิ้ว = ซูม/เลื่อนรูป · ↩️ = ย้อนกลับ<br>
   • ตัดพิกเซลที่สว่างสุด/มืดสุดอย่างละ 10% อัตโนมัติ (แสงวาว · เงา · ขน)<br>• ⚪ อ้างอิง (ก๊อซขาว/การ์ดเทา) ไม่บังคับ แต่ช่วยให้เทียบข้ามรอบได้ · ใช้ดูแนวโน้มเท่านั้น ไม่แทนการตรวจ flap</div>
 </main>
 <script>
 const $ = id => document.getElementById(id);
 const G = ['flap', 'skin', 'ref'], NAMES = { flap: 'flap', skin: 'ผิวปกติ', ref: 'อ้างอิง' }, COL = { flap: [239, 68, 68], skin: [161, 98, 7], ref: [96, 165, 250] };
-let GRP = 'flap', TOOL = 'paint', ZOOM = 1, BR = 14, IMG = null, PX = null, W = 0, H = 0, M = {}, HEAT = null, timer = 0;
+let GRP = 'flap', TOOL = 'paint', BR = 14, IMG = null, PX = null, W = 0, H = 0, M = {}, HEAT = null, timer = 0;
 function ui() {
   $('grp').innerHTML = G.map(k => `<button class="${GRP === k ? 'on' : ''}" onclick="GRP='${k}';ui()"><i style="background:rgb(${COL[k]})"></i>${NAMES[k]}${M[k] && cnt(k) ? ' ✓' : ''}</button>`).join('');
-  $('tools').innerHTML = [['paint', '✏️ ระบาย'], ['tap', '👆 แตะจุด'], ['erase', '🧽 ลบ'], ['pan', '🔍 ซูม ' + ZOOM + 'x']].map(([t, l]) => `<button class="${TOOL === t ? 'on' : ''}" onclick="tool('${t}')">${l}</button>`).join('')
-    + `<button class="sm" onclick="if(M[GRP]){M[GRP].fill(0);paintOv();later()}">ล้าง${NAMES[GRP]}</button>`;
-  $('mn').className = TOOL === 'pan' ? '' : 'paint';
+  $('tools').innerHTML = [['paint', '✏️ ระบาย'], ['tap', '👆 แตะจุด'], ['erase', '🧽 ลบ']].map(([t, l]) => `<button class="${TOOL === t ? 'on' : ''}" onclick="tool('${t}')">${l}</button>`).join('')
+    + `<button class="sm" onclick="undo()" ${UNDO.length ? '' : 'disabled'}>↩️</button><button class="sm" onclick="if(M[GRP]){snap();M[GRP].fill(0);paintOv();later()}">ล้าง${NAMES[GRP]}</button>`;
 }
-function tool(t) { if (t === 'pan') { ZOOM = TOOL === 'pan' ? (ZOOM % 3) + 1 : ZOOM; $('st').style.width = ZOOM * 100 + '%'; } TOOL = t; ui(); }
+function tool(t) { TOOL = t; ui(); }
+let UNDO = [], VS = 1, VX = 0, VY = 0;
+function snap() { UNDO.push(G.map(k => M[k].slice())); if (UNDO.length > 30) UNDO.shift(); }
+function undo() { const s = UNDO.pop(); if (!s) return; G.forEach((k, i) => M[k] = s[i]); paintOv(); later(); ui(); }
+function view() { const w = $('wr').clientWidth, h = $('wr').clientHeight; VS = Math.max(1, Math.min(6, VS)); VX = Math.min(0, Math.max(w - w * VS, VX)); VY = Math.min(0, Math.max(h - h * VS, VY)); $('st').style.transform = `translate(${VX}px,${VY}px) scale(${VS})`; }
 const cnt = k => { let n = 0; const m = M[k]; for (let i = 0; i < m.length; i++) n += m[i]; return n; };
 function load(f) {
   if (!f) return; const im = new Image();
@@ -55,7 +58,7 @@ function load(f) {
     for (const c of [$('cv'), $('ov')]) { c.width = W; c.height = H; }
     const c = $('cv').getContext('2d'); c.drawImage(im, 0, 0, W, H); PX = c.getImageData(0, 0, W, H).data; IMG = im;
     G.forEach(k => M[k] = new Uint8Array(W * H)); HEAT = null; GRP = 'flap'; BR = Math.round(Math.max(W, H) / 60); $('bs').max = Math.round(Math.max(W, H) / 12); $('bs').value = BR;
-    ZOOM = 1; $('st').style.width = '100%'; ui(); paintOv(); calc();
+    UNDO = []; VS = 1; VX = VY = 0; view(); ui(); paintOv(); calc();
   };
   im.src = URL.createObjectURL(f);
 }
@@ -67,15 +70,26 @@ function stamp(x, y, r, v, sq) {
 let last = null;
 function pt(e) { const rc = $('ov').getBoundingClientRect(); return [Math.round((e.clientX - rc.left) * W / rc.width), Math.round((e.clientY - rc.top) * H / rc.height)]; }
 function line(a, b, v) { const n = Math.max(1, Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1]) / Math.max(1, BR / 3))); for (let s = 0; s <= n; s++) stamp(Math.round(a[0] + (b[0] - a[0]) * s / n), Math.round(a[1] + (b[1] - a[1]) * s / n), BR, v); }
-$('ov').addEventListener('pointerdown', e => {
-  if (!IMG || TOOL === 'pan') return; e.preventDefault(); const p = pt(e);
-  if (TOOL === 'tap') { stamp(p[0], p[1], Math.max(4, Math.round(BR * 0.7)), 1, true); paintOv(); later(); return; }
-  last = p; $('ov').setPointerCapture(e.pointerId); stamp(p[0], p[1], BR, TOOL === 'erase' ? 0 : 1); paintOv();
+const PT = new Map(); let GS = null;
+const wp = e => { const r = $('wr').getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
+function gstate() { const [a, b] = [...PT.values()]; return { c: [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2], d: Math.hypot(a[0] - b[0], a[1] - b[1]) || 1 }; }
+$('wr').addEventListener('pointerdown', e => {
+  if (!IMG) return; e.preventDefault(); $('wr').setPointerCapture(e.pointerId); PT.set(e.pointerId, wp(e));
+  if (PT.size === 2) { if (last) { last = null; undo(); } GS = Object.assign(gstate(), { s: VS, x: VX, y: VY }); return; }
+  if (PT.size > 2 || GS) return;
+  const p = pt(e);
+  if (TOOL === 'tap') { snap(); stamp(p[0], p[1], Math.max(4, Math.round(BR * 0.7)), 1, true); paintOv(); later(); return; }
+  snap(); last = p; stamp(p[0], p[1], BR, TOOL === 'erase' ? 0 : 1); paintOv();
 });
-$('ov').addEventListener('pointermove', e => { if (!last) return; const p = pt(e); line(last, p, TOOL === 'erase' ? 0 : 1); last = p; paintOv(); });
-const end = () => { if (last) { last = null; later(); } };
-$('ov').addEventListener('pointerup', end); $('ov').addEventListener('pointercancel', end);
-function later() { clearTimeout(timer); timer = setTimeout(() => { calc(); ui(); }, 120); }
+$('wr').addEventListener('pointermove', e => {
+  if (!PT.has(e.pointerId)) return; PT.set(e.pointerId, wp(e));
+  if (GS && PT.size === 2) { const g = gstate(), s = Math.max(1, Math.min(6, GS.s * g.d / GS.d)), k = s / GS.s;
+    VS = s; VX = g.c[0] - (GS.c[0] - GS.x) * k; VY = g.c[1] - (GS.c[1] - GS.y) * k; view(); return; }
+  if (!last) return; const p = pt(e); line(last, p, TOOL === 'erase' ? 0 : 1); last = p; paintOv();
+});
+const end = e => { PT.delete(e.pointerId); if (!PT.size) GS = null; if (last) { last = null; later(); } };
+$('wr').addEventListener('pointerup', end); $('wr').addEventListener('pointercancel', end);
+function later() { clearTimeout(timer); timer = setTimeout(() => { calc(); ui(); }, 120); ui(); }
 let raf = 0;
 function paintOv() {
   if (raf) return; raf = requestAnimationFrame(() => {
