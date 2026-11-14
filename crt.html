@@ -28,13 +28,17 @@ main{padding:6px 16px max(8px,env(safe-area-inset-bottom));max-width:640px;width
   <label class="b" id="cam1">📹 ถ่าย / เลือกวิดีโอ (กด flap → ปล่อย)<input type="file" accept="video/*" style="display:none" onchange="load(this.files[0])"></label>
   <div class="bar" id="tools"></div>
   <div class="wrap" id="wr"><div class="stage" id="st"><canvas id="cv" width="10" height="10"></canvas><canvas id="ov" width="10" height="10"></canvas></div><button id="z1" class="hid" onclick="VS=1;view()" onpointerdown="event.stopPropagation()" style="position:absolute;right:8px;top:8px;z-index:2;border:0;border-radius:10px;background:rgba(0,0,0,.6);color:#fff;font:inherit;font-size:13px;padding:6px 10px">⤢ ย่อกลับ</button></div>
+  <div id="tsw" class="hid" style="display:flex;align-items:center;gap:8px;margin-top:4px;font-size:13px"><span>เฟรม</span><input type="range" id="ts" min="0" max="1" step="0.01" value="0" style="flex:1" oninput="scrub(+this.value)"><span id="tsl" style="min-width:42px;text-align:right">0.0 วิ</span></div>
   <canvas id="gr" class="hid"></canvas>
   <div id="res"></div>
   <video id="vd" playsinline muted preload="auto" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none"></video>
 </main>
 <div class="ov2 hid" id="help" onclick="this.classList.add('hid')"><div>
 • ถ่าย: วางมือถือ<b>นิ่ง</b> แสงคงที่ ไม่ใช้แฟลช · อัดก่อนกด 1–2 วิ → กด flap ~3 วิ → ปล่อย → อัดต่อ 4–5 วิ<br>
-• ✏️ ระบายตรงจุดที่กด (ส่วนที่ซีดหลังปล่อย) · 🟤 ผิวปกติข้างๆ (ไม่บังคับ) ช่วยหักผลกล้องปรับแสงเอง<br>
+• เลื่อนแถบ <b>เฟรม</b> ไปตอน<b>หลังยกกรรไกร</b> (เห็นรอยซีด) แล้วระบาย 🔴 ตรงรอยกด<br>
+• กดหลายครั้ง: กด ➕ แล้วเลื่อนไปหลังปล่อยครั้งถัดไป ระบายจุดนั้น → ได้ CRT แยกทุกครั้ง<br>
+• กล้องขยับได้นิดหน่อย แอปตามภาพให้เอง (ห้ามซูม/หมุนมาก)<br>
+• 🟤 ผิวปกติ (ไม่บังคับ): ระบาย<b>นอก flap</b> ห่างจากมือ/กรรไกร/เงา · ถ้าไม่แน่ใจ ไม่ต้องระบาย<br>
 • ▶️ วิเคราะห์ → กราฟความแดง · แอปหาจุดปล่อย (ซีดสุด) และจุดที่สีกลับ 90% ของก่อนกด = CRT<br>
 • กดด้วยกรรไกรได้: แอปตัดสีโลหะ/สำลีขาวออกเอง · ช่วงที่บังเกือบหมด = แถบเทาบนกราฟ · จุดปล่อย = เฟรมแรกที่กรรไกรออก · ระบายให้กว้างกว่าปลายกรรไกรนิดหน่อย และยกกรรไกรออกเร็วๆ<br>
 • แตะกราฟ = ย้ายจุดเริ่ม (ดูเฟรมนั้นบนรูปเพื่อเช็กว่าปล่อยแล้วจริง)<br>
@@ -43,39 +47,61 @@ main{padding:6px 16px max(8px,env(safe-area-inset-bottom));max-width:640px;width
 <span class="mu">แตะที่ใดก็ได้เพื่อปิด</span></div></div>
 <script>
 const $ = id => document.getElementById(id);
-const G = ['flap', 'skin'], NAMES = { flap: 'จุดที่กด', skin: 'ผิวปกติ' }, COL = { flap: [239, 68, 68], skin: [161, 98, 7] };
-let GRP = 'flap', TOOL = 'paint', BR = 10, VID = false, W = 0, H = 0, M = {}, UNDO = [], last = null, timer = 0;
-let VS = 1, VX = 0, VY = 0, FW = 0, FH = 0, SIG = null, T0 = null, BUSY = false;
-const vd = $('vd');
+const PC = [[239, 68, 68], [59, 130, 246], [168, 85, 247], [236, 72, 153]], SKC = [161, 98, 7];
+let GR = [], SKIN = null, ACT = 0, TOOL = 'paint', BR = 10, VID = false, W = 0, H = 0, UNDO = [], last = null, BUSY = false, DONE = false;
+let VS = 1, VX = 0, VY = 0, FW = 0, FH = 0;
+const vd = $('vd'), SF = 3;
+function newGroup() { GR.push({ m: new Uint8Array(W * H), t: null, ref: null, sig: null, T0: null, occ: [], vis: [], part: false }); ACT = GR.length - 1; TOOL = 'paint'; ui(); calc(); }
 function ui() {
-  $('tools').innerHTML = G.map(k => `<button class="${GRP === k && TOOL === 'paint' ? 'on' : ''}" onclick="GRP='${k}';TOOL='paint';ui()"><i style="background:rgb(${COL[k]})"></i>${NAMES[k]}</button>`).join('')
+  $('tools').innerHTML = GR.map((g, i) => `<button class="${ACT === i && TOOL === 'paint' ? 'on' : ''}" onclick="ACT=${i};TOOL='paint';ui();calc()"><i style="background:rgb(${PC[i % 4]})"></i>จุด ${i + 1}</button>`).join('')
+    + (GR.length < 4 ? `<button class="sm" onclick="newGroup()">➕</button>` : '')
+    + `<button class="${TOOL === 'skin' ? 'on' : ''}" onclick="TOOL='skin';ui()"><i style="background:rgb(${SKC})"></i>ผิวปกติ</button>`
     + `<button class="sm ${TOOL === 'erase' ? 'on' : ''}" onclick="TOOL='erase';ui()">🧽</button><button class="sm" onclick="undo()" ${UNDO.length ? '' : 'disabled'}>↩️</button>`;
 }
-function snap() { UNDO.push(G.map(k => M[k].slice())); if (UNDO.length > 30) UNDO.shift(); }
-function undo() { const s = UNDO.pop(); if (!s) return; G.forEach((k, i) => M[k] = s[i]); paintOv(); ui(); calc(); }
+function snap() { UNDO.push({ g: GR.map(x => [x.m.slice(), x.t, x.ref]), s: SKIN.slice() }); if (UNDO.length > 30) UNDO.shift(); }
+function undo() { const s = UNDO.pop(); if (!s) return; s.g.forEach((q, i) => { if (GR[i]) { GR[i].m = q[0]; GR[i].t = q[1]; GR[i].ref = q[2]; } }); SKIN = s.s; reset(); paintOv(); ui(); calc(); }
+function reset() { DONE = false; GR.forEach(g => { g.sig = null; g.T0 = null; }); $('gr').classList.add('hid'); }
 function load(f) {
-  if (!f) return; SIG = null; T0 = null; $('gr').classList.add('hid');
+  if (!f) return; DONE = false; $('gr').classList.add('hid');
   vd.src = URL.createObjectURL(f); vd.load();
   vd.onloadeddata = async () => {
     const s = Math.min(1, 480 / Math.max(vd.videoWidth, vd.videoHeight)); W = Math.round(vd.videoWidth * s); H = Math.round(vd.videoHeight * s);
     for (const c of [$('cv'), $('ov')]) { c.width = W; c.height = H; }
-    await seek(Math.min(0.2, vd.duration / 2)); frame();
-    G.forEach(k => M[k] = new Uint8Array(W * H)); UNDO = []; VID = true; BR = Math.round(Math.max(W, H) / 40);
+    GR = []; SKIN = new Uint8Array(W * H); UNDO = []; VID = true; BR = Math.round(Math.max(W, H) / 40); newGroup();
+    $('ts').max = vd.duration.toFixed(2); $('tsw').classList.remove('hid');
+    await scrub(Math.min(vd.duration / 2, vd.duration));
     $('cam1').classList.add('hid'); $('cam2').classList.remove('hid'); $('sv').classList.remove('hid'); VX = VY = 0;
     fit(); ui(); paintOv(); calc();
   };
 }
-const seek = t => new Promise(r => { const on = () => { vd.removeEventListener('seeked', on); r(); }; vd.addEventListener('seeked', on); vd.currentTime = t; });
+const seek = t => new Promise(r => { const on = () => { vd.removeEventListener('seeked', on); r(); }; vd.addEventListener('seeked', on); vd.currentTime = Math.max(0, Math.min(vd.duration - 0.01, t)); });
 function frame() { $('cv').getContext('2d').drawImage(vd, 0, 0, W, H); }
+let SCR = 0; async function scrub(t) { const k = ++SCR; $('ts').value = t; $('tsl').textContent = t.toFixed(1) + ' วิ'; await seek(t); if (k === SCR) { frame(); paintOv(); } }
+// ภาพย่อสีเทา (ใช้ตามการเลื่อนของกล้อง)
+function gray(px) { const w = Math.floor(W / SF), h = Math.floor(H / SF), g = new Float32Array(w * h);
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { let s = 0; for (let j = 0; j < SF; j++) for (let i = 0; i < SF; i++) { const p = ((y * SF + j) * W + x * SF + i) * 4; s += px[p] * 0.3 + px[p + 1] * 0.59 + px[p + 2] * 0.11; } g[y * w + x] = s / (SF * SF); }
+  let m = 0; for (const v of g) m += v; m /= g.length; for (let i = 0; i < g.length; i++) g[i] -= m; return g; }
+// หาการเลื่อน d ที่ cur(x+d) ≈ ref(x) · ค้นรอบ c ภายใน ±r (step)
+function track(ref, cur, c, r, st) {
+  const w = Math.floor(W / SF), h = Math.floor(H / SF), mg = Math.round(Math.min(w, h) * 0.18); let best = Infinity, bd = c;
+  for (let dy = c[1] - r; dy <= c[1] + r; dy += st) for (let dx = c[0] - r; dx <= c[0] + r; dx += st) {
+    let s = 0; for (let y = mg; y < h - mg; y += 2) { const yy = y + dy; if (yy < 0 || yy >= h) { s += 1e4; continue; } for (let x = mg; x < w - mg; x += 2) { const xx = x + dx; s += xx < 0 || xx >= w ? 60 : Math.abs(cur[yy * w + xx] - ref[y * w + x]); } }
+    if (s < best) { best = s; bd = [dx, dy]; } }
+  return bd;
+}
 function fit(keep) { if (!W) return; const w = $('wr').clientWidth, h = $('wr').clientHeight, s = Math.min(w / W, h / H); FW = W * s; FH = H * s; $('st').style.width = FW + 'px'; $('st').style.height = FH + 'px'; if (!keep) VS = 1; view(); }
 new ResizeObserver(() => fit(true)).observe($('wr'));
 function view() { const w = $('wr').clientWidth, h = $('wr').clientHeight; VS = Math.max(1, Math.min(6, VS)); VX = FW * VS <= w ? (w - FW * VS) / 2 : Math.min(0, Math.max(w - FW * VS, VX)); VY = FH * VS <= h ? (h - FH * VS) / 2 : Math.min(0, Math.max(h - FH * VS, VY)); $('st').style.transform = `translate(${VX}px,${VY}px) scale(${VS})`; $('z1').classList.toggle('hid', VS <= 1.01); }
 function stamp(x, y, r, on) {
+  const g = GR[ACT];
   for (let j = Math.max(0, y - r); j <= Math.min(H - 1, y + r); j++) for (let i = Math.max(0, x - r); i <= Math.min(W - 1, x + r); i++)
-    if ((i - x) ** 2 + (j - y) ** 2 <= r * r) { const p = j * W + i; if (on) { G.forEach(k => M[k][p] = 0); M[GRP][p] = 1; } else M[GRP][p] = 0; }
+    if ((i - x) ** 2 + (j - y) ** 2 <= r * r) { const p = j * W + i;
+      if (TOOL === 'skin') { SKIN[p] = 1; GR.forEach(q => q.m[p] = 0); }
+      else if (TOOL === 'paint') { g.m[p] = 1; SKIN[p] = 0; }
+      else { g.m[p] = 0; SKIN[p] = 0; } }
 }
 function pt(e) { const rc = $('ov').getBoundingClientRect(); return [Math.round((e.clientX - rc.left) * W / rc.width), Math.round((e.clientY - rc.top) * H / rc.height)]; }
-function line(a, b, on) { const n = Math.max(1, Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1]) / Math.max(1, BR / 3))); for (let s = 0; s <= n; s++) stamp(Math.round(a[0] + (b[0] - a[0]) * s / n), Math.round(a[1] + (b[1] - a[1]) * s / n), BR, on); }
+function line(a, b) { const n = Math.max(1, Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1]) / Math.max(1, BR / 3))); for (let s = 0; s <= n; s++) stamp(Math.round(a[0] + (b[0] - a[0]) * s / n), Math.round(a[1] + (b[1] - a[1]) * s / n), BR); }
 const PT = new Map(); let GS = null;
 const wp = e => { const r = $('wr').getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
 function gstate() { const [a, b] = [...PT.values()]; return { c: [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2], d: Math.hypot(a[0] - b[0], a[1] - b[1]) || 1 }; }
@@ -83,126 +109,144 @@ $('wr').addEventListener('pointerdown', e => {
   if (!VID || BUSY) return; e.preventDefault(); if (e.isPrimary) { PT.clear(); GS = null; } $('wr').setPointerCapture(e.pointerId); PT.set(e.pointerId, wp(e));
   if (PT.size === 2) { if (last) { last = null; undo(); } GS = Object.assign(gstate(), { s: VS, x: VX, y: VY }); return; }
   if (PT.size > 2 || GS) return;
-  snap(); last = pt(e); stamp(last[0], last[1], BR, TOOL === 'paint'); paintOv();
+  snap(); const g = GR[ACT];
+  // เฟรมอ้างอิงของจุดนี้ = เฟรมที่ระบายครั้งแรก
+  if (TOOL === 'paint' && g.t == null) { g.t = vd.currentTime; g.ref = gray($('cv').getContext('2d').getImageData(0, 0, W, H).data); }
+  if (TOOL === 'skin' && SKT == null) SKT = vd.currentTime;
+  last = pt(e); stamp(last[0], last[1], BR, TOOL !== 'erase'); paintOv();
 });
+let SKT = null;
 $('wr').addEventListener('pointermove', e => {
   if (!PT.has(e.pointerId)) return; PT.set(e.pointerId, wp(e));
   if (GS && PT.size === 2) { const g = gstate(), s = Math.max(1, Math.min(6, GS.s * g.d / GS.d)), k = s / GS.s;
     VS = s; VX = g.c[0] - (GS.c[0] - GS.x) * k; VY = g.c[1] - (GS.c[1] - GS.y) * k; view(); return; }
-  if (!last) return; const p = pt(e); line(last, p, TOOL === 'paint'); last = p; paintOv();
+  if (!last) return; const p = pt(e); line(last, p); last = p; paintOv();
 });
-const end = e => { if (!PT.has(e.pointerId)) return; PT.delete(e.pointerId); if (!PT.size) GS = null; if (last) { last = null; SIG = null; $('gr').classList.add('hid'); ui(); calc(); } };
+const end = e => { if (!PT.has(e.pointerId)) return; PT.delete(e.pointerId); if (!PT.size) GS = null; if (last) { last = null; reset(); ui(); calc(); } };
 $('wr').addEventListener('pointerup', end); $('wr').addEventListener('pointercancel', end); $('wr').addEventListener('lostpointercapture', end);
 let raf = 0;
 function paintOv() {
   if (raf) return; raf = requestAnimationFrame(() => {
     raf = 0; if (!VID) return; const c = $('ov').getContext('2d'), d = c.createImageData(W, H), o = d.data;
-    for (let p = 0; p < W * H; p++) for (const k of G) if (M[k][p]) { const col = COL[k]; o[p * 4] = col[0]; o[p * 4 + 1] = col[1]; o[p * 4 + 2] = col[2]; o[p * 4 + 3] = 100; }
+    // ถ้าวิเคราะห์แล้ว เลื่อนบริเวณตามกล้องของเฟรมที่แสดง
+    const fi = DONE && SH.length ? nearest(vd.currentTime) : -1;
+    const put = (p, col, a) => { o[p * 4] = col[0]; o[p * 4 + 1] = col[1]; o[p * 4 + 2] = col[2]; o[p * 4 + 3] = a; };
+    const draw = (m, col, sh) => { const dx = sh ? sh[0] * SF : 0, dy = sh ? sh[1] * SF : 0; for (let p = 0; p < W * H; p++) if (m[p]) { const x = p % W + dx, y = (p / W | 0) + dy; if (x >= 0 && y >= 0 && x < W && y < H) put(y * W + x, col, 100); } };
+    GR.forEach((g, i) => draw(g.m, PC[i % 4], fi >= 0 && g.t != null ? rel(fi, g.t) : null));
+    draw(SKIN, SKC, fi >= 0 && SKT != null ? rel(fi, SKT) : null);
     c.putImageData(d, 0, 0);
   });
 }
-const cnt = k => { let n = 0; for (const v of M[k]) n += v; return n; };
-// a* เฉลี่ยของพิกเซลผิว · ตัดพิกเซลที่ไม่ใช่ผิว (โลหะสีเทา/เงิน · สำลีขาว · แสงสะท้อน) → คืน [a*, สัดส่วนที่มองเห็น]
+// a* เฉลี่ยของพิกเซลผิว · ตัดพิกเซลที่ไม่ใช่ผิว (โลหะสีเทา/เงิน · สำลีขาว · แสงสะท้อน) → [a*, สัดส่วนที่เห็น]
 const _f = v => { v /= 255; return v > 0.04045 ? Math.pow((v + 0.055) / 1.055, 2.4) : v / 12.92; }, _h = t => t > 0.008856 ? Math.cbrt(t) : 7.787 * t + 16 / 116;
-function aStar(px, idx) {
-  if (!idx.length) return [null, 0]; let s = 0, n = 0;
-  for (const p of idx) {
+function aStar(px, pts, sh) {
+  if (!pts.length) return [null, 0]; let s = 0, n = 0; const dx = sh[0] * SF, dy = sh[1] * SF;
+  for (const q of pts) {
+    const x = q % W + dx, y = (q / W | 0) + dy; if (x < 0 || y < 0 || x >= W || y >= H) continue; const p = y * W + x;
     const R = _f(px[p * 4]), Gg = _f(px[p * 4 + 1]), B = _f(px[p * 4 + 2]);
     const X = _h((R * 0.4124 + Gg * 0.3576 + B * 0.1805) / 0.95047), Y = _h(R * 0.2126 + Gg * 0.7152 + B * 0.0722), Z = _h((R * 0.0193 + Gg * 0.1192 + B * 0.9505) / 1.08883);
     const L = 116 * Y - 16, a = 500 * (X - Y), b = 200 * (Y - Z);
     if (Math.hypot(a, b) < 7 || L > 93) continue; s += a; n++;
   }
-  return [n ? s / n : null, n / idx.length];
+  return [n ? s / n : null, n / pts.length];
 }
+// SH[i] = การเลื่อนของเฟรม i เทียบเฟรมอ้างอิงหลัก (จุด 1) · TT[i] = เวลา
+let SH = [], TT = [];
+const nearest = t => { let b = 0; TT.forEach((x, i) => { if (Math.abs(x - t) < Math.abs(TT[b] - t)) b = i; }); return b; };
+const rel = (i, t) => { const j = nearest(t); return [SH[i][0] - SH[j][0], SH[i][1] - SH[j][1]]; };
 async function analyze() {
-  if (BUSY || !VID) return; BUSY = true; PART = false; const fi = [], si = [];
-  for (let p = 0; p < W * H; p++) { if (M.flap[p]) fi.push(p); else if (M.skin[p]) si.push(p); }
-  const c = $('cv').getContext('2d'), raw = [];
-  const grab = t => { c.drawImage(vd, 0, 0, W, H); const px = c.getImageData(0, 0, W, H).data, a = aStar(px, fi), b = aStar(px, si);
-    raw.push([t, a[1] >= 0.2 ? a[0] : null, b[1] >= 0.2 ? b[0] : null, a[1]]); $('res').innerHTML = `<div class="res">⏳ กำลังวิเคราะห์… ${Math.round(t / vd.duration * 100)}%</div>`; };
+  const gs = GR.filter(g => g.t != null); if (BUSY || !VID || !gs.length) return; BUSY = true;
+  const ref = gs[0].ref, list = GR.map(g => { const a = []; for (let p = 0; p < W * H; p++) if (g.m[p]) a.push(p); return a; }), sl = []; for (let p = 0; p < W * H; p++) if (SKIN[p]) sl.push(p);
+  const c = $('cv').getContext('2d'), raw = []; SH = []; TT = []; let prev = null;
+  const grab = t => {
+    c.drawImage(vd, 0, 0, W, H); const px = c.getImageData(0, 0, W, H).data, g = gray(px);
+    const s = prev ? track(ref, g, prev, 3, 1) : (q => track(ref, g, q, 2, 1))(track(ref, g, [0, 0], 16, 2)); prev = s; SH.push(s); TT.push(t);
+    raw.push({ t, s, px: null, a: list.map(L => aStar(px, L, s)), k: sl.length ? aStar(px, sl, s) : [null, 0] });
+    $('res').innerHTML = `<div class="res">⏳ กำลังวิเคราะห์ (ตามภาพ + วัดสี)… ${Math.round(t / vd.duration * 100)}%</div>`;
+  };
   await seek(0);
   if ('requestVideoFrameCallback' in vd) {
-    await new Promise(r => { const cb = (now, md) => { if (!BUSY) return; grab(md.mediaTime); if (!vd.ended && !vd.paused) vd.requestVideoFrameCallback(cb); }; vd.requestVideoFrameCallback(cb); vd.onended = r; vd.playbackRate = 1; vd.play(); });
-  } else {
-    const step = 1 / 15; for (let t = 0; t < vd.duration; t += step) { await seek(t); grab(t); }
-  }
-  vd.pause(); vd.onended = null; BUSY = false;
-  // หักผลกล้องปรับแสงด้วยผิวปกติ (ถ้ามี)
+    await new Promise(r => { const cb = (now, md) => { if (!BUSY) return; grab(md.mediaTime); if (!vd.ended && !vd.paused) vd.requestVideoFrameCallback(cb); }; vd.requestVideoFrameCallback(cb); vd.onended = r; vd.playbackRate = 0.5; vd.play(); });
+  } else { for (let t = 0; t < vd.duration; t += 1 / 15) { await seek(t); grab(t); } }
+  vd.pause(); vd.onended = null; vd.playbackRate = 1;
+  // ผิวปกติ: ชดเชยเลื่อนเทียบเฟรมที่ระบาย (เฟรมอ้างอิงหลักคือจุด 1 · ผิวปกติวัดด้วยการเลื่อนเดียวกัน ปรับให้ตรงเฟรมที่ระบาย)
+  const order = GR.map((g, i) => i).filter(i => GR[i].t != null).sort((a, b) => GR[a].t - GR[b].t);
+  order.forEach((gi, k) => {
+    const g = GR[gi], tp = k ? GR[order[k - 1]].t : -1, tn = k < order.length - 1 ? GR[order[k + 1]].t : 1e9;
+    const lo = Math.max(0, g.t - 3.5, tp + 0.3), hi = Math.min(vd.duration + 1, g.t + 4, tn - 1.2);
+    const sub = raw.filter(r => r.t >= lo && r.t <= hi);
+    proc(g, sub.map(r => [r.t, r.a[gi][1] >= 0.2 ? r.a[gi][0] : null, r.k[1] >= 0.2 ? r.k[0] : null, r.a[gi][1]]));
+  });
+  BUSY = false; DONE = true; $('gr').classList.remove('hid'); calc(); const g = GR[ACT]; if (g.sig && g.T0 != null) scrub(g.sig[g.T0][0]);
+}
+function proc(G, raw) {
+  G.sig = null; G.T0 = null; G.occ = []; G.part = false; if (raw.length < 6) return;
   const sk = raw.filter(r => r[2] != null).slice(0, 5), s0 = sk.length ? sk.reduce((a, r) => a + r[2], 0) / sk.length : null;
   const rv = raw.map(r => [r[0], r[1] == null ? null : s0 == null || r[2] == null ? r[1] : r[1] - (r[2] - s0)]);
   const sm = rv.map((r, i) => { if (r[1] == null) return [r[0], null]; let s = 0, n = 0; for (let j = i - 1; j <= i + 1; j++) if (rv[j] && rv[j][1] != null) { s += rv[j][1]; n++; } return [r[0], s / n]; });
-  SIG = sm; OCC = []; VIS = raw.map(r => r[3]);
-  for (let i = 0; i < sm.length; i++) if (sm[i][1] == null) { let j = i; while (j + 1 < sm.length && sm[j + 1][1] == null) j++; OCC.push([i, j]); i = j; }
-  const ok = sm.map((r, i) => i).filter(i => sm[i][1] != null); if (!ok.length) { calc(); return; }
-  // จุดปล่อย: ถ้ามีช่วงที่ถูกบัง (กรรไกร) → เฟรมแรกที่เห็นผิวหลังช่วงบังที่ยาวที่สุด
-  const longest = OCC.filter(o => o[1] + 1 < sm.length).sort((a, b) => (b[1] - b[0]) - (a[1] - a[0]))[0];
-  // กรรไกรบังบางส่วน (เช่นห่วงกรรไกรล้อมจุดกด): จุดปล่อย = เฟรมแรกที่สัดส่วนผิวที่เห็นกลับเท่าตอนท้าย
-  const n = VIS.length, vt = VIS.slice(Math.floor(n * 0.8)).sort((a, b) => a - b), vf = vt[Math.floor(vt.length / 2)] || 0;
-  let pk = -1; for (let i = 0; i < n; i++) if (VIS[i] < vf - 0.04) pk = i;
-  if (longest && longest[1] - longest[0] >= 3) T0 = longest[1] + 1;
-  else if (pk >= 3 && pk < n - 4) { T0 = pk + 1; PART = true; }
+  G.sig = sm; G.vis = raw.map(r => r[3]);
+  for (let i = 0; i < sm.length; i++) if (sm[i][1] == null) { let j = i; while (j + 1 < sm.length && sm[j + 1][1] == null) j++; G.occ.push([i, j]); i = j; }
+  const ok = sm.map((r, i) => i).filter(i => sm[i][1] != null); if (!ok.length) { G.sig = null; return; }
+  const longest = G.occ.filter(o => o[1] + 1 < sm.length).sort((a, b) => (b[1] - b[0]) - (a[1] - a[0]))[0];
+  const n = G.vis.length, vt = G.vis.slice(Math.floor(n * 0.8)).sort((a, b) => a - b), vf = vt[Math.floor(vt.length / 2)] || 0;
+  let pk = -1; for (let i = 0; i < n; i++) if (G.vis[i] < vf - 0.04) pk = i;
+  if (longest && longest[1] - longest[0] >= 3) G.T0 = longest[1] + 1;
+  else if (pk >= 3 && pk < n - 4) { G.T0 = pk + 1; G.part = true; }
   else {
-    let mi = ok[0]; ok.forEach(i => { if (sm[i][1] < sm[mi][1]) mi = i; }); T0 = mi;
-    const R0 = crt();
-    if (R0 && R0.te > mi) {
-      let bj = -1, bd = 0, sl = [];
-      for (let i = mi + 1; i <= R0.te; i++) { if (rv[i][1] == null || rv[i - 1][1] == null) continue; const d = rv[i][1] - rv[i - 1][1]; sl.push(Math.abs(d)); if (d > bd) { bd = d; bj = i; } }
-      sl.sort((a, b) => a - b);
-      const nb = bj > 1 ? Math.max(Math.abs((rv[Math.min(rv.length - 1, bj + 1)][1] ?? rv[bj][1]) - rv[bj][1]), Math.abs((rv[bj - 1][1] ?? 0) - (rv[bj - 2][1] ?? rv[bj - 1][1] ?? 0))) : 1e9;
-      if (bj > 1 && bd > 4 * (sl[Math.floor(sl.length / 2)] || 0.01) && bd > 3 * nb && rv[bj][1] < R0.thr) T0 = Math.min(bj + 1, sm.length - 1);
-    }
-    const R1 = crt(); if (R1 && R1.te > T0) { const lim = sm[T0][1] + 0.05 * (R1.base - sm[T0][1]); for (let i = T0; i < R1.te; i++) if (sm[i][1] != null && sm[i][1] <= lim) T0 = i; }
+    let mi = ok[0]; ok.forEach(i => { if (sm[i][1] < sm[mi][1]) mi = i; }); G.T0 = mi;
+    const R1 = crt(G); if (R1 && R1.te > G.T0) { const lim = sm[G.T0][1] + 0.05 * (R1.base - sm[G.T0][1]); for (let i = G.T0; i < R1.te; i++) if (sm[i][1] != null && sm[i][1] <= lim) G.T0 = i; }
   }
-  while (T0 < sm.length - 1 && sm[T0][1] == null) T0++;
-  $('gr').classList.remove('hid'); calc(); await seek(sm[T0][0]); frame();
+  while (G.T0 < sm.length - 1 && sm[G.T0][1] == null) G.T0++;
 }
-let OCC = [], VIS = [], PART = false;
-function crt() {
-  if (!SIG || T0 == null || SIG[T0][1] == null) return null; const v = SIG;
-  const pre = v.slice(0, T0).filter(r => r[1] != null).map(r => r[1]); const occ0 = OCC.find(o => o[1] + 1 === T0);
+function crt(G) {
+  const v = G.sig, T0 = G.T0; if (!v || T0 == null || v[T0][1] == null) return null;
+  const occ0 = G.occ.find(o => o[1] + 1 === T0);
   const pb = (occ0 ? v.slice(0, occ0[0]) : v.slice(0, Math.max(3, Math.floor(T0 * 0.6)))).filter(r => r[1] != null).map(r => r[1]).sort((a, b) => a - b);
-  if (!pb.length) return null;
   const post = v.slice(T0).filter(r => r[1] != null).map(r => r[1]), tl = post.slice(-Math.max(5, Math.floor(post.length * 0.2))), ts = tl.slice().sort((a, b) => a - b);
-  const pre0 = pb[Math.floor(pb.length / 2)], tail = ts[Math.floor(ts.length / 2)], base = Math.max(pre0, tail ?? pre0), vmin = v[T0][1];
-  const rising = tl.length >= 6 && (tl.slice(-3).reduce((a, b) => a + b) - tl.slice(0, 3).reduce((a, b) => a + b)) / 3 > 0.1 * Math.abs(base - vmin); thr = vmin + 0.9 * (base - vmin);
-  let te = -1; for (let i = T0; i < v.length; i++) if (v[i][1] != null && v[i][1] >= thr) { te = i; break; }
-  return { base, vmin, thr, te, t: te < 0 ? null : v[te][0] - v[T0][0], drop: base - vmin, rising };
+  const pre0 = pb.length ? pb[Math.floor(pb.length / 2)] : -1e9, tail = ts.length ? ts[Math.floor(ts.length / 2)] : -1e9, base = Math.max(pre0, tail), vmin = v[T0][1];
+  if (base < -1e8) return null;
+  const rising = tl.length >= 6 && (tl.slice(-3).reduce((a, b) => a + b) - tl.slice(0, 3).reduce((a, b) => a + b)) / 3 > 0.1 * Math.abs(base - vmin);
+  const thr = vmin + 0.9 * (base - vmin); let te = -1; for (let i = T0; i < v.length; i++) if (v[i][1] != null && v[i][1] >= thr) { te = i; break; }
+  return { base, vmin, thr, te, t: te < 0 ? null : v[te][0] - v[T0][0], drop: base - vmin, rising, after: v[v.length - 1][0] - v[T0][0] };
 }
 function graph() {
-  const cv = $('gr'), r = cv.getBoundingClientRect(), dpr = devicePixelRatio || 1; cv.width = r.width * dpr; cv.height = r.height * dpr;
-  const c = cv.getContext('2d'); c.scale(dpr, dpr); const w = r.width, h = r.height, v = SIG; if (!v || v.length < 2) return;
-  const t1 = v[v.length - 1][0], ys = v.filter(q => q[1] != null).map(q => q[1]), lo = Math.min(...ys), hi = Math.max(...ys), X = t => 6 + (w - 12) * t / t1, Y = y => h - 14 - (h - 24) * (y - lo) / ((hi - lo) || 1);
-  c.fillStyle = 'rgba(107,114,128,.25)'; OCC.forEach(o => c.fillRect(X(v[o[0]][0]), 4, Math.max(2, X(v[o[1]][0]) - X(v[o[0]][0])), h - 18));
-  const R = crt(); c.font = '11px system-ui'; c.fillStyle = '#9ca3af';
-  for (let s = 0; s <= t1; s += 1) { c.fillRect(X(s), h - 12, 1, 4); c.fillText(s + 's', X(s) + 2, h - 2); }
+  const G = GR[ACT], cv = $('gr'), r = cv.getBoundingClientRect(), dpr = devicePixelRatio || 1; cv.width = r.width * dpr; cv.height = r.height * dpr;
+  const c = cv.getContext('2d'); c.scale(dpr, dpr); const w = r.width, h = r.height, v = G.sig; if (!v || v.length < 2) return;
+  const ta = v[0][0], t1 = v[v.length - 1][0], ys = v.filter(q => q[1] != null).map(q => q[1]), lo = Math.min(...ys), hi = Math.max(...ys), X = t => 6 + (w - 12) * (t - ta) / ((t1 - ta) || 1), Y = y => h - 14 - (h - 24) * (y - lo) / ((hi - lo) || 1);
+  c.fillStyle = 'rgba(107,114,128,.25)'; G.occ.forEach(o => c.fillRect(X(v[o[0]][0]), 4, Math.max(2, X(v[o[1]][0]) - X(v[o[0]][0])), h - 18));
+  const R = crt(G); c.font = '11px system-ui'; c.fillStyle = '#9ca3af';
+  for (let s = Math.ceil(ta); s <= t1; s += 1) { c.fillRect(X(s), h - 12, 1, 4); c.fillText(s + 's', X(s) + 2, h - 2); }
   if (R) { c.setLineDash([4, 3]); c.strokeStyle = '#9ca3af'; c.beginPath(); c.moveTo(6, Y(R.base)); c.lineTo(w - 6, Y(R.base)); c.stroke(); c.setLineDash([]);
-    if (R.te >= 0) { c.fillStyle = 'rgba(29,78,216,.15)'; c.fillRect(X(v[T0][0]), 4, X(v[R.te][0]) - X(v[T0][0]), h - 18); } }
-  c.strokeStyle = '#ef4444'; c.lineWidth = 2; c.beginPath(); let pen = false; v.forEach(q => { if (q[1] == null) { pen = false; return; } pen ? c.lineTo(X(q[0]), Y(q[1])) : c.moveTo(X(q[0]), Y(q[1])); pen = true; }); c.stroke();
+    if (R.te >= 0) { c.fillStyle = 'rgba(29,78,216,.15)'; c.fillRect(X(v[G.T0][0]), 4, X(v[R.te][0]) - X(v[G.T0][0]), h - 18); } }
+  c.strokeStyle = `rgb(${PC[ACT % 4]})`; c.lineWidth = 2; c.beginPath(); let pen = false; v.forEach(q => { if (q[1] == null) { pen = false; return; } pen ? c.lineTo(X(q[0]), Y(q[1])) : c.moveTo(X(q[0]), Y(q[1])); pen = true; }); c.stroke();
   const dot = (i, col) => { if (v[i][1] == null) return; c.fillStyle = col; c.beginPath(); c.arc(X(v[i][0]), Y(v[i][1]), 4, 0, 7); c.fill(); };
-  dot(T0, '#1d4ed8'); if (R && R.te >= 0) dot(R.te, '#059669');
+  dot(G.T0, '#1d4ed8'); if (R && R.te >= 0) dot(R.te, '#059669');
 }
-$('gr').addEventListener('pointerdown', async e => {
-  if (!SIG || BUSY) return; const r = $('gr').getBoundingClientRect(), t = (e.clientX - r.left - 6) / (r.width - 12) * SIG[SIG.length - 1][0];
-  let bi = -1; SIG.forEach((q, i) => { if (q[1] != null && (bi < 0 || Math.abs(q[0] - t) < Math.abs(SIG[bi][0] - t))) bi = i; }); if (bi < 0) return; T0 = bi; calc(); await seek(SIG[bi][0]); frame();
+$('gr').addEventListener('pointerdown', e => {
+  const G = GR[ACT]; if (!G || !G.sig || BUSY) return; const v = G.sig, r = $('gr').getBoundingClientRect(), t = v[0][0] + (e.clientX - r.left - 6) / (r.width - 12) * (v[v.length - 1][0] - v[0][0]);
+  let bi = -1; v.forEach((q, i) => { if (q[1] != null && (bi < 0 || Math.abs(q[0] - t) < Math.abs(v[bi][0] - t))) bi = i; }); if (bi < 0) return; G.T0 = bi; G.part = false; calc(); scrub(v[bi][0]);
 });
+function lvl(t) { return t < 1 ? ['bad', 'เร็ว (สงสัย venous congestion)'] : t <= 3 ? ['ok', 'ปกติ'] : ['bad', 'ช้า (สงสัย arterial insufficiency)']; }
 function calc() {
   const el = $('res'); if (!VID) { el.innerHTML = ''; return; }
-  if (!SIG) {
-    const ok = cnt('flap') >= 20;
-    el.innerHTML = `<div class="res">${ok ? '' : '✏️ ระบายตรงจุดที่กด flap · 🟤 ผิวปกติ (ไม่บังคับ)<br>'}<button class="b" style="margin-top:4px" onclick="analyze()" ${ok ? '' : 'disabled'}>▶️ วิเคราะห์</button></div>`; return;
+  const ready = GR.some(g => g.t != null && g.m.some(v => v));
+  if (!DONE) {
+    el.innerHTML = `<div class="res">${ready ? '' : '1) เลื่อนแถบ <b>เฟรม</b> ไปหลังยกกรรไกร · 2) ✏️ ระบายตรงรอยกด · กดหลายครั้ง → ➕<br>'}<button class="b" style="margin-top:4px" onclick="analyze()" ${ready ? '' : 'disabled'}>▶️ วิเคราะห์</button></div>`; return;
   }
-  graph(); const R = crt();
-  if (!R || R.t == null) { el.innerHTML = `<div class="res"><b class="warn">หาจุดสีกลับไม่เจอ</b> · แตะกราฟตรงจุดที่ปล่อยมือ หรืออัดวิดีโอให้ยาวขึ้นหลังปล่อย</div>`; return; }
-  const lv = R.t < 1 ? ['bad', 'เร็ว (สงสัย venous congestion)'] : R.t <= 3 ? ['ok', 'ปกติ'] : ['bad', 'ช้า (สงสัย arterial insufficiency)'];
-  const weak = (R.rising || SIG[SIG.length - 1][0] - SIG[T0][0] < 2 ? ' · <span class="warn">⚠️ อัดต่อหลังปล่อยให้นานขึ้น (≥ 4 วิ) สีอาจยังกลับไม่สุด</span>' : '') + (R.drop < 3 ? ' · <span class="warn">⚠️ ซีดน้อย กดแรงขึ้นหรือระบายให้ตรงจุดกด</span>' : '');
-  el.innerHTML = `<div class="res"><span class="big ${lv[0]}">CRT ${R.t.toFixed(1)} วิ</span> · ${lv[1]}<div class="mu">🔵 จุดปล่อย ${SIG[T0][0].toFixed(2)} วิ${OCC.some(o => o[1] - o[0] >= 3) || PART ? ' (หลังกรรไกรออก)' : ''} · 🟢 สีกลับ 90% · แตะกราฟเพื่อย้ายจุดปล่อย${M.skin && cnt('skin') ? ' · หักแสงด้วยผิวปกติ ✓' : ''}${weak}</div></div>`;
+  graph();
+  const rows = GR.map((g, i) => { if (g.t == null) return ''; const R = crt(g), col = `rgb(${PC[i % 4]})`;
+    if (!R || R.t == null) return `<div><b style="color:${col}">จุด ${i + 1}</b> <span class="warn">หาจุดสีกลับไม่เจอ · แตะกราฟตรงจุดปล่อย</span></div>`;
+    const lv = lvl(R.t); return `<div><b style="color:${col}">จุด ${i + 1}</b> <span class="big ${lv[0]}">CRT ${R.t.toFixed(1)} วิ</span> · ${lv[1]}</div>`; }).join('');
+  const G = GR[ACT], R = crt(G);
+  const warn = R ? ((R.rising || R.after < 2 ? ' · <span class="warn">⚠️ อัดต่อหลังปล่อยให้นานขึ้น (≥ 4 วิ)</span>' : '') + (R.drop < 3 ? ' · <span class="warn">⚠️ ซีดน้อย กดแรงขึ้นหรือระบายให้ตรงรอยกด</span>' : '')) : '';
+  el.innerHTML = `<div class="res">${rows}<div class="mu">กราฟ: จุด ${ACT + 1} · 🔵 ปล่อย ${G.sig && G.T0 != null ? G.sig[G.T0][0].toFixed(2) + ' วิ' : '-'}${G.occ.some(o => o[1] - o[0] >= 3) || G.part ? ' (หลังกรรไกรออก)' : ''} · 🟢 สีกลับ 90% · แตะกราฟเพื่อย้ายจุดปล่อย${SKIN.some(v => v) ? ' · หักแสงด้วยผิวปกติ' : ''}${warn}</div></div>`;
 }
 // 💾 บันทึกรูป: เฟรมปัจจุบัน + กราฟ + ผล
 function saveImg() {
-  if (!VID) return; const gh = SIG ? Math.round(W * 0.28) : 0, c2 = document.createElement('canvas'); c2.width = W; c2.height = H + gh; const c = c2.getContext('2d');
-  c.fillStyle = '#fff'; c.fillRect(0, 0, W, H + gh); c.drawImage($('cv'), 0, 0); c.drawImage($('ov'), 0, 0); if (SIG) c.drawImage($('gr'), 0, H, W, gh);
-  const rows = ($('res').innerText || '').split('\n').map(s => s.trim()).filter(Boolean).slice(0, 2);
-  const fs = Math.round(Math.max(W, H) / 28), pad = fs * 0.5, lh = fs * 1.3; c.font = `bold ${fs}px system-ui,sans-serif`;
+  if (!VID) return; const gh = DONE ? Math.round(W * 0.28) : 0, c2 = document.createElement('canvas'); c2.width = W; c2.height = H + gh; const c = c2.getContext('2d');
+  c.fillStyle = '#fff'; c.fillRect(0, 0, W, H + gh); c.drawImage($('cv'), 0, 0); c.drawImage($('ov'), 0, 0); if (DONE) c.drawImage($('gr'), 0, H, W, gh);
+  const rows = GR.map((g, i) => { const R = g.t != null && crt(g); return R && R.t != null ? `จุด ${i + 1}: CRT ${R.t.toFixed(1)} วิ · ${lvl(R.t)[1]}` : ''; }).filter(Boolean);
+  const fs = Math.round(Math.max(W, H) / 30), pad = fs * 0.5, lh = fs * 1.3; c.font = `bold ${fs}px system-ui,sans-serif`;
   const bw = Math.min(W - pad * 2, Math.max(0, ...rows.map(r => c.measureText(r).width)) + pad * 2), bh = rows.length * lh + pad * 1.4;
   if (rows.length) { c.fillStyle = 'rgba(0,0,0,.65)'; c.fillRect(pad, H - bh - pad, bw, bh); rows.forEach((r, i) => { c.fillStyle = '#fff'; c.fillText(r, pad * 2, H - bh - pad + pad + fs + i * lh, W - pad * 4); }); }
   const name = 'crt-' + (d => d.getFullYear() + String(d.getMonth() + 1).padStart(2, '0') + String(d.getDate()).padStart(2, '0') + '-' + String(d.getHours()).padStart(2, '0') + String(d.getMinutes()).padStart(2, '0'))(new Date()) + '.jpg';
