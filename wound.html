@@ -20,6 +20,8 @@ main{padding:6px 16px max(8px,env(safe-area-inset-bottom));max-width:640px;width
 .res{margin-top:6px;border:1px solid var(--ln);border-radius:12px;padding:6px 10px;font-size:13px;line-height:1.45}
 .res input{width:64px;font:inherit;font-size:16px;padding:4px 6px;border:1px solid var(--ln);border-radius:8px;background:var(--bg);color:var(--tx)}
 .res button{font:inherit;border:0;border-radius:8px;background:var(--hd);color:#fff;padding:5px 12px;cursor:pointer}
+.chips{display:flex;gap:4px;flex-wrap:nowrap;overflow-x:auto;margin-top:4px;touch-action:pan-x}.chips button{flex:none}
+#res{min-height:106px}.chips button{font:inherit;font-size:12px;border:1px solid var(--ln);background:var(--bg2);color:var(--tx);border-radius:8px;padding:3px 8px;cursor:pointer}.chips button.on{background:var(--hd);color:#fff;border-color:var(--hd)}
 .big{font-size:18px;font-weight:700}.warn{color:var(--or)}.bad{color:var(--rd)}
 .ov2{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;z-index:9}.ov2>div{background:var(--bg);width:100%;padding:16px 16px max(16px,env(safe-area-inset-bottom));border-radius:16px 16px 0 0;font-size:14px;line-height:1.6}
 </style></head><body>
@@ -33,7 +35,8 @@ main{padding:6px 16px max(8px,env(safe-area-inset-bottom));max-width:640px;width
 </main>
 <div class="ov2 hid" id="help" onclick="this.classList.add('hid')"><div>
 • 1) 📏 <b>ตั้งสเกล (บังคับ)</b>: ซูมที่ไม้บรรทัด แตะ 2 จุดบนขีด แล้วใส่ระยะจริง · ยิ่งห่าง (เช่น 5 cm) ยิ่งแม่น<br>
-• 📍 ระยะ: แตะ 2 จุด = 1 เส้น (gap cleft · ก้อนแบบ caliper ลาก 2 เส้นตั้งฉาก) · วัดได้หลายเส้น · ↩️ ลบเส้นล่าสุด<br>
+• 📍 ระยะ: แตะ 2 จุด = 1 เส้น (gap cleft · MRD · IPD · คิ้ว · ก้อนแบบ caliper ลาก 2 เส้นตั้งฉาก) · ตั้งชื่อเส้น + R/L ด้วยปุ่มใต้ผล · 📋 คัดลอกผล<br>
+• 👁️ HVID: ใช้เมื่อไม่มีไม้บรรทัด (แตะขอบ limbus ซ้าย–ขวา ≈ 11.7 mm) คลาด ±5% · MRD ต้องถ่ายตรงระดับตา · วัดได้หลายเส้น · ↩️ ลบเส้นล่าสุด<br>
 • ✏️ ระบายให้ทั่วแผล/ก้อน → ได้พื้นที่ cm² · ยาว × กว้าง (ยาวสุด และกว้างสุดในแนวตั้งฉาก) · เส้นรอบวง<br>
 • ↕️ หัว–เท้า (ไม่บังคับ): แตะฝั่งหัวแล้วฝั่งเท้า → ได้ยาว × กว้างตามแนวลำตัวเพิ่ม (แบบวัดด้วยไม้บรรทัดใน chart)<br>
 • ไม้บรรทัดต้องอยู่ระนาบเดียวกับแผล ถ่ายตั้งฉาก · แผลบนส่วนโค้งจะคลาด · วัดความลึกไม่ได้<br>
@@ -41,10 +44,10 @@ main{padding:6px 16px max(8px,env(safe-area-inset-bottom));max-width:640px;width
 <span class="mu">แตะที่ใดก็ได้เพื่อปิด</span></div></div>
 <script>
 const $ = id => document.getElementById(id);
-const MD = new URLSearchParams(location.search).get('m') || '', MT = { wound: ['🩸 วัดขนาดแผล', 'paint'], mass: ['🔵 วัดขนาดก้อน', 'dist'], gap: ['↔️ วัดขนาด gap (cleft)', 'dist'] }[MD];
+const MD = new URLSearchParams(location.search).get('m') || '', MT = { wound: ['🩸 วัดขนาดแผล', 'paint'], mass: ['🔵 วัดขนาดก้อน', 'dist'], gap: ['📏 วัดระยะ', 'dist'], dist: ['📏 วัดระยะ', 'dist'] }[MD];
 if (MT) { document.querySelector('header b').textContent = MT[0]; document.title = MT[0].slice(2).trim(); }
 let TOOL = 'scale', BR = 14, IMG = null, W = 0, H = 0, M = null, timer = 0, last = null;
-let LINES = [], DP = null, SC = [], PXCM = 0, CM = 1, AX = [], UNDO = [], VS = 1, VX = 0, VY = 0, FW = 0, FH = 0, A0 = null;
+let SCT = 'ruler', LINES = [], DP = null, SC = [], PXCM = 0, CM = 1, AX = [], UNDO = [], VS = 1, VX = 0, VY = 0, FW = 0, FH = 0, A0 = null;
 function ui() {
   const ok = PXCM > 0;
   $('tools').innerHTML = [['scale', '📏 สเกล'], ['dist', '📍 ระยะ'], ['paint', '✏️ ระบาย'], ['erase', '🧽'], ['axis', '↕️']]
@@ -107,7 +110,7 @@ const end = e => {
 $('wr').addEventListener('pointerup', end); $('wr').addEventListener('pointercancel', end); $('wr').addEventListener('lostpointercapture', end);
 function setScale() {
   const v = parseFloat(String($('cmv').value).replace(',', '.')); if (!(v > 0) || SC.length < 2) return;
-  CM = v; PXCM = Math.hypot(SC[1][0] - SC[0][0], SC[1][1] - SC[0][1]) / v; TOOL = MT ? MT[1] : 'dist'; ui(); paintOv(); calc();
+  CM = SCT === 'hvid' ? v / 10 : v; PXCM = Math.hypot(SC[1][0] - SC[0][0], SC[1][1] - SC[0][1]) / CM; TOOL = MT ? MT[1] : 'dist'; ui(); paintOv(); calc();
 }
 function later() { clearTimeout(timer); timer = setTimeout(() => { calc(); paintOv(); }, 120); ui(); }
 let raf = 0;
@@ -127,15 +130,29 @@ function paintOv() {
       c.beginPath(); c.moveTo(AX[1][0], AX[1][1]); c.lineTo(AX[1][0] - h * Math.cos(a - .4), AX[1][1] - h * Math.sin(a - .4)); c.lineTo(AX[1][0] - h * Math.cos(a + .4), AX[1][1] - h * Math.sin(a + .4)); c.fillStyle = '#a855f7'; c.fill(); }
     AX.forEach((p, i) => dot(p, '#a855f7'));
     LINES.forEach((L, i) => { const col = LC[i % LC.length]; seg(L[0], L[1], col); dot(L[0], col); dot(L[1], col);
-      const mx = (L[0][0] + L[1][0]) / 2, my = (L[0][1] + L[1][1]) / 2, tx = (i + 1) + ') ' + fmt(Math.hypot(L[1][0] - L[0][0], L[1][1] - L[0][1]));
-      c.font = `bold ${lw * 9}px system-ui`; c.lineWidth = lw * 3; c.strokeStyle = '#000'; c.strokeText(tx, mx + lw * 6, my - lw * 4); c.fillStyle = col; c.fillText(tx, mx + lw * 6, my - lw * 4); });
+      const mx = (L[0][0] + L[1][0]) / 2, my = (L[0][1] + L[1][1]) / 2, tx = lname(L, i) + ' ' + fmt(Math.hypot(L[1][0] - L[0][0], L[1][1] - L[0][1]));
+      c.font = `bold ${lw * 9}px system-ui`; c.lineJoin = 'round'; const tw = c.measureText(tx).width, ox = Math.max(2, Math.min(W - tw - 2, mx < W / 2 ? mx - lw * 8 - tw : mx + lw * 8)) - mx; c.lineWidth = lw * 3; c.strokeStyle = '#000'; c.strokeText(tx, mx + ox, my + lw * 3); c.fillStyle = col; c.fillText(tx, mx + ox, my + lw * 3); });
     if (DP) dot(DP, '#f97316');
   });
 }
 const LC = ['#f97316', '#22d3ee', '#f472b6', '#a3e635', '#fde047'];
 const fmt = px => { const cm = px / PXCM; return cm < 3 ? (cm * 10).toFixed(1) + ' mm' : cm.toFixed(2) + ' cm'; };
+const scl = () => SCT === 'hvid' ? 'HVID ' + (CM * 10).toFixed(1) + ' mm' : CM + ' cm';
+const lname = (L, i) => (L[2] || (i + 1) + ')') + (L[3] ? ' ' + L[3] : '');
+const dlen = L => Math.hypot(L[1][0] - L[0][0], L[1][1] - L[0][1]);
+const NM = ['gap', 'MRD1', 'MRD2', 'PFH', 'IPD', 'ICD', 'คิ้ว'];
+function nm(x) { const L = LINES[LINES.length - 1]; if (!L) return;
+  if (x === 'R' || x === 'L') L[3] = L[3] === x ? '' : x; else if (x === '✏️') { const v = window.prompt('ชื่อเส้น', L[2] || ''); if (v != null) L[2] = v.trim(); } else L[2] = L[2] === x ? '' : x;
+  paintOv(); calc(); }
+function copyRes() {
+  const s = LINES.map((L, i) => lname(L, i) + ' ' + fmt(dlen(L))).join('\n') + (SCT === 'hvid' ? '\n(สเกลจาก HVID ±5%)' : '');
+  const done = () => { const b = $('cpb'); if (b) b.textContent = '✓ คัดลอกแล้ว'; };
+  try { navigator.clipboard.writeText(s).then(done, () => window.prompt('คัดลอก', s)); } catch (e) { window.prompt('คัดลอก', s); }
+}
 function distTxt() {
-  const s = LINES.map((L, i) => `<b style="color:${LC[i % LC.length]}">${i + 1})</b> <b>${fmt(Math.hypot(L[1][0] - L[0][0], L[1][1] - L[0][1]))}</b>`).join(' · ');
+  const L = LINES[LINES.length - 1];
+  const s = LINES.map((L, i) => `<b style="color:${LC[i % LC.length]}">${lname(L, i)}</b> <b>${fmt(dlen(L))}</b>`).join(' · ')
+    + (L ? `<div class="chips">${NM.concat(['R', 'L', '✏️']).map(x => `<button class="${L[2] === x || L[3] === x ? 'on' : ''}" onclick="nm('${x}')">${x}</button>`).join('')}<button id="cpb" onclick="copyRes()">📋</button></div>` : '');
   return s || TOOL === 'dist' ? `<div>📍 ${s || ''}${TOOL === 'dist' ? ` <span class="mu">${DP ? 'แตะจุดที่ 2' : 'แตะจุดที่ 1'}</span>` : ''}</div>` : '';
 }
 // จุดขอบแผล → convex hull
@@ -155,15 +172,17 @@ function extent(Hh, u) {
 function calc() {
   const el = $('res'); A0 = null; if (!IMG) { el.innerHTML = ''; return; }
   if (!PXCM) {
-    el.innerHTML = SC.length < 2 ? `<div class="res"><b>📏 ขั้นที่ 1 (บังคับ):</b> ซูมที่ไม้บรรทัด แล้วแตะ <b>${2 - SC.length}</b> จุดบนขีด</div>`
-      : `<div class="res">ระยะระหว่าง 2 จุด = <input id="cmv" inputmode="decimal" value="${CM}" onkeydown="if(event.key==='Enter')setScale()"> cm <button onclick="setScale()">ตกลง</button> <span class="mu">· แตะใหม่ได้</span></div>`;
+    const hv = SCT === 'hvid', sw = `<div class="chips"><button class="${hv ? '' : 'on'}" onclick="SCT='ruler';SC=[];paintOv();calc()">📏 ไม้บรรทัด</button><button class="${hv ? 'on' : ''}" onclick="SCT='hvid';SC=[];paintOv();calc()">👁️ HVID (สำรอง)</button></div>`;
+    el.innerHTML = SC.length < 2 ? `<div class="res"><b>ขั้นที่ 1 ตั้งสเกล (บังคับ):</b> ${hv ? 'ซูมที่ตา แตะขอบ limbus ซ้าย–ขวาของกระจกตา 1 ตา' : 'ซูมที่ไม้บรรทัด แตะ 2 จุดบนขีด'} (เหลือ <b>${2 - SC.length}</b>)${sw}${hv ? '<div class="warn">⚠️ HVID แต่ละคน 11–12.5 mm → คลาด ±5% · ใช้เมื่อไม่มีไม้บรรทัด · ไม่ใช้กับเด็กเล็ก</div>' : ''}</div>`
+      : hv ? `<div class="res">HVID = <input id="cmv" inputmode="decimal" value="11.7" onkeydown="if(event.key==='Enter')setScale()"> mm <button onclick="setScale()">ตกลง</button> <span class="mu">· แก้ได้ถ้าวัดจริงไว้</span></div>`
+      : `<div class="res">ระยะระหว่าง 2 จุด = <input id="cmv" inputmode="decimal" value="${SCT === 'ruler' && CM ? CM : 1}" onkeydown="if(event.key==='Enter')setScale()"> cm <button onclick="setScale()">ตกลง</button> <span class="mu">· แตะใหม่ได้</span></div>`;
     return;
   }
-  const spx = PXCM * CM, warn = spx < 60 ? ' <span class="warn">⚠️ จุดสเกลใกล้กันไป ซูมแล้วใช้ระยะยาวขึ้นจะแม่นกว่า</span>' : '';
+  const spx = PXCM * CM, warn = (SCT === 'hvid' ? ' <span class="warn">⚠️ สเกลจาก HVID (±5%)</span>' : '') + (spx < (SCT === 'hvid' ? 35 : 60) ? ' <span class="warn">⚠️ ' + (SCT === 'hvid' ? 'ตาเล็กในรูป ถ่ายใกล้ขึ้นจะแม่นกว่า' : 'จุดสเกลใกล้กันไป ซูมแล้วใช้ระยะยาวขึ้นจะแม่นกว่า') + '</span>' : '');
   let n = 0; const B = [];
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { const p = y * W + x; if (!M[p]) continue; n++;
     if (!x || !y || x === W - 1 || y === H - 1 || !M[p - 1] || !M[p + 1] || !M[p - W] || !M[p + W]) B.push([x, y]); }
-  if (n < 30) { el.innerHTML = `<div class="res">${distTxt() || '📍 วัดระยะ หรือ ✏️ ระบายพื้นที่'}<div class="mu">สเกล ${CM} cm = ${spx.toFixed(0)} px ✓${warn}</div></div>`; return; }
+  if (n < 30) { el.innerHTML = `<div class="res">${distTxt() || '📍 วัดระยะ หรือ ✏️ ระบายพื้นที่'}<div class="mu">สเกล ${scl()} = ${spx.toFixed(0)} px ✓${warn}</div></div>`; return; }
   // เส้นรอบวง: marching squares (ตรง = 1 · มุม = √½)
   let per = 0; const g = (x, y) => x >= 0 && y >= 0 && x < W && y < H && M[y * W + x] ? 1 : 0, r2 = Math.SQRT1_2;
   const seen = new Set();
@@ -181,7 +200,7 @@ function calc() {
     bl = `<div>↕️ หัว–เท้า: <b>${cm(e.L)} × ${cm(e.Wd)} cm</b></div>`; }
   else if (TOOL === 'axis') bl = `<div class="mu">↕️ แตะฝั่งหัว แล้วแตะฝั่งเท้า (${AX.length}/2)</div>`;
   el.innerHTML = `<div class="res"><div><span class="big">${area.toFixed(area < 10 ? 2 : 1)} cm²</span> · <b><span style="color:#ca8a04">ยาว ${cm(A0.L)}</span> × <span style="color:#0284c7">กว้าง ${cm(A0.Wd)}</span> cm</b></div>
-    ${bl}${distTxt()}<div class="mu">เส้นรอบวง ≈${cm(per)} cm · สเกล ${CM} cm = ${spx.toFixed(0)} px ✓${warn}</div></div>`;
+    ${bl}${distTxt()}<div class="mu">เส้นรอบวง ≈${cm(per)} cm · สเกล ${scl()} = ${spx.toFixed(0)} px ✓${warn}</div></div>`;
 }
 ui();
 </script></body></html>
