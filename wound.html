@@ -35,7 +35,7 @@ main{padding:6px 16px max(8px,env(safe-area-inset-bottom));max-width:640px;width
 </main>
 <div class="ov2 hid" id="help" onclick="this.classList.add('hid')"><div>
 • 1) 📏 <b>ตั้งสเกล (บังคับ)</b>: ซูมที่ไม้บรรทัด แตะ 2 จุดบนขีด แล้วใส่ระยะจริง · ยิ่งห่าง (เช่น 5 cm) ยิ่งแม่น<br>
-• 📍 ระยะ: แตะ 2 จุด = 1 เส้น (gap cleft · MRD · IPD · คิ้ว · ก้อนแบบ caliper ลาก 2 เส้นตั้งฉาก) · ตั้งชื่อเส้น + R/L ด้วยปุ่มใต้ผล · 📋 คัดลอกผล<br>
+• 📍 ระยะ: แตะ 2 จุด = 1 เส้น (gap cleft · MRD1 · BPD = brow–pupil · ก้อนแบบ caliper ลาก 2 เส้นตั้งฉาก) · ตั้งชื่อเส้น + R/L ด้วยปุ่มใต้ผล · 📋 คัดลอกผล<br>
 • 👁️ HVID: ใช้เมื่อไม่มีไม้บรรทัด (แตะขอบ limbus ซ้าย–ขวา ≈ 11.7 mm) คลาด ±5% · MRD ต้องถ่ายตรงระดับตา · วัดได้หลายเส้น · ↩️ ลบเส้นล่าสุด<br>
 • ✏️ ระบายให้ทั่วแผล/ก้อน → ได้พื้นที่ cm² · ยาว × กว้าง (ยาวสุด และกว้างสุดในแนวตั้งฉาก) · เส้นรอบวง<br>
 • ↕️ หัว–เท้า (ไม่บังคับ): แตะฝั่งหัวแล้วฝั่งเท้า → ได้ยาว × กว้างตามแนวลำตัวเพิ่ม (แบบวัดด้วยไม้บรรทัดใน chart)<br>
@@ -140,7 +140,7 @@ const fmt = px => { const cm = px / PXCM; return cm < 3 ? (cm * 10).toFixed(1) +
 const scl = () => SCT === 'hvid' ? 'HVID ' + (CM * 10).toFixed(1) + ' mm' : CM + ' cm';
 const lname = (L, i) => (L[2] || (i + 1) + ')') + (L[3] ? ' ' + L[3] : '');
 const dlen = L => Math.hypot(L[1][0] - L[0][0], L[1][1] - L[0][1]);
-const NM = ['gap', 'MRD1', 'MRD2', 'PFH', 'IPD', 'ICD', 'คิ้ว'];
+const NM = ['gap', 'MRD1', 'BPD'];
 function nm(x) { const L = LINES[LINES.length - 1]; if (!L) return;
   if (x === 'R' || x === 'L') L[3] = L[3] === x ? '' : x; else if (x === '✏️') { const v = window.prompt('ชื่อเส้น', L[2] || ''); if (v != null) L[2] = v.trim(); } else L[2] = L[2] === x ? '' : x;
   paintOv(); calc(); }
@@ -152,7 +152,7 @@ function copyRes() {
 function distTxt() {
   const L = LINES[LINES.length - 1];
   const s = LINES.map((L, i) => `<b style="color:${LC[i % LC.length]}">${lname(L, i)}</b> <b>${fmt(dlen(L))}</b>`).join(' · ')
-    + (L ? `<div class="chips">${NM.concat(['R', 'L', '✏️']).map(x => `<button class="${L[2] === x || L[3] === x ? 'on' : ''}" onclick="nm('${x}')">${x}</button>`).join('')}<button id="cpb" onclick="copyRes()">📋</button></div>` : '');
+    + (L ? `<div class="chips">${NM.concat(['R', 'L']).map(x => `<button class="${L[2] === x || L[3] === x ? 'on' : ''}" onclick="nm('${x}')">${x}</button>`).join('')}<button id="cpb" onclick="copyRes()">📋</button></div>` : '');
   return s || TOOL === 'dist' ? `<div>📍 ${s || ''}${TOOL === 'dist' ? ` <span class="mu">${DP ? 'แตะจุดที่ 2' : 'แตะจุดที่ 1'}</span>` : ''}</div>` : '';
 }
 // จุดขอบแผล → convex hull
