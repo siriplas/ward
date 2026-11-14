@@ -1,0 +1,173 @@
+<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>วัดขนาดแผล</title><meta name="theme-color" content="#1d4ed8"><meta name="apple-mobile-web-app-capable" content="yes">
+<style>
+:root{--bg:#fff;--bg2:#f4f5f7;--tx:#111827;--mu:#6b7280;--ln:#e5e7eb;--hd:#1d4ed8;--g:#059669;--or:#d97706;--rd:#dc2626}
+@media (prefers-color-scheme: dark){:root{--bg:#0f1115;--bg2:#1c1f26;--tx:#e5e7eb;--mu:#9ca3af;--ln:#262a31;--g:#34d399;--or:#fbbf24;--rd:#f87171}}
+*{box-sizing:border-box}html,body{height:100%;overflow:hidden;touch-action:none}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:'IBM Plex Sans Thai','Noto Sans Thai',system-ui,-apple-system,sans-serif;font-size:15px;display:flex;flex-direction:column;height:100dvh}
+header{border-top:4px solid var(--hd);padding:6px 16px;border-bottom:1px solid var(--ln);padding-top:max(6px,env(safe-area-inset-top));display:flex;align-items:center;gap:8px}
+header b{font-size:17px;flex:1}header button,header label{border:1px solid var(--ln);background:var(--bg2);color:var(--tx);border-radius:10px;min-width:40px;height:36px;display:flex;align-items:center;justify-content:center;font:inherit;cursor:pointer}
+main{padding:6px 16px max(8px,env(safe-area-inset-bottom));max-width:640px;width:100%;margin:0 auto;flex:1;min-height:0;display:flex;flex-direction:column}
+.hid{display:none!important}.mu{color:var(--mu)}
+.b{display:flex;align-items:center;justify-content:center;min-height:44px;border-radius:12px;border:1px solid var(--hd);background:var(--hd);color:#fff;font:inherit;cursor:pointer}
+.bar{display:flex;gap:6px;margin:6px 0 0}
+.bar button{flex:1;min-height:34px;border-radius:10px;border:2px solid var(--ln);background:var(--bg2);color:var(--tx);font:inherit;font-size:13px;cursor:pointer;line-height:1.2;padding:0 6px}
+.bar button:disabled{opacity:.35}.bar button.on{border-color:var(--hd)}.bar button.sm{flex:0 0 auto}
+.sz{display:flex;align-items:center;gap:8px;margin-top:4px;font-size:13px}.sz input[type=range]{flex:1;min-width:0}
+.wrap{position:relative;margin-top:6px;flex:1;min-height:120px;overflow:hidden;border-radius:10px;background:var(--bg2);touch-action:none}
+.stage{position:absolute;left:0;top:0;transform-origin:0 0}
+.stage canvas{position:absolute;left:0;top:0;width:100%;height:100%;display:block}
+.res{margin-top:6px;border:1px solid var(--ln);border-radius:12px;padding:6px 10px;font-size:13px;line-height:1.45}
+.res input{width:64px;font:inherit;font-size:16px;padding:4px 6px;border:1px solid var(--ln);border-radius:8px;background:var(--bg);color:var(--tx)}
+.res button{font:inherit;border:0;border-radius:8px;background:var(--hd);color:#fff;padding:5px 12px;cursor:pointer}
+.big{font-size:18px;font-weight:700}.warn{color:var(--or)}.bad{color:var(--rd)}
+.ov2{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;z-index:9}.ov2>div{background:var(--bg);width:100%;padding:16px 16px max(16px,env(safe-area-inset-bottom));border-radius:16px 16px 0 0;font-size:14px;line-height:1.6}
+</style></head><body>
+<header><b>📐 วัดขนาดแผล</b><label id="cam2" class="hid">📷<input type="file" accept="image/*" style="display:none" onchange="load(this.files[0])"></label><button onclick="$('help').classList.remove('hid')">ℹ️</button></header>
+<main>
+  <label class="b" id="cam1">📷 ถ่าย / เลือกรูปแผล (ต้องมีไม้บรรทัด)<input type="file" accept="image/*" style="display:none" onchange="load(this.files[0])"></label>
+  <div class="bar" id="tools"></div>
+  <div class="sz">แปรง <input type="range" id="bs" min="2" max="40" value="14" oninput="BR=+this.value"></div>
+  <div class="wrap" id="wr"><div class="stage" id="st"><canvas id="cv" width="10" height="10"></canvas><canvas id="ov" width="10" height="10"></canvas></div><button id="z1" class="hid" onclick="VS=1;view()" onpointerdown="event.stopPropagation()" style="position:absolute;right:8px;top:8px;z-index:2;border:0;border-radius:10px;background:rgba(0,0,0,.6);color:#fff;font:inherit;font-size:13px;padding:6px 10px">⤢ ย่อกลับ</button></div>
+  <div id="res"></div>
+</main>
+<div class="ov2 hid" id="help" onclick="this.classList.add('hid')"><div>
+• 1) 📏 <b>ตั้งสเกล (บังคับ)</b>: ซูมที่ไม้บรรทัด แตะ 2 จุดบนขีด แล้วใส่ระยะจริง · ยิ่งห่าง (เช่น 5 cm) ยิ่งแม่น<br>
+• 2) ✏️ ระบายให้ทั่วแผล → ได้พื้นที่ cm² · ยาว × กว้าง (ยาวสุด และกว้างสุดในแนวตั้งฉาก) · เส้นรอบวง<br>
+• ↕️ หัว–เท้า (ไม่บังคับ): แตะฝั่งหัวแล้วฝั่งเท้า → ได้ยาว × กว้างตามแนวลำตัวเพิ่ม (แบบวัดด้วยไม้บรรทัดใน chart)<br>
+• ไม้บรรทัดต้องอยู่ระนาบเดียวกับแผล ถ่ายตั้งฉาก · แผลบนส่วนโค้งจะคลาด · วัดความลึกไม่ได้<br>
+• 2 นิ้ว = ซูม/เลื่อน · ↩️ ย้อนกลับ · คำนวณในเครื่อง ไม่ส่งรูปไปไหน<br>
+<span class="mu">แตะที่ใดก็ได้เพื่อปิด</span></div></div>
+<script>
+const $ = id => document.getElementById(id);
+let TOOL = 'scale', BR = 14, IMG = null, W = 0, H = 0, M = null, timer = 0, last = null;
+let SC = [], PXCM = 0, CM = 1, AX = [], UNDO = [], VS = 1, VX = 0, VY = 0, FW = 0, FH = 0, A0 = null;
+function ui() {
+  const ok = PXCM > 0;
+  $('tools').innerHTML = [['scale', '📏 สเกล'], ['paint', '✏️ ระบาย'], ['erase', '🧽 ลบ'], ['axis', '↕️ หัว–เท้า']]
+    .map(([t, l]) => `<button class="${TOOL === t ? 'on' : ''}" ${!IMG || (!ok && t !== 'scale') ? 'disabled' : ''} onclick="tool('${t}')">${l}</button>`).join('')
+    + `<button class="sm" onclick="undo()" ${UNDO.length ? '' : 'disabled'}>↩️</button>`;
+}
+function tool(t) { TOOL = t; if (t === 'scale') SC = []; if (t === 'axis') AX = []; ui(); paintOv(); calc(); }
+function snap() { UNDO.push(M.slice()); if (UNDO.length > 30) UNDO.shift(); }
+function undo() { const s = UNDO.pop(); if (!s) return; M = s; paintOv(); later(); }
+function load(f) {
+  if (!f) return; const im = new Image();
+  im.onload = () => {
+    const s = Math.min(1, 1400 / Math.max(im.width, im.height)); W = Math.round(im.width * s); H = Math.round(im.height * s);
+    for (const c of [$('cv'), $('ov')]) { c.width = W; c.height = H; }
+    $('cv').getContext('2d').drawImage(im, 0, 0, W, H); IMG = im;
+    M = new Uint8Array(W * H); UNDO = []; SC = []; AX = []; PXCM = 0; TOOL = 'scale';
+    BR = Math.round(Math.max(W, H) / 50); $('bs').max = Math.round(Math.max(W, H) / 10); $('bs').value = BR;
+    $('cam1').classList.add('hid'); $('cam2').classList.remove('hid'); VX = VY = 0;
+    fit(); ui(); paintOv(); calc();
+  };
+  im.src = URL.createObjectURL(f);
+}
+function fit(keep) { if (!W) return; const w = $('wr').clientWidth, h = $('wr').clientHeight, s = Math.min(w / W, h / H); FW = W * s; FH = H * s; $('st').style.width = FW + 'px'; $('st').style.height = FH + 'px'; if (!keep) VS = 1; view(); }
+new ResizeObserver(() => fit(true)).observe($('wr'));
+function view() { const w = $('wr').clientWidth, h = $('wr').clientHeight; VS = Math.max(1, Math.min(8, VS)); VX = FW * VS <= w ? (w - FW * VS) / 2 : Math.min(0, Math.max(w - FW * VS, VX)); VY = FH * VS <= h ? (h - FH * VS) / 2 : Math.min(0, Math.max(h - FH * VS, VY)); $('st').style.transform = `translate(${VX}px,${VY}px) scale(${VS})`; $('z1').classList.toggle('hid', VS <= 1.01); paintOv(); }
+function stamp(x, y, r, on) {
+  for (let j = Math.max(0, y - r); j <= Math.min(H - 1, y + r); j++) for (let i = Math.max(0, x - r); i <= Math.min(W - 1, x + r); i++)
+    if ((i - x) ** 2 + (j - y) ** 2 <= r * r) M[j * W + i] = on ? 1 : 0;
+}
+function pt(e) { const rc = $('ov').getBoundingClientRect(); return [(e.clientX - rc.left) * W / rc.width, (e.clientY - rc.top) * H / rc.height]; }
+const ip = p => [Math.round(p[0]), Math.round(p[1])];
+function line(a, b, on) { const n = Math.max(1, Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1]) / Math.max(1, BR / 3))); for (let s = 0; s <= n; s++) stamp(Math.round(a[0] + (b[0] - a[0]) * s / n), Math.round(a[1] + (b[1] - a[1]) * s / n), BR, on); }
+const PT = new Map(); let GS = null, TAP = null;
+const wp = e => { const r = $('wr').getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
+function gstate() { const [a, b] = [...PT.values()]; return { c: [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2], d: Math.hypot(a[0] - b[0], a[1] - b[1]) || 1 }; }
+const isTapTool = () => TOOL === 'scale' || TOOL === 'axis';
+$('wr').addEventListener('pointerdown', e => {
+  if (!IMG) return; e.preventDefault(); if (e.isPrimary) { PT.clear(); GS = null; } $('wr').setPointerCapture(e.pointerId); PT.set(e.pointerId, wp(e));
+  if (PT.size === 2) { TAP = null; if (last) { last = null; undo(); } GS = Object.assign(gstate(), { s: VS, x: VX, y: VY }); return; }
+  if (PT.size > 2 || GS) return;
+  if (isTapTool()) { TAP = { w: wp(e), p: pt(e) }; return; }
+  snap(); last = ip(pt(e)); stamp(last[0], last[1], BR, TOOL === 'paint'); paintOv();
+});
+$('wr').addEventListener('pointermove', e => {
+  if (!PT.has(e.pointerId)) return; PT.set(e.pointerId, wp(e));
+  if (GS && PT.size === 2) { const g = gstate(), s = Math.max(1, Math.min(8, GS.s * g.d / GS.d)), k = s / GS.s;
+    VS = s; VX = g.c[0] - (GS.c[0] - GS.x) * k; VY = g.c[1] - (GS.c[1] - GS.y) * k; view(); return; }
+  if (TAP && Math.hypot(wp(e)[0] - TAP.w[0], wp(e)[1] - TAP.w[1]) > 12) TAP = null;
+  if (!last) return; const p = ip(pt(e)); line(last, p, TOOL === 'paint'); last = p; paintOv();
+});
+const end = e => {
+  if (!PT.has(e.pointerId)) return; PT.delete(e.pointerId); if (!PT.size) GS = null;
+  if (TAP && !PT.size) { const p = TAP.p; TAP = null;
+    if (TOOL === 'scale') { if (SC.length >= 2) SC = []; SC.push(p); if (SC.length === 2) PXCM = 0; }
+    else { if (AX.length >= 2) AX = []; AX.push(p); }
+    paintOv(); calc(); ui(); if (TOOL === 'scale' && SC.length === 2) setTimeout(() => { const i = $('cmv'); i && i.focus(); i && i.select(); }, 50); }
+  if (last) { last = null; later(); }
+};
+$('wr').addEventListener('pointerup', end); $('wr').addEventListener('pointercancel', end); $('wr').addEventListener('lostpointercapture', end);
+function setScale() {
+  const v = parseFloat(String($('cmv').value).replace(',', '.')); if (!(v > 0) || SC.length < 2) return;
+  CM = v; PXCM = Math.hypot(SC[1][0] - SC[0][0], SC[1][1] - SC[0][1]) / v; TOOL = 'paint'; ui(); paintOv(); calc();
+}
+function later() { clearTimeout(timer); timer = setTimeout(() => { calc(); paintOv(); }, 120); ui(); }
+let raf = 0;
+function paintOv() {
+  if (raf) return; raf = requestAnimationFrame(() => {
+    raf = 0; if (!IMG) return; const c = $('ov').getContext('2d'), d = c.createImageData(W, H), o = d.data;
+    for (let p = 0; p < W * H; p++) if (M[p]) {
+      const edge = !M[p - 1] || !M[p + 1] || !M[p - W] || !M[p + W];
+      o[p * 4] = edge ? 255 : 239; o[p * 4 + 1] = edge ? 255 : 68; o[p * 4 + 2] = edge ? 255 : 68; o[p * 4 + 3] = edge ? 255 : 90;
+    }
+    c.putImageData(d, 0, 0);
+    const lw = Math.max(1.5, W / FW / VS * 2), dot = (p, col) => { c.beginPath(); c.arc(p[0], p[1], lw * 4, 0, 7); c.fillStyle = col; c.fill(); c.lineWidth = lw; c.strokeStyle = '#fff'; c.stroke(); };
+    const seg = (a, b, col, dash) => { c.beginPath(); c.setLineDash(dash ? [lw * 4, lw * 3] : []); c.moveTo(a[0], a[1]); c.lineTo(b[0], b[1]); c.lineWidth = lw * 2.5; c.strokeStyle = '#000'; c.stroke(); c.lineWidth = lw * 1.3; c.strokeStyle = col; c.stroke(); c.setLineDash([]); };
+    if (A0) { seg(A0.l[0], A0.l[1], '#facc15', true); seg(A0.w[0], A0.w[1], '#38bdf8', true); }
+    if (SC.length === 2) seg(SC[0], SC[1], '#22c55e'); SC.forEach(p => dot(p, '#22c55e'));
+    if (AX.length === 2) { seg(AX[0], AX[1], '#a855f7'); const a = Math.atan2(AX[1][1] - AX[0][1], AX[1][0] - AX[0][0]), h = lw * 10;
+      c.beginPath(); c.moveTo(AX[1][0], AX[1][1]); c.lineTo(AX[1][0] - h * Math.cos(a - .4), AX[1][1] - h * Math.sin(a - .4)); c.lineTo(AX[1][0] - h * Math.cos(a + .4), AX[1][1] - h * Math.sin(a + .4)); c.fillStyle = '#a855f7'; c.fill(); }
+    AX.forEach((p, i) => dot(p, '#a855f7'));
+  });
+}
+// จุดขอบแผล → convex hull
+function hull(P) {
+  P.sort((a, b) => a[0] - b[0] || a[1] - b[1]); const cr = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+  const lo = [], up = []; for (const p of P) { while (lo.length >= 2 && cr(lo[lo.length - 2], lo[lo.length - 1], p) <= 0) lo.pop(); lo.push(p); }
+  for (let i = P.length - 1; i >= 0; i--) { const p = P[i]; while (up.length >= 2 && cr(up[up.length - 2], up[up.length - 1], p) <= 0) up.pop(); up.push(p); }
+  return lo.slice(0, -1).concat(up.slice(0, -1));
+}
+// ยาว × กว้าง ตามแนว u (เวกเตอร์หน่วย) · คืนเส้นสำหรับวาด
+function extent(Hh, u) {
+  const v = [-u[1], u[0]], pr = (p, d) => p[0] * d[0] + p[1] * d[1];
+  let a = Infinity, b = -Infinity, c = Infinity, d = -Infinity; for (const p of Hh) { const x = pr(p, u), y = pr(p, v); a = Math.min(a, x); b = Math.max(b, x); c = Math.min(c, y); d = Math.max(d, y); }
+  const m = (c + d) / 2, n = (a + b) / 2, P = (s, t) => [s * u[0] + t * v[0], s * u[1] + t * v[1]];
+  return { L: b - a + 1, Wd: d - c + 1, l: [P(a, m), P(b, m)], w: [P(n, c), P(n, d)] };
+}
+function calc() {
+  const el = $('res'); A0 = null; if (!IMG) { el.innerHTML = ''; return; }
+  if (!PXCM) {
+    el.innerHTML = SC.length < 2 ? `<div class="res"><b>📏 ขั้นที่ 1 (บังคับ):</b> ซูมที่ไม้บรรทัด แล้วแตะ <b>${2 - SC.length}</b> จุดบนขีด</div>`
+      : `<div class="res">ระยะระหว่าง 2 จุด = <input id="cmv" inputmode="decimal" value="${CM}" onkeydown="if(event.key==='Enter')setScale()"> cm <button onclick="setScale()">ตกลง</button> <span class="mu">· แตะใหม่ได้</span></div>`;
+    return;
+  }
+  const spx = PXCM * CM, warn = spx < 60 ? ' <span class="warn">⚠️ จุดสเกลใกล้กันไป ซูมแล้วใช้ระยะยาวขึ้นจะแม่นกว่า</span>' : '';
+  let n = 0; const B = [];
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { const p = y * W + x; if (!M[p]) continue; n++;
+    if (!x || !y || x === W - 1 || y === H - 1 || !M[p - 1] || !M[p + 1] || !M[p - W] || !M[p + W]) B.push([x, y]); }
+  if (n < 30) { el.innerHTML = `<div class="res">✏️ ระบายให้ทั่วแผล <span class="mu">· สเกล ${CM} cm = ${spx.toFixed(0)} px ✓</span>${warn}</div>`; return; }
+  // เส้นรอบวง: marching squares (ตรง = 1 · มุม = √½)
+  let per = 0; const g = (x, y) => x >= 0 && y >= 0 && x < W && y < H && M[y * W + x] ? 1 : 0, r2 = Math.SQRT1_2;
+  const seen = new Set();
+  for (const [bx, by] of B) for (let y = by - 1; y <= by; y++) for (let x = bx - 1; x <= bx; x++) {
+    const k = y * (W + 1) + x; if (seen.has(k)) continue; seen.add(k);
+    const a = g(x, y), b = g(x + 1, y), c = g(x + 1, y + 1), d = g(x, y + 1), s = a + b + c + d;
+    if (s === 1 || s === 3) per += r2; else if (s === 2) per += (a === c) ? 2 * r2 : 1;
+  }
+  const Hh = hull(B.slice()); let best = 0, u = [1, 0];
+  for (let i = 0; i < Hh.length; i++) for (let j = i + 1; j < Hh.length; j++) { const dx = Hh[j][0] - Hh[i][0], dy = Hh[j][1] - Hh[i][1], q = dx * dx + dy * dy; if (q > best) { best = q; u = [dx, dy]; } }
+  const ul = Math.hypot(u[0], u[1]) || 1; A0 = extent(Hh, [u[0] / ul, u[1] / ul]);
+  const cm = v => (v / PXCM).toFixed(1), area = n / PXCM / PXCM;
+  let bl = '';
+  if (AX.length === 2) { const dx = AX[1][0] - AX[0][0], dy = AX[1][1] - AX[0][1], dl = Math.hypot(dx, dy) || 1, e = extent(Hh, [dx / dl, dy / dl]);
+    bl = `<div>↕️ หัว–เท้า: <b>${cm(e.L)} × ${cm(e.Wd)} cm</b></div>`; }
+  else if (TOOL === 'axis') bl = `<div class="mu">↕️ แตะฝั่งหัว แล้วแตะฝั่งเท้า (${AX.length}/2)</div>`;
+  el.innerHTML = `<div class="res"><div><span class="big">${area.toFixed(area < 10 ? 2 : 1)} cm²</span> · <b><span style="color:#ca8a04">ยาว ${cm(A0.L)}</span> × <span style="color:#0284c7">กว้าง ${cm(A0.Wd)}</span> cm</b></div>
+    ${bl}<div class="mu">เส้นรอบวง ≈${cm(per)} cm · สเกล ${CM} cm = ${spx.toFixed(0)} px ✓${warn}</div></div>`;
+}
+ui();
+</script></body></html>
