@@ -30,7 +30,7 @@ main{padding:6px 16px max(8px,env(safe-area-inset-bottom));max-width:640px;width
   <div class="bar" id="grp"></div>
   <div class="bar" id="tools"></div>
   <div class="sz">แปรง <input type="range" id="bs" min="2" max="40" value="14" oninput="BR=+this.value"><span id="thw" class="hid">ความไว <input type="range" id="th" min="4" max="30" value="14" oninput="auto();later()" style="width:70px"></span></div>
-  <div class="wrap" id="wr"><div class="stage" id="st"><canvas id="cv" width="10" height="10"></canvas><canvas id="ov" width="10" height="10"></canvas></div></div>
+  <div class="wrap" id="wr"><div class="stage" id="st"><canvas id="cv" width="10" height="10"></canvas><canvas id="ov" width="10" height="10"></canvas></div><button id="z1" class="hid" onclick="VS=1;view()" onpointerdown="event.stopPropagation()" style="position:absolute;right:8px;top:8px;z-index:2;border:0;border-radius:10px;background:rgba(0,0,0,.6);color:#fff;font:inherit;font-size:13px;padding:6px 10px">⤢ ย่อกลับ</button></div>
   <div id="res"></div>
 </main>
 <div class="ov2 hid" id="help" onclick="this.classList.add('hid')"><div>
@@ -86,7 +86,7 @@ function auto() {
 const cls = p => LBL[p] || (MODE ? AUTO[p] : 1);
 function fit(keep) { if (!W) return; const w = $('wr').clientWidth, h = $('wr').clientHeight, s = Math.min(w / W, h / H); FW = W * s; FH = H * s; $('st').style.width = FW + 'px'; $('st').style.height = FH + 'px'; if (!keep) VS = 1; view(); }
 new ResizeObserver(() => fit(true)).observe($('wr'));
-function view() { const w = $('wr').clientWidth, h = $('wr').clientHeight; VS = Math.max(1, Math.min(6, VS)); VX = FW * VS <= w ? (w - FW * VS) / 2 : Math.min(0, Math.max(w - FW * VS, VX)); VY = FH * VS <= h ? (h - FH * VS) / 2 : Math.min(0, Math.max(h - FH * VS, VY)); $('st').style.transform = `translate(${VX}px,${VY}px) scale(${VS})`; }
+function view() { const w = $('wr').clientWidth, h = $('wr').clientHeight; VS = Math.max(1, Math.min(6, VS)); VX = FW * VS <= w ? (w - FW * VS) / 2 : Math.min(0, Math.max(w - FW * VS, VX)); VY = FH * VS <= h ? (h - FH * VS) / 2 : Math.min(0, Math.max(h - FH * VS, VY)); $('st').style.transform = `translate(${VX}px,${VY}px) scale(${VS})`; $('z1').classList.toggle('hid', VS <= 1.01); }
 function stamp(x, y, r, on) {
   for (let j = Math.max(0, y - r); j <= Math.min(H - 1, y + r); j++) for (let i = Math.max(0, x - r); i <= Math.min(W - 1, x + r); i++)
     if ((i - x) ** 2 + (j - y) ** 2 <= r * r) { const p = j * W + i;
@@ -98,7 +98,7 @@ const PT = new Map(); let GS = null;
 const wp = e => { const r = $('wr').getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
 function gstate() { const [a, b] = [...PT.values()]; return { c: [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2], d: Math.hypot(a[0] - b[0], a[1] - b[1]) || 1 }; }
 $('wr').addEventListener('pointerdown', e => {
-  if (!IMG) return; e.preventDefault(); $('wr').setPointerCapture(e.pointerId); PT.set(e.pointerId, wp(e));
+  if (!IMG) return; e.preventDefault(); if (e.isPrimary) { PT.clear(); GS = null; } $('wr').setPointerCapture(e.pointerId); PT.set(e.pointerId, wp(e));
   if (PT.size === 2) { if (last) { last = null; undo(); } GS = Object.assign(gstate(), { s: VS, x: VX, y: VY }); return; }
   if (PT.size > 2 || GS) return;
   snap(); last = pt(e); stamp(last[0], last[1], BR, TOOL === 'paint'); paintOv();
@@ -109,8 +109,8 @@ $('wr').addEventListener('pointermove', e => {
     VS = s; VX = g.c[0] - (GS.c[0] - GS.x) * k; VY = g.c[1] - (GS.c[1] - GS.y) * k; view(); return; }
   if (!last) return; const p = pt(e); line(last, p, TOOL === 'paint'); last = p; paintOv();
 });
-const end = e => { PT.delete(e.pointerId); if (!PT.size) GS = null; if (last) { last = null; later(); } };
-$('wr').addEventListener('pointerup', end); $('wr').addEventListener('pointercancel', end);
+const end = e => { if (!PT.has(e.pointerId)) return; PT.delete(e.pointerId); if (!PT.size) GS = null; if (last) { last = null; later(); } };
+$('wr').addEventListener('pointerup', end); $('wr').addEventListener('pointercancel', end); $('wr').addEventListener('lostpointercapture', end);
 function later() { clearTimeout(timer); timer = setTimeout(() => { calc(); paintOv(); }, 120); ui(); }
 let raf = 0;
 function paintOv() {
