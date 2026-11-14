@@ -30,7 +30,7 @@ main{padding:6px 16px max(8px,env(safe-area-inset-bottom));max-width:640px;width
   <label class="b" id="cam1">📷 ถ่าย / เลือกรูป (ต้องมีไม้บรรทัด)<input type="file" accept="image/*" style="display:none" onchange="load(this.files[0])"></label>
   <div class="bar" id="tools"></div>
   <div class="sz">แปรง <input type="range" id="bs" min="2" max="40" value="14" oninput="BR=+this.value"></div>
-  <div class="wrap" id="wr"><div class="stage" id="st"><canvas id="cv" width="10" height="10"></canvas><canvas id="ov" width="10" height="10"></canvas></div><button id="z1" class="hid" onclick="VS=1;view()" onpointerdown="event.stopPropagation()" style="position:absolute;right:8px;top:8px;z-index:2;border:0;border-radius:10px;background:rgba(0,0,0,.6);color:#fff;font:inherit;font-size:13px;padding:6px 10px">⤢ ย่อกลับ</button></div>
+  <div class="wrap" id="wr"><div class="stage" id="st"><canvas id="cv" width="10" height="10"></canvas><canvas id="ov" width="10" height="10"></canvas></div><div id="lg" class="hid" style="position:absolute;left:6px;bottom:6px;z-index:2;background:rgba(0,0,0,.6);border-radius:8px;padding:4px 8px;font-size:13px;font-weight:700;line-height:1.35;pointer-events:none"></div><button id="z1" class="hid" onclick="VS=1;view()" onpointerdown="event.stopPropagation()" style="position:absolute;right:8px;top:8px;z-index:2;border:0;border-radius:10px;background:rgba(0,0,0,.6);color:#fff;font:inherit;font-size:13px;padding:6px 10px">⤢ ย่อกลับ</button></div>
   <div id="res"></div>
 </main>
 <div class="ov2 hid" id="help" onclick="this.classList.add('hid')"><div>
@@ -122,17 +122,17 @@ function paintOv() {
       o[p * 4] = edge ? 255 : 239; o[p * 4 + 1] = edge ? 255 : 68; o[p * 4 + 2] = edge ? 255 : 68; o[p * 4 + 3] = edge ? 255 : 90;
     }
     c.putImageData(d, 0, 0);
-    const lw = Math.max(1.5, W / FW / VS * 2), dot = (p, col) => { c.beginPath(); c.arc(p[0], p[1], lw * 4, 0, 7); c.fillStyle = col; c.fill(); c.lineWidth = lw; c.strokeStyle = '#fff'; c.stroke(); };
-    const seg = (a, b, col, dash) => { c.beginPath(); c.setLineDash(dash ? [lw * 4, lw * 3] : []); c.moveTo(a[0], a[1]); c.lineTo(b[0], b[1]); c.lineWidth = lw * 2.5; c.strokeStyle = '#000'; c.stroke(); c.lineWidth = lw * 1.3; c.strokeStyle = col; c.stroke(); c.setLineDash([]); };
+    const lw = Math.max(1.5, W / FW / VS * 2), dot = (p, col) => { const r = lw * 5; c.beginPath(); c.moveTo(p[0] - r, p[1]); c.lineTo(p[0] + r, p[1]); c.moveTo(p[0], p[1] - r); c.lineTo(p[0], p[1] + r); c.lineWidth = lw * 1.8; c.strokeStyle = '#000'; c.stroke(); c.lineWidth = lw * 0.8; c.strokeStyle = col; c.stroke(); },
+      tick = (a, b, col) => { const dx = b[0] - a[0], dy = b[1] - a[1], d = Math.hypot(dx, dy) || 1, r = lw * 4, nx = -dy / d * r, ny = dx / d * r; c.beginPath(); c.moveTo(a[0] - nx, a[1] - ny); c.lineTo(a[0] + nx, a[1] + ny); c.lineWidth = lw * 1.8; c.strokeStyle = '#000'; c.stroke(); c.lineWidth = lw * 0.8; c.strokeStyle = col; c.stroke(); };
+    const seg = (a, b, col, dash) => { c.beginPath(); c.setLineDash(dash ? [lw * 4, lw * 3] : []); c.moveTo(a[0], a[1]); c.lineTo(b[0], b[1]); c.lineWidth = lw * 1.8; c.strokeStyle = '#000'; c.stroke(); c.lineWidth = lw * 0.8; c.strokeStyle = col; c.stroke(); c.setLineDash([]); };
     if (A0) { seg(A0.l[0], A0.l[1], '#facc15', true); seg(A0.w[0], A0.w[1], '#38bdf8', true); }
-    if (SC.length === 2) seg(SC[0], SC[1], '#22c55e'); SC.forEach(p => dot(p, '#22c55e'));
+    if (SC.length === 2) { seg(SC[0], SC[1], '#22c55e'); tick(SC[0], SC[1], '#22c55e'); tick(SC[1], SC[0], '#22c55e'); } else SC.forEach(p => dot(p, '#22c55e'));
     if (AX.length === 2) { seg(AX[0], AX[1], '#a855f7'); const a = Math.atan2(AX[1][1] - AX[0][1], AX[1][0] - AX[0][0]), h = lw * 10;
       c.beginPath(); c.moveTo(AX[1][0], AX[1][1]); c.lineTo(AX[1][0] - h * Math.cos(a - .4), AX[1][1] - h * Math.sin(a - .4)); c.lineTo(AX[1][0] - h * Math.cos(a + .4), AX[1][1] - h * Math.sin(a + .4)); c.fillStyle = '#a855f7'; c.fill(); }
     AX.forEach((p, i) => dot(p, '#a855f7'));
-    LINES.forEach((L, i) => { const col = LC[i % LC.length]; seg(L[0], L[1], col); dot(L[0], col); dot(L[1], col);
-      const mx = (L[0][0] + L[1][0]) / 2, my = (L[0][1] + L[1][1]) / 2, tx = lname(L, i) + ' ' + fmt(Math.hypot(L[1][0] - L[0][0], L[1][1] - L[0][1]));
-      c.font = `bold ${lw * 9}px system-ui`; c.lineJoin = 'round'; const tw = c.measureText(tx).width, ox = Math.max(2, Math.min(W - tw - 2, mx < W / 2 ? mx - lw * 8 - tw : mx + lw * 8)) - mx; c.lineWidth = lw * 3; c.strokeStyle = '#000'; c.strokeText(tx, mx + ox, my + lw * 3); c.fillStyle = col; c.fillText(tx, mx + ox, my + lw * 3); });
-    if (DP) dot(DP, '#f97316');
+    LINES.forEach((L, i) => { const col = LC[i % LC.length]; seg(L[0], L[1], col); tick(L[0], L[1], col); tick(L[1], L[0], col); });
+    if (DP) dot(DP, LC[LINES.length % LC.length]);
+    $('lg').innerHTML = LINES.map((L, i) => `<div style="color:${LC[i % LC.length]}">${lname(L, i)} ${fmt(dlen(L))}</div>`).join(''); $('lg').classList.toggle('hid', !LINES.length);
   });
 }
 const LC = ['#f97316', '#22d3ee', '#f472b6', '#a3e635', '#fde047'];
