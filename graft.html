@@ -23,7 +23,7 @@ main{padding:6px 16px max(8px,env(safe-area-inset-bottom));max-width:640px;width
 .big{font-size:18px;font-weight:700}.ok{color:var(--g)}.warn{color:var(--or)}.bad{color:var(--rd)}
 .ov2{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;z-index:9}.ov2>div{background:var(--bg);width:100%;padding:16px 16px max(16px,env(safe-area-inset-bottom));border-radius:16px 16px 0 0;font-size:14px;line-height:1.6}
 </style></head><body>
-<header><a href="tools.html" style="color:inherit;text-decoration:none;font-size:20px;padding:0 4px">‹</a><b>🩹 Graft take</b><label id="cam2" class="hid">📷<input type="file" accept="image/*" style="display:none" onchange="load(this.files[0])"></label><button onclick="$('help').classList.remove('hid')">ℹ️</button></header>
+<header><a href="tools.html" style="color:inherit;text-decoration:none;font-size:20px;padding:0 4px">‹</a><b>🩹 Graft take</b><label id="cam2" class="hid">📷<input type="file" accept="image/*" style="display:none" onchange="load(this.files[0])"></label><button id="sv" class="hid" onclick="saveImg()">💾</button><button onclick="$('help').classList.remove('hid')">ℹ️</button></header>
 <main>
   <label class="b" id="cam1">📷 ถ่าย / เลือกรูปแผล graft<input type="file" accept="image/*" style="display:none" onchange="load(this.files[0])"></label>
   <div class="seg"><button id="mA" onclick="setMode(0)">✋ ระบายเอง</button><button id="mB" onclick="setMode(1)">🤖 แยกให้อัตโนมัติ</button></div>
@@ -72,7 +72,7 @@ function load(f) {
     const c = $('cv').getContext('2d'); c.drawImage(im, 0, 0, W, H); PX = c.getImageData(0, 0, W, H).data; IMG = im;
     AREA = new Uint8Array(W * H); REF = new Uint8Array(W * H); LA = null; mkLab(); LBL = new Uint8Array(W * H); AUTO = new Uint8Array(W * H); UNDO = [];
     GRP = 'area'; BR = Math.round(Math.max(W, H) / 50); $('bs').max = Math.round(Math.max(W, H) / 10); $('bs').value = BR;
-    $('cam1').classList.add('hid'); $('cam2').classList.remove('hid'); VX = VY = 0;
+    $('cam1').classList.add('hid'); $('cam2').classList.remove('hid'); $('sv').classList.remove('hid'); VX = VY = 0;
     auto(); fit(); ui(); paintOv(); calc();
   };
   im.src = URL.createObjectURL(f);
@@ -146,6 +146,22 @@ function calc() {
   const pc = k => c[k] / n * 100, take = pc(1), lv = take >= 90 ? 'ok' : take >= 70 ? 'warn' : 'bad';
   el.innerHTML = `<div class="res"><div class="big ${lv}">Take ${take.toFixed(0)}%</div>
     <div>🟨 ไม่ติด <b>${pc(2).toFixed(0)}%</b> · ⬛ เนื้อตาย <b>${pc(3).toFixed(0)}%</b> <span class="mu">· ${MODE ? 'แยกอัตโนมัติ' + (WB ? ' · ปรับแสงด้วยก๊อซแล้ว ✓' : ' · ⚠️ ยังไม่ระบายก๊อซขาว') : 'ระบายเอง'}</span></div></div>`;
+}
+
+// 💾 บันทึกรูป: รูป + ส่วนที่ระบาย + ผลมุมซ้ายล่าง
+function saveImg() {
+  if (!IMG) return; const c2 = document.createElement('canvas'); c2.width = W; c2.height = H; const c = c2.getContext('2d');
+  c.drawImage($('cv'), 0, 0); c.drawImage($('ov'), 0, 0);
+  const rows = ($('res').innerText || '').replace(/[▾▴]\s*(รายละเอียด)?/g, '').split('\n').map(s => s.trim()).filter(Boolean).slice(0, 4);
+  const fs = Math.round(Math.max(W, H) / 34), pad = fs * 0.5, lh = fs * 1.3; c.font = `bold ${fs}px system-ui,sans-serif`;
+  const bw = Math.min(W - pad * 2, Math.max(0, ...rows.map(r => c.measureText(r).width)) + pad * 2), bh = rows.length * lh + pad * 1.4;
+  if (rows.length) { c.fillStyle = 'rgba(0,0,0,.65)'; c.fillRect(pad, H - bh - pad, bw, bh); rows.forEach((r, i) => { c.fillStyle = '#fff'; c.fillText(r, pad * 2, H - bh - pad + pad + fs + i * lh, W - pad * 4); }); }
+  const name = 'graft-' + (d => d.getFullYear() + String(d.getMonth() + 1).padStart(2, '0') + String(d.getDate()).padStart(2, '0') + '-' + String(d.getHours()).padStart(2, '0') + String(d.getMinutes()).padStart(2, '0'))(new Date()) + '.jpg';
+  c2.toBlob(b => {
+    const f = new File([b], name, { type: 'image/jpeg' });
+    if (navigator.canShare && navigator.canShare({ files: [f] })) navigator.share({ files: [f] }).catch(() => {});
+    else { const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = name; document.body.appendChild(a); a.click(); a.remove(); }
+  }, 'image/jpeg', 0.92);
 }
 ui();
 </script></body></html>
