@@ -25,7 +25,7 @@ main{padding:6px 16px max(8px,env(safe-area-inset-bottom));max-width:640px;width
 .big{font-size:18px;font-weight:700}.warn{color:var(--or)}.bad{color:var(--rd)}
 .ov2{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;z-index:9}.ov2>div{background:var(--bg);width:100%;padding:16px 16px max(16px,env(safe-area-inset-bottom));border-radius:16px 16px 0 0;font-size:14px;line-height:1.6}
 </style></head><body>
-<header><a href="tools.html" style="color:inherit;text-decoration:none;font-size:20px;padding:0 4px">‹</a><b>📐 วัดในรูป</b><label id="cam2" class="hid">📷<input type="file" accept="image/*" style="display:none" onchange="load(this.files[0])"></label><button onclick="$('help').classList.remove('hid')">ℹ️</button></header>
+<header><a href="tools.html" style="color:inherit;text-decoration:none;font-size:20px;padding:0 4px">‹</a><b>📐 วัดในรูป</b><label id="cam2" class="hid">📷<input type="file" accept="image/*" style="display:none" onchange="load(this.files[0])"></label><button id="sv" class="hid" onclick="saveImg()">💾</button><button onclick="$('help').classList.remove('hid')">ℹ️</button></header>
 <main>
   <label class="b" id="cam1">📷 ถ่าย / เลือกรูป (ต้องมีไม้บรรทัด)<input type="file" accept="image/*" style="display:none" onchange="load(this.files[0])"></label>
   <div class="bar" id="tools"></div>
@@ -35,7 +35,7 @@ main{padding:6px 16px max(8px,env(safe-area-inset-bottom));max-width:640px;width
 </main>
 <div class="ov2 hid" id="help" onclick="this.classList.add('hid')"><div>
 • 1) 📏 <b>ตั้งสเกล (บังคับ)</b>: ซูมที่ไม้บรรทัด แตะ 2 จุดบนขีด แล้วใส่ระยะจริง · ยิ่งห่าง (เช่น 5 cm) ยิ่งแม่น<br>
-• 📍 ระยะ: แตะ 2 จุด = 1 เส้น (gap cleft · MRD1 · BPD = brow–pupil · ก้อนแบบ caliper ลาก 2 เส้นตั้งฉาก) · ตั้งชื่อเส้น + R/L ด้วยปุ่มใต้ผล · 📋 คัดลอกผล<br>
+• 📍 ระยะ: แตะ 2 จุด = 1 เส้น (gap cleft · MRD1 · BPD = brow–pupil · ก้อนแบบ caliper ลาก 2 เส้นตั้งฉาก) · ตั้งชื่อเส้น + R/L ด้วยปุ่มใต้ผล · 💾 บันทึกรูปพร้อมผล<br>
 • 👁️ HVID: ใช้เมื่อไม่มีไม้บรรทัด (แตะขอบ limbus ซ้าย–ขวา ≈ 11.7 mm) คลาด ±5% · MRD ต้องถ่ายตรงระดับตา · วัดได้หลายเส้น · ↩️ ลบเส้นล่าสุด<br>
 • ✏️ ระบายให้ทั่วแผล/ก้อน → ได้พื้นที่ cm² · ยาว × กว้าง (ยาวสุด และกว้างสุดในแนวตั้งฉาก) · เส้นรอบวง<br>
 • ↕️ หัว–เท้า (ไม่บังคับ): แตะฝั่งหัวแล้วฝั่งเท้า → ได้ยาว × กว้างตามแนวลำตัวเพิ่ม (แบบวัดด้วยไม้บรรทัดใน chart)<br>
@@ -65,7 +65,7 @@ function load(f) {
     $('cv').getContext('2d').drawImage(im, 0, 0, W, H); IMG = im;
     M = new Uint8Array(W * H); UNDO = []; LINES = []; DP = null; SC = []; AX = []; PXCM = 0; TOOL = 'scale';
     BR = Math.round(Math.max(W, H) / 50); $('bs').max = Math.round(Math.max(W, H) / 10); $('bs').value = BR;
-    $('cam1').classList.add('hid'); $('cam2').classList.remove('hid'); VX = VY = 0;
+    $('cam1').classList.add('hid'); $('cam2').classList.remove('hid'); $('sv').classList.remove('hid'); VX = VY = 0;
     fit(); ui(); paintOv(); calc();
   };
   im.src = URL.createObjectURL(f);
@@ -114,26 +114,43 @@ function setScale() {
 }
 function later() { clearTimeout(timer); timer = setTimeout(() => { calc(); paintOv(); }, 120); ui(); }
 let raf = 0;
-function paintOv() {
-  if (raf) return; raf = requestAnimationFrame(() => {
-    raf = 0; if (!IMG) return; const c = $('ov').getContext('2d'), d = c.createImageData(W, H), o = d.data;
+function paintOv() { if (raf) return; raf = requestAnimationFrame(() => { raf = 0; drawOv($('ov').getContext('2d'), W / FW / VS * 2); }); }
+function drawOv(c, LW) {
+  {
+    if (!IMG) return; const d = c.createImageData(W, H), o = d.data;
     for (let p = 0; p < W * H; p++) if (M[p]) {
       const edge = !M[p - 1] || !M[p + 1] || !M[p - W] || !M[p + W];
       o[p * 4] = edge ? 255 : 239; o[p * 4 + 1] = edge ? 255 : 68; o[p * 4 + 2] = edge ? 255 : 68; o[p * 4 + 3] = edge ? 255 : 90;
     }
     c.putImageData(d, 0, 0);
-    const lw = Math.max(1.5, W / FW / VS * 2), dot = (p, col) => { const r = lw * 5; c.beginPath(); c.moveTo(p[0] - r, p[1]); c.lineTo(p[0] + r, p[1]); c.moveTo(p[0], p[1] - r); c.lineTo(p[0], p[1] + r); c.lineWidth = lw * 1.8; c.strokeStyle = '#000'; c.stroke(); c.lineWidth = lw * 0.8; c.strokeStyle = col; c.stroke(); },
-      tick = (a, b, col) => { const dx = b[0] - a[0], dy = b[1] - a[1], d = Math.hypot(dx, dy) || 1, r = lw * 4, nx = -dy / d * r, ny = dx / d * r; c.beginPath(); c.moveTo(a[0] - nx, a[1] - ny); c.lineTo(a[0] + nx, a[1] + ny); c.lineWidth = lw * 1.8; c.strokeStyle = '#000'; c.stroke(); c.lineWidth = lw * 0.8; c.strokeStyle = col; c.stroke(); };
+    const lw = Math.max(1.5, LW), dot = (p, col) => { const r = lw * 5; c.beginPath(); c.moveTo(p[0] - r, p[1]); c.lineTo(p[0] + r, p[1]); c.moveTo(p[0], p[1] - r); c.lineTo(p[0], p[1] + r); c.lineWidth = lw * 1.8; c.strokeStyle = '#000'; c.stroke(); c.lineWidth = lw * 0.8; c.strokeStyle = col; c.stroke(); };
     const seg = (a, b, col, dash) => { c.beginPath(); c.setLineDash(dash ? [lw * 4, lw * 3] : []); c.moveTo(a[0], a[1]); c.lineTo(b[0], b[1]); c.lineWidth = lw * 1.8; c.strokeStyle = '#000'; c.stroke(); c.lineWidth = lw * 0.8; c.strokeStyle = col; c.stroke(); c.setLineDash([]); };
     if (A0) { seg(A0.l[0], A0.l[1], '#facc15', true); seg(A0.w[0], A0.w[1], '#38bdf8', true); }
-    if (SC.length === 2) { seg(SC[0], SC[1], '#22c55e'); tick(SC[0], SC[1], '#22c55e'); tick(SC[1], SC[0], '#22c55e'); } else SC.forEach(p => dot(p, '#22c55e'));
+    if (SC.length === 2) seg(SC[0], SC[1], '#22c55e'); else SC.forEach(p => dot(p, '#22c55e'));
     if (AX.length === 2) { seg(AX[0], AX[1], '#a855f7'); const a = Math.atan2(AX[1][1] - AX[0][1], AX[1][0] - AX[0][0]), h = lw * 10;
       c.beginPath(); c.moveTo(AX[1][0], AX[1][1]); c.lineTo(AX[1][0] - h * Math.cos(a - .4), AX[1][1] - h * Math.sin(a - .4)); c.lineTo(AX[1][0] - h * Math.cos(a + .4), AX[1][1] - h * Math.sin(a + .4)); c.fillStyle = '#a855f7'; c.fill(); }
     AX.forEach((p, i) => dot(p, '#a855f7'));
-    LINES.forEach((L, i) => { const col = LC[i % LC.length]; seg(L[0], L[1], col); tick(L[0], L[1], col); tick(L[1], L[0], col); });
+    LINES.forEach((L, i) => { const col = LC[i % LC.length]; seg(L[0], L[1], col); });
     if (DP) dot(DP, LC[LINES.length % LC.length]);
     $('lg').innerHTML = LINES.map((L, i) => `<div style="color:${LC[i % LC.length]}">${lname(L, i)} ${fmt(dlen(L))}</div>`).join(''); $('lg').classList.toggle('hid', !LINES.length);
-  });
+  }
+}
+// 💾 บันทึกรูป: รูป + เส้น + ป้ายผลมุมซ้ายล่าง
+let SUM = '';
+function saveImg() {
+  if (!IMG) return; const k = $('cv'), c2 = document.createElement('canvas'); c2.width = W; c2.height = H; const c = c2.getContext('2d');
+  c.drawImage(k, 0, 0); const o = document.createElement('canvas'); o.width = W; o.height = H; drawOv(o.getContext('2d'), Math.max(W, H) / 250); c.drawImage(o, 0, 0); paintOv();
+  const rows = LINES.map((L, i) => [lname(L, i) + ' ' + fmt(dlen(L)), LC[i % LC.length]]);
+  if (SUM) rows.push([SUM, '#fff']); if (PXCM) rows.push(['สเกล ' + scl() + (SCT === 'hvid' ? ' (HVID ±5%)' : ''), '#ddd']);
+  const fs = Math.round(W / 26), pad = fs * 0.5, lh = fs * 1.3; c.font = `bold ${fs}px system-ui,sans-serif`;
+  const bw = Math.max(0, ...rows.map(r => c.measureText(r[0]).width)) + pad * 2, bh = rows.length * lh + pad * 1.4;
+  if (rows.length) { c.fillStyle = 'rgba(0,0,0,.65)'; c.fillRect(pad, H - bh - pad, bw, bh); rows.forEach((r, i) => { c.fillStyle = r[1]; c.fillText(r[0], pad * 2, H - bh - pad + pad + fs + i * lh); }); }
+  const name = 'measure-' + (d => d.getFullYear() + String(d.getMonth() + 1).padStart(2, '0') + String(d.getDate()).padStart(2, '0') + '-' + String(d.getHours()).padStart(2, '0') + String(d.getMinutes()).padStart(2, '0'))(new Date()) + '.jpg';
+  c2.toBlob(b => {
+    const f = new File([b], name, { type: 'image/jpeg' });
+    if (navigator.canShare && navigator.canShare({ files: [f] })) navigator.share({ files: [f] }).catch(() => {});
+    else { const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = name; document.body.appendChild(a); a.click(); a.remove(); }
+  }, 'image/jpeg', 0.92);
 }
 const LC = ['#f97316', '#22d3ee', '#f472b6', '#a3e635', '#fde047'];
 const fmt = px => { const cm = px / PXCM; return cm < 3 ? (cm * 10).toFixed(1) + ' mm' : cm.toFixed(2) + ' cm'; };
@@ -144,15 +161,10 @@ const NM = ['gap', 'MRD1', 'BPD'];
 function nm(x) { const L = LINES[LINES.length - 1]; if (!L) return;
   if (x === 'R' || x === 'L') L[3] = L[3] === x ? '' : x; else if (x === '✏️') { const v = window.prompt('ชื่อเส้น', L[2] || ''); if (v != null) L[2] = v.trim(); } else L[2] = L[2] === x ? '' : x;
   paintOv(); calc(); }
-function copyRes() {
-  const s = LINES.map((L, i) => lname(L, i) + ' ' + fmt(dlen(L))).join('\n') + (SCT === 'hvid' ? '\n(สเกลจาก HVID ±5%)' : '');
-  const done = () => { const b = $('cpb'); if (b) b.textContent = '✓ คัดลอกแล้ว'; };
-  try { navigator.clipboard.writeText(s).then(done, () => window.prompt('คัดลอก', s)); } catch (e) { window.prompt('คัดลอก', s); }
-}
 function distTxt() {
   const L = LINES[LINES.length - 1];
   const s = LINES.map((L, i) => `<b style="color:${LC[i % LC.length]}">${lname(L, i)}</b> <b>${fmt(dlen(L))}</b>`).join(' · ')
-    + (L ? `<div class="chips">${NM.concat(['R', 'L']).map(x => `<button class="${L[2] === x || L[3] === x ? 'on' : ''}" onclick="nm('${x}')">${x}</button>`).join('')}<button id="cpb" onclick="copyRes()">📋</button></div>` : '');
+    + (L ? `<div class="chips">${NM.concat(['R', 'L']).map(x => `<button class="${L[2] === x || L[3] === x ? 'on' : ''}" onclick="nm('${x}')">${x}</button>`).join('')}</div>` : '');
   return s || TOOL === 'dist' ? `<div>📍 ${s || ''}${TOOL === 'dist' ? ` <span class="mu">${DP ? 'แตะจุดที่ 2' : 'แตะจุดที่ 1'}</span>` : ''}</div>` : '';
 }
 // จุดขอบแผล → convex hull
@@ -170,7 +182,7 @@ function extent(Hh, u) {
   return { L: b - a + 1, Wd: d - c + 1, l: [P(a, m), P(b, m)], w: [P(n, c), P(n, d)] };
 }
 function calc() {
-  const el = $('res'); A0 = null; if (!IMG) { el.innerHTML = ''; return; }
+  const el = $('res'); A0 = null; SUM = ''; if (!IMG) { el.innerHTML = ''; return; }
   if (!PXCM) {
     const hv = SCT === 'hvid', sw = `<div class="chips"><button class="${hv ? '' : 'on'}" onclick="SCT='ruler';SC=[];paintOv();calc()">📏 ไม้บรรทัด</button><button class="${hv ? 'on' : ''}" onclick="SCT='hvid';SC=[];paintOv();calc()">👁️ HVID (สำรอง)</button></div>`;
     el.innerHTML = SC.length < 2 ? `<div class="res"><b>ขั้นที่ 1 ตั้งสเกล (บังคับ):</b> ${hv ? 'ซูมที่ตา แตะขอบ limbus ซ้าย–ขวาของกระจกตา 1 ตา' : 'ซูมที่ไม้บรรทัด แตะ 2 จุดบนขีด'} (เหลือ <b>${2 - SC.length}</b>)${sw}${hv ? '<div class="warn">⚠️ HVID แต่ละคน 11–12.5 mm → คลาด ±5% · ใช้เมื่อไม่มีไม้บรรทัด · ไม่ใช้กับเด็กเล็ก</div>' : ''}</div>`
@@ -199,6 +211,7 @@ function calc() {
   if (AX.length === 2) { const dx = AX[1][0] - AX[0][0], dy = AX[1][1] - AX[0][1], dl = Math.hypot(dx, dy) || 1, e = extent(Hh, [dx / dl, dy / dl]);
     bl = `<div>↕️ หัว–เท้า: <b>${cm(e.L)} × ${cm(e.Wd)} cm</b></div>`; }
   else if (TOOL === 'axis') bl = `<div class="mu">↕️ แตะฝั่งหัว แล้วแตะฝั่งเท้า (${AX.length}/2)</div>`;
+  SUM = `${area.toFixed(area < 10 ? 2 : 1)} cm² · ${cm(A0.L)} × ${cm(A0.Wd)} cm`;
   el.innerHTML = `<div class="res"><div><span class="big">${area.toFixed(area < 10 ? 2 : 1)} cm²</span> · <b><span style="color:#ca8a04">ยาว ${cm(A0.L)}</span> × <span style="color:#0284c7">กว้าง ${cm(A0.Wd)}</span> cm</b></div>
     ${bl}${distTxt()}<div class="mu">เส้นรอบวง ≈${cm(per)} cm · สเกล ${scl()} = ${spx.toFixed(0)} px ✓${warn}</div></div>`;
 }
