@@ -99,7 +99,8 @@ textarea.inp{resize:vertical;line-height:1.45;min-height:44px;overflow:hidden;fo
 .adh{display:flex;align-items:center;gap:8px}.adg{display:flex;gap:6px}.adg .inp{min-width:0}.adi{min-height:40px;padding:8px 10px}
 .adbar{position:sticky;bottom:-16px;background:var(--bg);margin:0 -16px -16px;padding:10px 16px 16px;border-top:1px solid var(--ln);display:flex;gap:8px}.adbar .b{flex:1;min-height:46px}
 .qmv{margin:6px 0 2px}.qmv .inp{min-height:38px;padding:6px 10px;font-size:15px;border-color:var(--or)}
-#tabX{display:none}body.isadmin #tabX{display:block}.atab .fab,.atab .add,.atab #chips,.atab #notices,.atab #count{display:none!important}
+#tabX{display:none}body.isadmin #tabX{display:block}
+#toolsv{position:fixed;left:0;right:0;bottom:0;display:none;z-index:5;background:var(--bg,#fff)}body.ttab #toolsv{display:block}body.ttab #main{display:none}#toolsv iframe{width:100%;height:100%;border:0;display:block}.atab .fab,.atab .add,.atab #chips,.atab #notices,.atab #count{display:none!important}
 .amain .ehead{position:static;margin:0;padding:10px 0;border:0;background:none}.amain .adbar{bottom:0;margin:0 -16px}
 .adday{margin:14px -16px 2px;padding:9px 16px;background:var(--bg2);border-top:3px solid var(--hd);font-weight:700;font-size:15px;display:flex;justify-content:space-between}.adday span{font-weight:500;color:var(--mu);font-size:13px}.adday+.adc,.adday+.adr{border-top:0}
 .dstag{background:#7c3aed;color:#fff;border-radius:6px;padding:0 6px;font-size:11px;font-weight:700}.dschk{display:flex;align-items:center;gap:4px;font-size:13px;font-weight:600;white-space:nowrap}.adh .dschk{margin-left:auto}
@@ -196,7 +197,7 @@ label.b{display:flex;align-items:center;justify-content:center;cursor:pointer}  
     <div><div class="date" id="date"></div><h1 id="ttl">งานวันนี้</h1></div>
     <span style="display:flex;align-items:center;gap:6px"><span class="pill" id="count">…</span><span class="upd" id="updAt"></span><button class="rf" id="rf" onclick="refreshNow()" aria-label="รีเฟรช"><svg viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg></button></span>
   </div>
-  <div class="tabs"><button id="tabT" class="tab on" onclick="if(TAB==='task'&&OFF){go(0)}else setTab('task')">งาน</button><button id="tabR" class="tab" onclick="setTab('round')">ราวด์</button><button id="tabA" class="tab" onclick="setTab('admit')">รับใหม่</button><button id="tabF" class="tab" onclick="setTab('fight')">🥊</button><button id="tabX" class="tab" onclick="setTab('admin')">ผู้ดูแล</button></div>
+  <div class="tabs"><button id="tabT" class="tab on" onclick="if(TAB==='task'&&OFF){go(0)}else setTab('task')">งาน</button><button id="tabR" class="tab" onclick="setTab('round')">ราวด์</button><button id="tabA" class="tab" onclick="setTab('admit')">รับใหม่</button><button id="tabF" class="tab" onclick="setTab('fight')">🥊</button><button id="tabM" class="tab" onclick="setTab('tools')">📐</button><button id="tabX" class="tab" onclick="setTab('admin')">ผู้ดูแล</button></div>
   <div class="dnav" id="dnav"></div>
   <div class="chips" id="chips"></div>
 </header>
@@ -213,8 +214,8 @@ label.b{display:flex;align-items:center;justify-content:center;cursor:pointer}  
 <button class="fab" id="fab" aria-label="เพิ่มงาน" onclick="if(TAB==='round'){openAdd()}else{openAddSheet()}">+</button>
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbw9dsYKGy8pELEBeIatNSjJLFv6W7MGjxhnjj584Z4BUlXN6WEfon-JID4f4eHR9wQ/exec';   // ← วาง URL ของบอท (ลงท้าย /exec)
-const APP_VER = 'v3.54';   // 🔖 ต้องตรงกับ SERVER_VER
-const APP_DATE = '14/11/69 11:50';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
+const APP_VER = 'v3.55';   // 🔖 ต้องตรงกับ SERVER_VER
+const APP_DATE = '14/11/69 14:15';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
 const TOK = new URLSearchParams(location.search).get('t') || '';
 // 🔄 แถบสีด้านบนวิ่งระหว่างโหลด / บันทึก
 let LOADING = 0;
@@ -687,10 +688,11 @@ function asAdd(more) {
 // 🥊 ล็อกซูมระหว่างอยู่ในเกม (เปลี่ยน viewport → iPhone รีเซ็ตซูมที่ค้างด้วย) · ออกจากเกม = ซูมได้ปกติ
 function zoomLock(on) { const m = document.querySelector('meta[name=viewport]'); if (m) m.content = 'width=device-width, initial-scale=1' + (on ? ', maximum-scale=1, user-scalable=no' : ''); }
 function setTab(t, force) {
-  zoomLock(t === 'fight');
-  TAB = t; document.body.classList.toggle('rtab', t === 'round'); document.body.classList.toggle('atab', t === 'admit' || t === 'admin' || t === 'fight'); stamp(); if (t === "round") $("ttl").textContent = "ราวด์"; if (t === 'admit') $('ttl').textContent = 'รับใหม่'; $('tabT').classList.toggle('on', t === 'task'); $('tabR').classList.toggle('on', t === 'round'); $('tabA').classList.toggle('on', t === 'admit'); $('tabX').classList.toggle('on', t === 'admin'); $('tabF').classList.toggle('on', t === 'fight');
+  zoomLock(t === 'fight' || t === 'tools');
+  TAB = t; document.body.classList.toggle('rtab', t === 'round'); document.body.classList.toggle('atab', t === 'admit' || t === 'admin' || t === 'fight' || t === 'tools'); document.body.classList.toggle('ttab', t === 'tools'); $('tabM').classList.toggle('on', t === 'tools'); stamp(); if (t === "round") $("ttl").textContent = "ราวด์"; if (t === 'admit') $('ttl').textContent = 'รับใหม่'; $('tabT').classList.toggle('on', t === 'task'); $('tabR').classList.toggle('on', t === 'round'); $('tabA').classList.toggle('on', t === 'admit'); $('tabX').classList.toggle('on', t === 'admin'); $('tabF').classList.toggle('on', t === 'fight');
   if (t === 'admit') { document.body.classList.remove('adding'); $('dnav').style.display = 'none'; return openAdmit(); }
   if (t === 'fight') { document.body.classList.remove('adding'); $('dnav').style.display = 'none'; $('ttl').textContent = 'สังเวียน'; return openFight(); }
+  if (t === 'tools') { document.body.classList.remove('adding'); $('dnav').style.display = 'none'; $('ttl').textContent = 'เครื่องมือวัด'; return openTools(); }
   if (t === 'admin') { document.body.classList.remove('adding'); $('dnav').style.display = 'none'; $('ttl').textContent = 'ผู้ดูแล'; return openAdminX(); }
   if (t === 'round') document.body.classList.remove('adding'); $('dnav').style.display = t === 'task' ? 'flex' : 'none';
   if (t === 'round') { if (R) renderRound(); else { $('main').innerHTML = '<div class="empty">กำลังโหลด…</div>'; }
@@ -698,6 +700,12 @@ function setTab(t, force) {
     const g0 = EQGEN; call({ api: 'round' }, r => { if (!r.error && (EQ.length || EQGEN !== g0)) return;   // มีการแก้ระหว่างโหลด → ไม่ทับ (โหลดใหม่เองหลังคิวหมด)
       if (!r.error) { LASTR = Date.now(); stamp(); } if (r.error) { $('main').innerHTML = '<div class="empty">' + (r.error === 'expired' ? '🔒 ลิงก์หมดอายุ' : '❗ อ่านตารางราวด์ไม่ได้') + '</div>'; return; } setR(r); if (TAB === 'round') renderRound(); }); }
   else if (D) render();
+}
+// 📐 เครื่องมือวัด: ฝังหน้า tools.html (แก้เครื่องมือได้โดยทีมไม่ต้องอัปแอป) · โหลดครั้งเดียว สลับแท็บแล้วงานที่วัดค้างไม่หาย
+function openTools() {
+  let v = $('toolsv'); if (!v) { v = document.createElement('div'); v.id = 'toolsv'; v.innerHTML = '<iframe src="tools.html" allow="web-share; clipboard-write; camera"></iframe>'; document.body.appendChild(v); }
+  scrollTo(0, 0); const pos = () => { const tb = document.querySelector('.tabs'); if (tb && TAB === 'tools') v.style.top = Math.max(0, tb.getBoundingClientRect().bottom) + 'px'; };
+  pos(); if (!openTools.r) { openTools.r = 1; addEventListener('resize', pos); }
 }
 const EVE_RE = /ราว[นด]์?\s*เย็น/;   // "ราวน์เย็น" / "ราวด์เย็น"
 // 🔗 ลิงก์นอก (ประวัติ): แอปบนหน้าจอโฮมไอโฟนเปิดเป็นหน้าต่างชั่วคราว (ลืมล็อกอิน) → เปิดใน Safari ตัวจริง (iOS 17+) · เปิดไม่ได้ = แบบเดิม

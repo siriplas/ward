@@ -53,6 +53,7 @@ let VS = 1, VX = 0, VY = 0, FW = 0, FH = 0;
 const vd = $('vd'), SF = 3;
 function newGroup() { GR.push({ m: new Uint8Array(W * H), t: null, ref: null, sig: null, T0: null, occ: [], vis: [], part: false }); ACT = GR.length - 1; TOOL = 'paint'; ui(); calc(); }
 function ui() {
+  if (!VID) { $('tools').innerHTML = ''; return; }
   $('tools').innerHTML = GR.map((g, i) => `<button class="${ACT === i && TOOL === 'paint' ? 'on' : ''}" onclick="ACT=${i};TOOL='paint';ui();calc()"><i style="background:rgb(${PC[i % 4]})"></i>กดครั้งที่ ${i + 1}</button>`).join('')
     + (GR.length < 4 ? `<button class="sm" onclick="newGroup()">➕</button>` : '')
     + `<button class="${TOOL === 'skin' ? 'on' : ''}" onclick="TOOL='skin';ui()"><i style="background:rgb(${SKC})"></i>ผิวปกติ</button>`
