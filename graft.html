@@ -1,0 +1,137 @@
+<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Graft take</title><meta name="theme-color" content="#1d4ed8"><meta name="apple-mobile-web-app-capable" content="yes">
+<style>
+:root{--bg:#fff;--bg2:#f4f5f7;--tx:#111827;--mu:#6b7280;--ln:#e5e7eb;--hd:#1d4ed8;--g:#059669;--or:#d97706;--rd:#dc2626}
+@media (prefers-color-scheme: dark){:root{--bg:#0f1115;--bg2:#1c1f26;--tx:#e5e7eb;--mu:#9ca3af;--ln:#262a31;--g:#34d399;--or:#fbbf24;--rd:#f87171}}
+*{box-sizing:border-box}html,body{height:100%;overflow:hidden;touch-action:none}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:'IBM Plex Sans Thai','Noto Sans Thai',system-ui,-apple-system,sans-serif;font-size:15px;display:flex;flex-direction:column;height:100dvh}
+header{border-top:4px solid var(--hd);padding:6px 16px;border-bottom:1px solid var(--ln);padding-top:max(6px,env(safe-area-inset-top));display:flex;align-items:center;gap:8px}
+header b{font-size:17px;flex:1}header button,header label{border:1px solid var(--ln);background:var(--bg2);color:var(--tx);border-radius:10px;min-width:40px;height:36px;display:flex;align-items:center;justify-content:center;font:inherit;cursor:pointer}
+main{padding:6px 16px max(8px,env(safe-area-inset-bottom));max-width:640px;width:100%;margin:0 auto;flex:1;min-height:0;display:flex;flex-direction:column}
+.hid{display:none!important}.mu{color:var(--mu)}
+.b{display:flex;align-items:center;justify-content:center;min-height:44px;border-radius:12px;border:1px solid var(--hd);background:var(--hd);color:#fff;font:inherit;cursor:pointer}
+.bar{display:flex;gap:6px;margin:6px 0 0}
+.bar button{flex:1;min-height:34px;border-radius:10px;border:2px solid var(--ln);background:var(--bg2);color:var(--tx);font:inherit;font-size:13px;cursor:pointer;line-height:1.2;padding:0 6px}
+.bar button:disabled{opacity:.4}.bar button.on{border-color:var(--hd)}.bar button.sm{flex:0 0 auto}
+.bar i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:4px;vertical-align:-1px;border:1px solid rgba(0,0,0,.3)}
+.seg{display:flex;border:1px solid var(--ln);border-radius:10px;overflow:hidden;margin-top:6px}.seg button{flex:1;border:0;background:var(--bg2);color:var(--tx);font:inherit;font-size:13px;min-height:32px;cursor:pointer}.seg button.on{background:var(--hd);color:#fff}
+.sz{display:flex;align-items:center;gap:8px;margin-top:4px;font-size:13px}.sz input[type=range]{flex:1;min-width:0}
+.wrap{position:relative;margin-top:6px;flex:1;min-height:120px;overflow:hidden;border-radius:10px;background:var(--bg2);touch-action:none}
+.stage{position:absolute;left:0;top:0;transform-origin:0 0}
+.stage canvas{position:absolute;left:0;top:0;width:100%;height:100%;display:block}
+.res{margin-top:6px;border:1px solid var(--ln);border-radius:12px;padding:6px 10px;font-size:13px;line-height:1.45}
+.big{font-size:18px;font-weight:700}.ok{color:var(--g)}.warn{color:var(--or)}.bad{color:var(--rd)}
+.ov2{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;z-index:9}.ov2>div{background:var(--bg);width:100%;padding:16px 16px max(16px,env(safe-area-inset-bottom));border-radius:16px 16px 0 0;font-size:14px;line-height:1.6}
+</style></head><body>
+<header><b>🩹 Graft take</b><label id="cam2" class="hid">📷<input type="file" accept="image/*" style="display:none" onchange="load(this.files[0])"></label><button onclick="$('help').classList.remove('hid')">ℹ️</button></header>
+<main>
+  <label class="b" id="cam1">📷 ถ่าย / เลือกรูปแผล graft<input type="file" accept="image/*" style="display:none" onchange="load(this.files[0])"></label>
+  <div class="seg"><button id="mA" onclick="setMode(0)">✋ ระบายเอง</button><button id="mB" onclick="setMode(1)">🤖 แยกให้อัตโนมัติ</button></div>
+  <div class="bar" id="grp"></div>
+  <div class="bar" id="tools"></div>
+  <div class="sz">แปรง <input type="range" id="bs" min="2" max="40" value="14" oninput="BR=+this.value"><span id="thw" class="hid">ความไว <input type="range" id="th" min="4" max="30" value="14" oninput="auto();later()" style="width:70px"></span></div>
+  <div class="wrap" id="wr"><div class="stage" id="st"><canvas id="cv" width="10" height="10"></canvas><canvas id="ov" width="10" height="10"></canvas></div></div>
+  <div id="res"></div>
+</main>
+<div class="ov2 hid" id="help" onclick="this.classList.add('hid')"><div>
+• 1) เลือก ⬜ ขอบ graft แล้วระบายให้ทั่วพื้นที่ graft ทั้งหมด (= 100%)<br>
+• 2) <b>ระบายเอง</b>: ระบาย 🟨 ไม่ติด (slough/fibrin/แผลเปิด) และ ⬛ เนื้อตาย · ที่เหลือในขอบ = ติด<br>
+• 2) <b>แยกให้อัตโนมัติ</b>: แยกจากสี (ชมพู/แดง = ติด · เหลือง/ขาว = ไม่ติด · มืดมาก = เนื้อตาย) แล้วระบาย 🟩 / 🟨 / ⬛ ทับจุดที่ผิดได้ · ปรับ "ความไว" ถ้าแยกแดงไม่ดี<br>
+• 2 นิ้ว = ซูม/เลื่อน · ↩️ ย้อนกลับ · 🧽 ลบ = ลบของกลุ่มที่เลือก<br>
+• ถ่ายตั้งฉากกับแผล แสงสม่ำเสมอ · ใช้ประกอบการประเมิน ไม่แทนการตรวจ · คำนวณในเครื่อง ไม่ส่งรูปไปไหน<br>
+<span class="mu">แตะที่ใดก็ได้เพื่อปิด</span></div></div>
+<script>
+const $ = id => document.getElementById(id);
+// ป้าย: 0 = ไม่ระบุ · 1 ติด · 2 ไม่ติด · 3 เนื้อตาย
+const G = ['area', 1, 2, 3], NAMES = { area: 'ขอบ graft', 1: 'ติด', 2: 'ไม่ติด', 3: 'เนื้อตาย' }, COL = { area: [96, 165, 250], 1: [16, 185, 129], 2: [250, 204, 21], 3: [30, 30, 30] };
+let GRP = 'area', TOOL = 'paint', MODE = 0, BR = 14, IMG = null, PX = null, W = 0, H = 0, AREA = null, LBL = null, AUTO = null, LA = null, timer = 0, last = null;
+let UNDO = [], VS = 1, VX = 0, VY = 0, FW = 0, FH = 0;
+function ui() {
+  $('mA').className = MODE ? '' : 'on'; $('mB').className = MODE ? 'on' : ''; $('thw').classList.toggle('hid', !MODE);
+  $('grp').innerHTML = G.filter(k => MODE || k !== 1).map(k => `<button class="${GRP == k ? 'on' : ''}" onclick="GRP=${k === 'area' ? "'area'" : k};ui()"><i style="background:rgb(${COL[k]})"></i>${NAMES[k]}</button>`).join('');
+  $('tools').innerHTML = [['paint', '✏️ ระบาย'], ['erase', '🧽 ลบ']].map(([t, l]) => `<button class="${TOOL === t ? 'on' : ''}" onclick="TOOL='${t}';ui()">${l}</button>`).join('')
+    + `<button class="sm" onclick="undo()" ${UNDO.length ? '' : 'disabled'}>↩️</button><button class="sm" onclick="clr()">ล้าง${NAMES[GRP]}</button>`;
+}
+function setMode(m) { MODE = m; if (!m && GRP === 1) GRP = 2; if (m) auto(); ui(); later(); }
+function snap() { UNDO.push([AREA.slice(), LBL.slice()]); if (UNDO.length > 30) UNDO.shift(); }
+function undo() { const s = UNDO.pop(); if (!s) return; [AREA, LBL] = s; paintOv(); later(); }
+function clr() { if (!AREA) return; snap(); if (GRP === 'area') AREA.fill(0); else for (let p = 0; p < LBL.length; p++) if (LBL[p] === GRP) LBL[p] = 0; paintOv(); later(); }
+function lab(r, g, b) {
+  const f = v => { v /= 255; return v > 0.04045 ? Math.pow((v + 0.055) / 1.055, 2.4) : v / 12.92; };
+  const R = f(r), Gg = f(g), B = f(b);
+  let X = (R * 0.4124 + Gg * 0.3576 + B * 0.1805) / 0.95047, Y = R * 0.2126 + Gg * 0.7152 + B * 0.0722, Z = (R * 0.0193 + Gg * 0.1192 + B * 0.9505) / 1.08883;
+  const h = t => t > 0.008856 ? Math.cbrt(t) : 7.787 * t + 16 / 116; X = h(X); Y = h(Y); Z = h(Z);
+  return [116 * Y - 16, 500 * (X - Y), 200 * (Y - Z)];
+}
+function load(f) {
+  if (!f) return; const im = new Image();
+  im.onload = () => {
+    const s = Math.min(1, 1000 / Math.max(im.width, im.height)); W = Math.round(im.width * s); H = Math.round(im.height * s);
+    for (const c of [$('cv'), $('ov')]) { c.width = W; c.height = H; }
+    const c = $('cv').getContext('2d'); c.drawImage(im, 0, 0, W, H); PX = c.getImageData(0, 0, W, H).data; IMG = im;
+    LA = new Float32Array(W * H * 3);
+    for (let p = 0; p < W * H; p++) { const q = lab(PX[p * 4], PX[p * 4 + 1], PX[p * 4 + 2]); LA[p * 3] = q[0]; LA[p * 3 + 1] = q[1]; LA[p * 3 + 2] = q[2]; }
+    AREA = new Uint8Array(W * H); LBL = new Uint8Array(W * H); AUTO = new Uint8Array(W * H); UNDO = [];
+    GRP = 'area'; BR = Math.round(Math.max(W, H) / 50); $('bs').max = Math.round(Math.max(W, H) / 10); $('bs').value = BR;
+    $('cam1').classList.add('hid'); $('cam2').classList.remove('hid'); VX = VY = 0;
+    auto(); fit(); ui(); paintOv(); calc();
+  };
+  im.src = URL.createObjectURL(f);
+}
+// แยกสีอัตโนมัติ: มืดมาก = เนื้อตาย · แดงพอ (a* ≥ เกณฑ์) = ติด · ที่เหลือ (เหลือง/ขาว/ซีด) = ไม่ติด
+function auto() {
+  if (!LA) return; const th = +$('th').value;
+  for (let p = 0; p < W * H; p++) { const L = LA[p * 3], a = LA[p * 3 + 1]; AUTO[p] = L < 28 ? 3 : a >= th ? 1 : 2; }
+}
+const cls = p => LBL[p] || (MODE ? AUTO[p] : 1);
+function fit(keep) { if (!W) return; const w = $('wr').clientWidth, h = $('wr').clientHeight, s = Math.min(w / W, h / H); FW = W * s; FH = H * s; $('st').style.width = FW + 'px'; $('st').style.height = FH + 'px'; if (!keep) VS = 1; view(); }
+new ResizeObserver(() => fit(true)).observe($('wr'));
+function view() { const w = $('wr').clientWidth, h = $('wr').clientHeight; VS = Math.max(1, Math.min(6, VS)); VX = FW * VS <= w ? (w - FW * VS) / 2 : Math.min(0, Math.max(w - FW * VS, VX)); VY = FH * VS <= h ? (h - FH * VS) / 2 : Math.min(0, Math.max(h - FH * VS, VY)); $('st').style.transform = `translate(${VX}px,${VY}px) scale(${VS})`; }
+function stamp(x, y, r, on) {
+  for (let j = Math.max(0, y - r); j <= Math.min(H - 1, y + r); j++) for (let i = Math.max(0, x - r); i <= Math.min(W - 1, x + r); i++)
+    if ((i - x) ** 2 + (j - y) ** 2 <= r * r) { const p = j * W + i;
+      if (GRP === 'area') AREA[p] = on ? 1 : 0; else if (on) { LBL[p] = GRP; AREA[p] = 1; } else if (LBL[p] === GRP) LBL[p] = 0; }
+}
+function pt(e) { const rc = $('ov').getBoundingClientRect(); return [Math.round((e.clientX - rc.left) * W / rc.width), Math.round((e.clientY - rc.top) * H / rc.height)]; }
+function line(a, b, on) { const n = Math.max(1, Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1]) / Math.max(1, BR / 3))); for (let s = 0; s <= n; s++) stamp(Math.round(a[0] + (b[0] - a[0]) * s / n), Math.round(a[1] + (b[1] - a[1]) * s / n), BR, on); }
+const PT = new Map(); let GS = null;
+const wp = e => { const r = $('wr').getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
+function gstate() { const [a, b] = [...PT.values()]; return { c: [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2], d: Math.hypot(a[0] - b[0], a[1] - b[1]) || 1 }; }
+$('wr').addEventListener('pointerdown', e => {
+  if (!IMG) return; e.preventDefault(); $('wr').setPointerCapture(e.pointerId); PT.set(e.pointerId, wp(e));
+  if (PT.size === 2) { if (last) { last = null; undo(); } GS = Object.assign(gstate(), { s: VS, x: VX, y: VY }); return; }
+  if (PT.size > 2 || GS) return;
+  snap(); last = pt(e); stamp(last[0], last[1], BR, TOOL === 'paint'); paintOv();
+});
+$('wr').addEventListener('pointermove', e => {
+  if (!PT.has(e.pointerId)) return; PT.set(e.pointerId, wp(e));
+  if (GS && PT.size === 2) { const g = gstate(), s = Math.max(1, Math.min(6, GS.s * g.d / GS.d)), k = s / GS.s;
+    VS = s; VX = g.c[0] - (GS.c[0] - GS.x) * k; VY = g.c[1] - (GS.c[1] - GS.y) * k; view(); return; }
+  if (!last) return; const p = pt(e); line(last, p, TOOL === 'paint'); last = p; paintOv();
+});
+const end = e => { PT.delete(e.pointerId); if (!PT.size) GS = null; if (last) { last = null; later(); } };
+$('wr').addEventListener('pointerup', end); $('wr').addEventListener('pointercancel', end);
+function later() { clearTimeout(timer); timer = setTimeout(() => { calc(); paintOv(); }, 120); ui(); }
+let raf = 0;
+function paintOv() {
+  if (raf) return; raf = requestAnimationFrame(() => {
+    raf = 0; if (!IMG) return; const c = $('ov').getContext('2d'), d = c.createImageData(W, H), o = d.data;
+    for (let p = 0; p < W * H; p++) {
+      if (!AREA[p]) continue; const k = cls(p), col = COL[k], edge = !AREA[p - 1] || !AREA[p + 1] || !AREA[p - W] || !AREA[p + W];
+      const cc = edge ? COL.area : col, a = edge ? 255 : k === 1 ? (MODE ? 70 : 40) : 150;
+      o[p * 4] = cc[0]; o[p * 4 + 1] = cc[1]; o[p * 4 + 2] = cc[2]; o[p * 4 + 3] = a;
+    }
+    c.putImageData(d, 0, 0);
+  });
+}
+function calc() {
+  const el = $('res'); if (!IMG) { el.innerHTML = ''; return; }
+  let n = 0; const c = [0, 0, 0, 0];
+  for (let p = 0; p < W * H; p++) if (AREA[p]) { n++; c[cls(p)]++; }
+  if (n < 50) { el.innerHTML = `<div class="res mu">ระบาย ⬜ ขอบ graft ให้ทั่วพื้นที่ graft ก่อน</div>`; return; }
+  const pc = k => c[k] / n * 100, take = pc(1), lv = take >= 90 ? 'ok' : take >= 70 ? 'warn' : 'bad';
+  el.innerHTML = `<div class="res"><div class="big ${lv}">Take ${take.toFixed(0)}%</div>
+    <div>🟨 ไม่ติด <b>${pc(2).toFixed(0)}%</b> · ⬛ เนื้อตาย <b>${pc(3).toFixed(0)}%</b> <span class="mu">· ${MODE ? 'แยกอัตโนมัติ + ที่แก้เอง' : 'ระบายเอง'}</span></div></div>`;
+}
+ui();
+</script></body></html>
