@@ -1,7 +1,12 @@
 // 🧪 เซิร์ฟเวอร์ปลอม (ข้อมูลสมมติล้วน) สำหรับเทสต์แอปด้วย Playwright
 const APPV = require('fs').readFileSync(__dirname + '/../index.html', 'utf8').match(/const APP_VER = '([^']+)'/)[1];
 function fresh() {
+  const d0 = new Date(Date.now() + 7 * 3600e3).toISOString().slice(0, 10);
   return {
+    admits: [
+      { row: 2, date: d0, name: 'นาง สมศรี ใจดี', hn: '44444444', staff: 'ST', sec: 'ADMISSION', dx: 'Lymphedema', proc: 'LVA both legs', ds: false, st: '' },
+      { row: 3, date: d0, name: 'นาย มานะ ขยัน', hn: '', staff: 'NA', sec: 'CONSULT', dx: 'ORN mandible', proc: 'FFF', ds: false, st: '' }
+    ],
     tasks: [
       { no: 1, id: 'r1', task: 'สมชาย ล้างแผล', rest: 'ล้างแผล', name: 'สมชาย', ward: 'ฉก 7 ต', by: 'Tester', done: false, urgent: false },
       { no: 2, id: 'r2', task: 'มานี CBC', rest: 'CBC', name: 'มานี', ward: '72/8 ออก', by: 'Other', done: false, urgent: true },
@@ -22,7 +27,7 @@ function handler(S) {
     let r;
     if (api === 'data') r = data();
     else if (api === 'round') r = { pts: S.pts, wards: ['ฉก 7 ต', '72/8 ออก'], canEdit: true, admin: false, ver: APPV, tdOk: true };
-    else if (api === 'admits') r = { rows: [] };
+    else if (api === 'admits') r = { rows: S.admits || [] };
     else if (api === 'fights') r = { rows: [] };
     else if (api === 'run') {
       const t = String(q.text || q.t2 || q.cmd || '');

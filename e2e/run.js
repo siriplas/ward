@@ -29,6 +29,7 @@ const out = []; const ok = (n, c, got) => { out.push((c ? '✅ ' : '❌ ') + n +
   // แท็บรับใหม่ (ไม่พัง)
   await tap('#tabA'); await p.waitForTimeout(500);
   ok('รับใหม่: เปิดได้', (await txt()).length > 10, '');
+  ok('รับใหม่: ปุ่ม 📄 ประวัติ เฉพาะคนที่มี HN', await p.locator('.admh').count() === 1, await p.locator('.admh').count());
   // แท็บเครื่องมือ
   await tap('#tabM'); await p.waitForTimeout(1200);
   const f = p.frameLocator('#toolsv iframe');
