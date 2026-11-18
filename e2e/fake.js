@@ -28,6 +28,9 @@ function handler(S) {
     if (api === 'data') r = data();
     else if (api === 'round') r = { pts: S.pts, wards: ['ฉก 7 ต', '72/8 ออก'], canEdit: true, admin: false, ver: APPV, tdOk: true };
     else if (api === 'admits') r = { rows: S.admits || [] };
+    else if (api === 'consultocr') { S.cons = (S.cons || 0) + 1; r = { ok: true, row: { sec: 'CONSULT', date: '2026-11-19', hn: '1234567', name: 'ทดสอบ' + S.cons, ward: 'ICU สยามินทร์', staff: '', dx: 'Pressure injury sacrum', proc: '', ds: false, cons: true } }; }
+    else if (api === 'admitsave') { S.saved = body.rows; S.admits = (S.admits || []).concat(body.rows.map((x, i) => Object.assign({ row: 90 + i, st: x.hold ? 'รอ อ.' : '' }, x))); r = { ok: true, msg: 'ok' }; }
+    else if (api === 'admitedit') { S.edit = body; r = { ok: true, msg: 'ok' }; }
     else if (api === 'fights') r = { rows: [] };
     else if (api === 'run') {
       const t = String(q.text || q.t2 || q.cmd || '');

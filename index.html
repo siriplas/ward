@@ -216,8 +216,8 @@ label.b{display:flex;align-items:center;justify-content:center;cursor:pointer}  
 <button class="fab" id="fab" aria-label="เพิ่มงาน" onclick="if(TAB==='round'){openAdd()}else{openAddSheet()}">+</button>
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbw9dsYKGy8pELEBeIatNSjJLFv6W7MGjxhnjj584Z4BUlXN6WEfon-JID4f4eHR9wQ/exec';   // ← วาง URL ของบอท (ลงท้าย /exec)
-const APP_VER = 'v3.61';   // 🔖 ต้องตรงกับ SERVER_VER
-const APP_DATE = '19/11/69 02:30';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
+const APP_VER = 'v3.62';   // 🔖 ต้องตรงกับ SERVER_VER
+const APP_DATE = '19/11/69 02:45';   // 🔖 ต้องตรงกับ SERVER_VER ใน AppServer.gs
 const TOK = new URLSearchParams(location.search).get('t') || '';
 // 🔄 แถบสีด้านบนวิ่งระหว่างโหลด / บันทึก
 let LOADING = 0;
@@ -924,8 +924,8 @@ function drawAdmit() {
     const plan = s.plan, by = {};
     (plan || []).forEach(p => (by[p.date] = by[p.date] || []).push(p));
     const list = plan == null ? '<div class="meta">กำลังโหลด…</div>' : !plan.length ? '<div class="meta">ยังไม่มีรายการที่รอเพิ่ม</div>' :
-      Object.keys(by).map(d => `<div class="adday">${d === todayIsoBkk() ? 'วันนี้ · ' : d === new Date(Date.parse(todayIsoBkk()) + 864e5).toISOString().slice(0, 10) ? 'พรุ่งนี้ · ' : ''}${dow(d)} ${thd(d)} <span>${by[d].length} คน</span></div>` + by[d].map(p => AD.edit === p.row ? admEditForm(p) : `<div class="adc"${R && R.canEdit && (!p.st || R.admin) ? ` onclick="AD.edit=${p.row};AD.arm=0;drawAdmit()" style="cursor:pointer"` : ''}><div class="adt"><b>${esc(String(p.name).replace(/^(นาย|นางสาว|นาง|น\.ส\.|ด\.ช\.|ด\.ญ\.|เด็กชาย|เด็กหญิง)\s*/, '').split(/\s+/)[0])}</b>${/^\d{6,9}$/.test(String(p.hn || '')) ? ` <span class="admh" role="link" onclick="event.stopPropagation();openHist('${p.hn}')">HN ${esc(p.hn)} ↗</span>` : p.hn ? ` <span class="meta">HN ${esc(p.hn)}</span>` : ''}${admStat(p)}</div><div class="meta" style="display:flex;align-items:center"><span>${p.ds ? '<span class="dstag">DS</span> ' : ''}${p.sec === 'CONSULT' ? '<b>consult</b> · ' : ''}อ. ${esc(p.staff || '-')}</span>${p.date >= todayIsoBkk() ? `<span style="margin-left:auto;color:var(--hd);font-weight:600;cursor:pointer;padding:2px 0 2px 12px" onclick="event.stopPropagation();admTask(${p.row})">＋ ${p.st ? 'เพิ่มงาน' : 'เพิ่มงานล่วงหน้า'}</span>` : ''}</div>${p.dx ? `<div>${esc(p.dx)}</div>` : ''}${p.proc ? `<div class="ww">${esc(p.proc)}</div>` : ''}</div>`).join('')).join('');
-    $('main').innerHTML = '<div class="amain">' + head + '' + `${s.log ? `<div class="prog">${esc(s.log)}</div>` : ''}<div class="lbl" style="margin-top:6px">รอ admit (วันนี้เป็นต้นไป)</div>${list}<div style="margin-top:18px">${(!(R && R.canEdit) ? reqEditBtn() : `<label class="b adup" style="display:flex;align-items:center;justify-content:center;cursor:pointer;min-height:44px">${s.busy ? '⏳ บอทกำลังอ่านรูป… (~10–20 วิ)' : '🖼 เลือกรูปตาราง admit'}<input type="file" accept="image/*" style="display:none" ${s.busy ? 'disabled' : ''} onchange="admitPick(this.files[0])"></label><button class="b" style="min-height:34px;font-size:13px;margin-top:8px;width:100%" onclick="admitManual()">＋ admit นอกโพย</button>`)}</div></div>`;
+      Object.keys(by).map(d => `<div class="adday">${d === todayIsoBkk() ? 'วันนี้ · ' : d === new Date(Date.parse(todayIsoBkk()) + 864e5).toISOString().slice(0, 10) ? 'พรุ่งนี้ · ' : ''}${dow(d)} ${thd(d)} <span>${by[d].length} คน</span></div>` + by[d].map(p => AD.edit === p.row ? admEditForm(p) : `<div class="adc"${R && R.canEdit && (!p.st || p.st === 'รอ อ.' || R.admin) ? ` onclick="AD.edit=${p.row};AD.arm=0;drawAdmit()" style="cursor:pointer"` : ''}><div class="adt"><b>${esc(String(p.name).replace(/^(นาย|นางสาว|นาง|น\.ส\.|ด\.ช\.|ด\.ญ\.|เด็กชาย|เด็กหญิง)\s*/, '').split(/\s+/)[0])}</b>${/^\d{6,9}$/.test(String(p.hn || '')) ? ` <span class="admh" role="link" onclick="event.stopPropagation();openHist('${p.hn}')">HN ${esc(p.hn)} ↗</span>` : p.hn ? ` <span class="meta">HN ${esc(p.hn)}</span>` : ''}${admStat(p)}</div><div class="meta" style="display:flex;align-items:center"><span>${p.ds ? '<span class="dstag">DS</span> ' : ''}${p.sec === 'CONSULT' ? '<b>consult</b> · ' : ''}อ. ${esc(p.staff || '-')}</span>${p.date >= todayIsoBkk() ? `<span style="margin-left:auto;color:var(--hd);font-weight:600;cursor:pointer;padding:2px 0 2px 12px" onclick="event.stopPropagation();admTask(${p.row})">＋ ${p.st && p.st !== 'รอ อ.' ? 'เพิ่มงาน' : 'เพิ่มงานล่วงหน้า'}</span>` : ''}</div>${p.dx ? `<div>${esc(p.dx)}</div>` : ''}${p.proc ? `<div class="ww">${esc(p.proc)}</div>` : ''}</div>`).join('')).join('');
+    $('main').innerHTML = '<div class="amain">' + head + '' + `${s.log ? `<div class="prog">${esc(s.log)}</div>` : ''}<div class="lbl" style="margin-top:6px">รอ admit (วันนี้เป็นต้นไป)</div>${list}<div style="margin-top:18px">${(!(R && R.canEdit) ? reqEditBtn() : `<label class="b adup" style="display:flex;align-items:center;justify-content:center;cursor:pointer;min-height:44px">${s.busy ? '⏳ บอทกำลังอ่านรูป… (~10–20 วิ)' : '🖼 เลือกรูปตาราง admit'}<input type="file" accept="image/*" style="display:none" ${s.busy ? 'disabled' : ''} onchange="admitPick(this.files[0])"></label><label class="b adup" style="display:flex;align-items:center;justify-content:center;cursor:pointer;min-height:44px;margin-top:8px">📄 ใบ consult (เลือกได้หลายรูป)<input type="file" accept="image/*" multiple style="display:none" ${s.busy ? 'disabled' : ''} onchange="consultPick(this.files)"></label><button class="b" style="min-height:34px;font-size:13px;margin-top:8px;width:100%" onclick="admitManual()">＋ admit นอกโพย</button>`)}</div></div>`;
     return;
   }
   // ตรวจ/แก้
@@ -934,9 +934,9 @@ function drawAdmit() {
   $('main').innerHTML = '<div class="amain">' + head + `${AD.raw ? `<button class="b" style="min-height:36px;font-size:13px" onclick="fallbackCopy(AD.raw,()=>toast('คัดลอกข้อความที่บอทอ่านแล้ว'))">📋 คัดลอกข้อความที่บอทอ่าน (ส่งให้ปรับ)</button>` : ''}<div class="meta">ตรวจทุกแถว แก้ช่องที่ผิดได้ · ติ๊กออก = ไม่เพิ่ม · <b>HN ผิด = รูปแผลไปผิดคน</b></div>` +
     s.rows.map((r, i) => `<div class="adr${r.on ? '' : ' off'}${r.on && !r.hn ? ' warn' : ''}">
       <label class="adh"><input type="checkbox" ${r.on ? 'checked' : ''} onchange="AD.rows[${i}].on=this.checked;drawAdmit()"> <b>${esc(r.sec || '?')}</b> <span class="meta">${dow(r.date)} ${thd(r.date)}</span></label>${r.on ? `<label class="dschk"><input type="checkbox" ${r.ds ? 'checked' : ''} onchange="AD.rows[${i}].ds=this.checked"> DS</label>` : ''}
-      ${r.on ? `<div class="adg">${F(i, 'name', 'ชื่อ', 2)}${F(i, 'hn', 'HN', 1)}</div><div class="adg"><input class="inp adi" type="date" style="flex:1.4" value="${esc(r.date)}" onchange="AD.rows[${i}].date=this.value">${F(i, 'staff', 'อ.', 0.6)}</div>${F(i, 'dx', 'Dx')}${F(i, 'proc', 'Procedure')}` : `<div class="meta">${esc(r.name)}</div>`}
+      ${r.on ? `<div class="adg">${F(i, 'name', 'ชื่อ', 2)}${F(i, 'hn', 'HN', 1)}</div><div class="adg"><input class="inp adi" type="date" style="flex:1.4" value="${esc(r.date)}" onchange="AD.rows[${i}].date=this.value">${F(i, 'staff', 'อ.', 0.6)}</div>${r.cons ? `<div class="adg">${F(i, 'ward', 'ward (เช่น 72/3)')}</div>${r.crop ? `<img src="${r.crop}" alt="ปัญหาของผู้ป่วย" style="width:100%;border-radius:8px;border:1px solid var(--bd,#ddd);margin:4px 0">` : ''}${F(i, 'dx', 'Dx (เทียบกับรูปบน)')}` : F(i, 'dx', 'Dx') + F(i, 'proc', 'Procedure')}` : `<div class="meta">${esc(r.name)}</div>`}
     </div>`).join('') +
-    `<div class="adbar"><button class="b p" ${s.busy || !n ? 'disabled' : ''} onclick="admitSave()">${s.busy ? 'กำลังบันทึก…' : 'ยืนยัน ' + n + ' คน'}</button><button class="b" onclick="AD.step='list';drawAdmit()">กลับ</button></div></div>`;
+    `<div class="adbar"><button class="b p" ${s.busy || !n ? 'disabled' : ''} onclick="admitSave()">${s.busy ? 'กำลังบันทึก…' : s.rows.some(r => r.cons) ? 'พักไว้ ' + n + ' คน (รอ อ.)' : 'ยืนยัน ' + n + ' คน'}</button><button class="b" onclick="AD.step='list';drawAdmit()">กลับ</button></div></div>`;
 }
 // ＋ เพิ่มงานล่วงหน้า ลงวันที่คนไข้จะมา admit (ทุกลิงก์) — ใช้หน้า ＋ เดิม เลือกคนไข้+วันให้แล้ว
 function admTask(row) {
@@ -954,14 +954,14 @@ function admEditForm(p) {
   return `<div class="adr" onclick="event.stopPropagation()"><div class="adh"><b>แก้รายการ</b><span class="meta" style="margin-left:auto;cursor:pointer" onclick="AD.edit=null;drawAdmit()">ปิด ⌃</span></div>
     <div class="adg">${F('name', 'ชื่อ', 2)}${F('hn', 'HN', 1)}</div>
     <div class="adg"><input class="inp adi" id="ae_date" type="date" style="flex:1.4" value="${esc(p.date)}">${F('staff', 'อ.', 0.6)}<label class="dschk"><input type="checkbox" id="ae_ds" ${p.ds ? 'checked' : ''}> DS</label><select class="inp adi" id="ae_sec" style="flex:1.2">${[['ADMISSION', 'admit'], ['CONSULT', 'consult']].map(([s, l]) => `<option value="${s}"${p.sec === s ? ' selected' : ''}>${l}</option>`).join('')}</select></div>
-    ${F('dx', 'Dx')}${F('proc', 'Procedure')}
-    <div class="adg"><button class="b p" style="flex:2" onclick="admEditSave(${p.row})">บันทึก</button><button class="b r" style="flex:1" onclick="admEditSave(${p.row}, true)">${AD.arm === p.row ? 'กดอีกครั้ง = ยกเลิก' : 'ยกเลิกคนนี้'}</button></div></div>`;
+    ${p.sec === 'CONSULT' ? F('ward', 'ward') : ''}${F('dx', 'Dx')}${F('proc', 'Procedure')}
+    ${p.st === 'รอ อ.' ? `<button class="b p" style="width:100%;margin-bottom:6px" onclick="admEditSave(${p.row}, false, true)">✅ บันทึก + เข้าตาราง</button>` : ''}<div class="adg"><button class="b${p.st === 'รอ อ.' ? '' : ' p'}" style="flex:2" onclick="admEditSave(${p.row})">บันทึก</button><button class="b r" style="flex:1" onclick="admEditSave(${p.row}, true)">${AD.arm === p.row ? 'กดอีกครั้ง = ยกเลิก' : 'ยกเลิกคนนี้'}</button></div></div>`;
 }
-async function admEditSave(row, cancel) {
+async function admEditSave(row, cancel, push) {
   const p = (AD.plan || []).find(x => x.row === row); if (!p) return;
   if (cancel && AD.arm !== row) { AD.arm = row; return drawAdmit(); }
-  const vals = {}; ['name', 'hn', 'date', 'staff', 'sec', 'dx', 'proc'].forEach(k => { const e = $('ae_' + k); vals[k] = e ? e.value.trim() : p[k]; }); vals.ds = !!($('ae_ds') || {}).checked;
-  busyOn(); let r; try { r = await ser(() => fetch(API, { method: 'POST', body: JSON.stringify({ app: 'admitedit', t: TOK, row, origName: p.name, origDate: p.date, cancel: !!cancel, vals }) }).then(x => x.json())); } catch (e) { r = { msg: 'ส่งไม่ได้ ลองใหม่' }; } finally { busyOff(); }
+  const vals = {}; ['name', 'hn', 'date', 'staff', 'sec', 'dx', 'proc', 'ward'].forEach(k => { const e = $('ae_' + k); vals[k] = e ? e.value.trim() : p[k]; }); vals.ds = !!($('ae_ds') || {}).checked; if (push && !vals.staff) return toast('❗ ใส่ชื่ออาจารย์ก่อนเข้าตาราง');
+  busyOn(); let r; try { r = await ser(() => fetch(API, { method: 'POST', body: JSON.stringify({ app: 'admitedit', t: TOK, row, origName: p.name, origDate: p.date, cancel: !!cancel, push: !!push, vals }) }).then(x => x.json())); } catch (e) { r = { msg: 'ส่งไม่ได้ ลองใหม่' }; } finally { busyOff(); }
   toast(r.ok ? r.msg : '❗ ' + (r.msg || 'ไม่สำเร็จ')); if (r.ok) { AD.edit = null; AD.arm = 0; openAdmit(true); }
 }
 // 📐 หาเส้นตารางจากรูป แล้วทำรูปใหม่ "ช่องละบรรทัด" มีป้าย R<แถว>C<คอลัมน์> นำหน้า → OCR ของ Google อ่านทีละบรรทัด → รู้ว่าข้อความอยู่ช่องไหนแน่นอน
@@ -1022,9 +1022,31 @@ async function admitPick(file) {
     AD.raw = r.raw || ''; AD.rows = r.rows.map(x => Object.assign(x, { on: !x.sec || AD_SECS.includes(x.sec) })); AD.step = 'review'; drawAdmit();
   } catch (e) { AD.busy = false; AD.log = '❗ ส่งรูปไม่ได้ ลองใหม่'; drawAdmit(); }
 }
+// 📄 ใบ consult: 1 รูป = 1 คน · ส่งทีละรูป · ตัดรูปช่อง "ปัญหาของผู้ป่วย" (~25–45% ความสูง) ไว้เทียบ Dx ลายมือ
+async function consultPick(files) {
+  files = [...(files || [])]; if (!files.length || !AD) return; AD.busy = true; AD.log = ''; drawAdmit();
+  const rows = [], fail = [];
+  for (let i = 0; i < files.length; i++) {
+    AD.log = `⏳ อ่านใบที่ ${i + 1}/${files.length}…`; drawAdmit();
+    try {
+      const bm = await createImageBitmap(files[i]), k = Math.min(1, 2000 / Math.max(bm.width, bm.height)), c = document.createElement('canvas');
+      c.width = Math.round(bm.width * k); c.height = Math.round(bm.height * k); c.getContext('2d').drawImage(bm, 0, 0, c.width, c.height);
+      const cr = document.createElement('canvas'), y0 = Math.round(c.height * 0.25), h = Math.round(c.height * 0.2), cw = Math.min(900, c.width);
+      cr.width = cw; cr.height = Math.round(h * cw / c.width); cr.getContext('2d').drawImage(c, 0, y0, c.width, h, 0, 0, cr.width, cr.height);
+      const crop = cr.toDataURL('image/jpeg', 0.7), blob = await new Promise(res => c.toBlob(res, 'image/jpeg', 0.9));
+      let r; busyOn(); try { r = await (await fetch(API, { method: 'POST', body: JSON.stringify({ app: 'consultocr', t: TOK, mime: 'image/jpeg', data: await b64(blob) }) })).json(); } finally { busyOff(); }
+      if (r && r.ok && r.row) rows.push(Object.assign(r.row, { on: true, crop })); else fail.push(i + 1);
+    } catch (e) { fail.push(i + 1); }
+  }
+  AD.busy = false; AD.log = fail.length ? '❗ อ่านไม่ได้: ใบที่ ' + fail.join(', ') : '';
+  if (!rows.length) return drawAdmit();
+  AD.raw = ''; AD.rows = rows; AD.step = 'review'; drawAdmit();
+  if (fail.length) toast(AD.log);
+}
 // สถานะในแท็บรับใหม่: จับคู่ตารางราวด์ (HN ก่อน ไม่มี HN ใช้ชื่อต้น) → รอเข้าตาราง / รอย้าย ward / ✓ ward จริง
 function admStat(p) {
   if (!p.st) return '<span class="ads">รอเข้าตาราง</span>';
+  if (p.st === 'รอ อ.') return '<span class="ads" style="color:var(--rd)">รอ อ. · ยังไม่เข้าตาราง</span>';
   const nm = firstName(String(p.name).replace(/^(นาย|นางสาว|นาง|น\.ส\.|ด\.ช\.|ด\.ญ\.|เด็กชาย|เด็กหญิง)\s*/, ''));
   const pt = R && R.pts ? (p.hn ? R.pts.find(x => x.hn && String(x.hn) === String(p.hn)) : R.pts.find(x => firstName(x.name) === nm)) : null;
   if (pt && isPend(pt.ward)) return '<span class="ads">รอย้าย ward</span>';
@@ -1039,7 +1061,7 @@ function admitManual() {
 }
 async function admitSave() {
   const s = AD; if (!s || s.busy) return;
-  const rows = s.rows.filter(r => r.on).map(({ on, wardRaw, ...r }) => Object.assign(r, { ward: '' }));
+  const rows = s.rows.filter(r => r.on).map(({ on, wardRaw, crop, cons, ...r }) => Object.assign(r, { ward: cons ? String(r.ward || '').trim() : '', hold: !!cons }));
   const bad = rows.find(r => !String(r.name).trim() || !/^\d{4}-\d\d-\d\d$/.test(r.date) || (r.hn && !/^\d{7,8}$/.test(String(r.hn).trim())));
   if (bad) return toast('❗ ตรวจแถว ' + (bad.name || '(ไม่มีชื่อ)') + ': ต้องมีชื่อ วันที่ และ HN 7–8 หลัก');
   s.busy = true; drawAdmit();

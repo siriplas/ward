@@ -30,6 +30,20 @@ const out = []; const ok = (n, c, got) => { out.push((c ? '✅ ' : '❌ ') + n +
   await tap('#tabA'); await p.waitForTimeout(500);
   ok('รับใหม่: เปิดได้', (await txt()).length > 10, '');
   ok('รับใหม่: ปุ่ม 📄 ประวัติ เฉพาะคนที่มี HN', await p.locator('.admh').count() === 1, await p.locator('.admh').count());
+  // 📄 ใบ consult 2 รูป (รูปสมมติ) → การ์ดตรวจ มีรูปตัด + ward + ช่อง อ.
+  { const png = Buffer.from(await p.evaluate(() => { const c = document.createElement('canvas'); c.width = 600; c.height = 800; const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, 600, 800); x.fillStyle = '#000'; x.font = '28px sans-serif'; x.fillText('ปัญหาของผู้ป่วย: แผลกดทับ (สมมติ)', 30, 260); return c.toDataURL('image/png').split(',')[1]; }), 'base64');
+    await p.locator('input[onchange^="consultPick"]').setInputFiles([{ name: 'a.png', mimeType: 'image/png', buffer: png }, { name: 'b.png', mimeType: 'image/png', buffer: png }]);
+    await p.waitForTimeout(2500); const n = await p.locator('.adr').count();
+    ok('consult: 2 ใบ = 2 การ์ด', n === 2, n);
+    ok('consult: มีรูปตัด + ward + ช่อง อ.', await p.locator('.adr img').count() === 2 && await p.locator('.adr input[placeholder^="ward"]').first().inputValue() === 'ICU สยามินทร์' && await p.locator('.adr input[placeholder="อ."]').count() === 2, '');
+    await p.locator('.adr input[placeholder="อ."]').first().fill('AB');
+    await p.screenshot({ path: '/tmp/claude-0/consult_mock.png' });
+    await tap('.adbar .b.p'); await p.waitForTimeout(800);
+    ok('consult: พักไว้ (hold) ส่ง ward + อ. ไม่ส่งรูป', S.saved && S.saved[0].ward === 'ICU สยามินทร์' && S.saved[0].staff === 'AB' && S.saved[0].hold === true && !S.saved[0].crop, JSON.stringify(S.saved || '').slice(0, 200)); }
+  { await tap('#tabR'); await p.waitForTimeout(800); await tap('#tabA'); await p.waitForTimeout(800); const c = p.locator('.adc', { hasText: 'รอ อ.' }); ok('consult: รายการขึ้น "รอ อ."', await c.count() >= 1, await txt());
+    await c.first().click(); await p.waitForTimeout(300); await p.screenshot({ path: '/tmp/claude-0/consult_edit.png' });
+    await tap('text=บันทึก + เข้าตาราง'); await p.waitForTimeout(600);
+    ok('consult: กดเข้าตาราง ส่ง push', S.edit && S.edit.push === true && S.edit.vals.ward === 'ICU สยามินทร์', JSON.stringify(S.edit || '').slice(0, 200)); }
   // แท็บเครื่องมือ
   await tap('#tabM'); await p.waitForTimeout(1200);
   const f = p.frameLocator('#toolsv iframe');
